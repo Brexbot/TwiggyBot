@@ -1,20 +1,15 @@
-import {
-  CommandInteraction,
-  MessageActionRow,
-  SelectMenuInteraction,
-  MessageSelectMenu,
-} from "discord.js";
-import { Discord, Slash, SelectMenuComponent } from "discordx";
+import { CommandInteraction, MessageActionRow, SelectMenuInteraction, MessageSelectMenu } from 'discord.js';
+import { Discord, Slash, SelectMenuComponent } from 'discordx';
 
 const roles = [
-  { label: "Principal", value: "principal" },
-  { label: "Teacher", value: "teacher" },
-  { label: "Student", value: "student" },
+  { label: 'Principal', value: 'principal' },
+  { label: 'Teacher', value: 'teacher' },
+  { label: 'Student', value: 'student' },
 ];
 
 @Discord()
-export abstract class buttons {
-  @SelectMenuComponent("role-menu")
+export abstract class Buttons {
+  @SelectMenuComponent('role-menu')
   async handle(interaction: SelectMenuInteraction): Promise<unknown> {
     await interaction.deferReply();
 
@@ -23,32 +18,26 @@ export abstract class buttons {
 
     // if value not found
     if (!roleValue) {
-      return await interaction.followUp("invalid role id, select again");
+      return await interaction.followUp('invalid role id, select again');
     }
 
-    await interaction.followUp(
-      `you have selected role: ${
-        roles.find((r) => r.value === roleValue)?.label
-      }`
-    );
+    await interaction.followUp(`you have selected role: ${roles.find((r) => r.value === roleValue)?.label}`);
     return;
   }
 
-  @Slash("myroles", { description: "roles menu" })
+  @Slash('myroles', { description: 'roles menu' })
   async myroles(interaction: CommandInteraction): Promise<unknown> {
     await interaction.deferReply();
 
     // create menu for roels
-    const menu = new MessageSelectMenu()
-      .addOptions(roles)
-      .setCustomId("role-menu");
+    const menu = new MessageSelectMenu().addOptions(roles).setCustomId('role-menu');
 
     // create a row for meessage actions
     const buttonRow = new MessageActionRow().addComponents(menu);
 
     // send it
     interaction.editReply({
-      content: "select your role!",
+      content: 'select your role!',
       components: [buttonRow],
     });
     return;
