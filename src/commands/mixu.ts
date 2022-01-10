@@ -49,6 +49,8 @@ abstract class Mixu {
 
   @SimpleCommand('mixu', { directMessage: false })
   mixu(command: SimpleCommandMessage) {
+    if (!command.message.guild) return;
+
     const tiles = this.shuffle();
     const score = this.score(tiles);
 
@@ -57,29 +59,27 @@ abstract class Mixu {
       this.bestMixuTiles = tiles;
     }
 
-    if (command.message.guild) {
-      const text = this.stringify(tiles, command.message.guild);
-      command.message.channel.send(
-        `:regional_indicator_m::regional_indicator_i::regional_indicator_x::regional_indicator_u:${text}`,
-      );
-    }
+    const text = this.stringify(tiles, command.message.guild);
+    command.message.channel.send(
+      `:regional_indicator_m::regional_indicator_i::regional_indicator_x::regional_indicator_u:${text}`,
+    );
   }
 
   @SimpleCommand('bestmixu', { directMessage: false })
   bestMixu(command: SimpleCommandMessage) {
-    if (command.message.guild && this.bestMixuTiles.length > 0) {
-      const text = this.stringify(this.bestMixuTiles, command.message.guild);
-      command.message.channel.send(`${text}`);
-    }
+    if (!command.message.guild || this.bestMixuTiles.length !== 0) return;
+
+    const text = this.stringify(this.bestMixuTiles, command.message.guild);
+    command.message.channel.send(`${text}`);
   }
 
   @SimpleCommand('miku', { directMessage: false })
   miku(command: SimpleCommandMessage) {
-    if (command.message.guild) {
-      const text = this.stringify(this.numbers, command.message.guild);
-      command.message.channel.send(
-        `:regional_indicator_m::regional_indicator_i::regional_indicator_k::regional_indicator_u:${text}`,
-      );
-    }
+    if (!command.message.guild) return;
+
+    const text = this.stringify(this.numbers, command.message.guild);
+    command.message.channel.send(
+      `:regional_indicator_m::regional_indicator_i::regional_indicator_k::regional_indicator_u:${text}`,
+    );
   }
 }
