@@ -6,6 +6,7 @@ abstract class Mixu {
   private numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   private bestScore = 0;
   private bestMixuTiles: number[] = [];
+  private mixuChannel = '340275382093611011';
 
   private shuffle(): number[] {
     return [...this.numbers].sort(() => 0.5 - Math.random());
@@ -47,9 +48,13 @@ abstract class Mixu {
       .join('');
   }
 
+  private isMixuChannel(channel: string): boolean {
+    return channel === this.mixuChannel;
+  }
+
   @SimpleCommand('mixu', { directMessage: false })
   mixu(command: SimpleCommandMessage) {
-    if (!command.message.guild) return;
+    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) return;
 
     const tiles = this.shuffle();
     const score = this.score(tiles);
@@ -67,7 +72,9 @@ abstract class Mixu {
 
   @SimpleCommand('bestmixu', { directMessage: false })
   bestMixu(command: SimpleCommandMessage) {
-    if (!command.message.guild || this.bestMixuTiles.length !== 0) return;
+    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id) || this.bestMixuTiles.length === 0) {
+      return;
+    }
 
     const text = this.stringify(this.bestMixuTiles, command.message.guild);
     command.message.channel.send(`${text}`);
@@ -75,7 +82,7 @@ abstract class Mixu {
 
   @SimpleCommand('mikustare', { directMessage: false })
   mikustare(command: SimpleCommandMessage) {
-    if (!command.message.guild) return;
+    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) return;
 
     const text = this.stringify(this.numbers, command.message.guild);
     command.message.channel.send(
