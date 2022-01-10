@@ -1,7 +1,5 @@
  # The Banana Hammock - Discord Bot
 
-
-
 Example taken from https://github.com/oceanroleplay/discord.ts-example
 
 Relevant links:
@@ -12,7 +10,10 @@ Relevant links:
 
  1. ~~Determine scope of bot.~~ Integrate within Discord server
  2. ~~Decide Framework.~~ TypeScript, with SQLLite DB
- 3. [List of commands to implement](https://docs.google.com/spreadsheets/d/1Y9Z3YJUqWFB-CPGZUzIvDEc6tC9hR0jwobJfzH18eD0/edit#gid=2132467532)
- 4. Implement working base bot.
- 5. Start-to-finish documentation for setup and new devs.
+ 3. Implement working base bot.
+ 4. Start-to-finish documentation for setup and new devs.
+ 5. [List of commands to implement](https://docs.google.com/spreadsheets/d/1Y9Z3YJUqWFB-CPGZUzIvDEc6tC9hR0jwobJfzH18eD0/edit#gid=2132467532)
  6. Investigate merging with current BrexBot implementation, including potential account ownership/transfer.
+
+
+Reach in the #bot-development channel in the [Discord](https://discord.gg/brex) for questions on joining the project.
