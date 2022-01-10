@@ -5,7 +5,7 @@ import { dirname, importx } from '@discordx/importer';
 
 const client = new Client({
   simpleCommand: {
-    prefix: '!',
+    prefix: '>',
   },
   intents: [
     Intents.FLAGS.GUILDS,
