@@ -73,8 +73,8 @@ abstract class Mixu {
     command.message.channel.send(`${text}`);
   }
 
-  @SimpleCommand('miku', { directMessage: false })
-  miku(command: SimpleCommandMessage) {
+  @SimpleCommand('mikustare', { directMessage: false })
+  mikustare(command: SimpleCommandMessage) {
     if (!command.message.guild) return;
 
     const text = this.stringify(this.numbers, command.message.guild);
