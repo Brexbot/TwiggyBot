@@ -1,37 +1,37 @@
-import { CommandInteraction } from "discord.js";
-import { Discord, Slash, SlashOption, SlashGroup } from "discordx";
+import { CommandInteraction } from 'discord.js';
+import { Discord, Slash, SlashOption, SlashGroup } from 'discordx';
 
 enum TextChoices {
-  Hello = "Hello",
-  "Good Bye" = "GoodBye",
+  Hello = 'Hello',
+  'Good Bye' = 'GoodBye',
 }
 
 @Discord()
-@SlashGroup("testing", "Testing group description", {
-  maths: "maths group description",
-  text: "text group description",
+@SlashGroup('testing', 'Testing group description', {
+  maths: 'maths group description',
+  text: 'text group description',
 })
 export abstract class AppDiscord {
-  @Slash("add")
-  @SlashGroup("maths")
+  @Slash('add')
+  @SlashGroup('maths')
   add(
-    @SlashOption("x", { description: "x value" })
+    @SlashOption('x', { description: 'x value' })
     x: number,
-    @SlashOption("y", { description: "y value" })
+    @SlashOption('y', { description: 'y value' })
     y: number,
-    interaction: CommandInteraction
+    interaction: CommandInteraction,
   ) {
     interaction.reply(String(x + y));
   }
 
-  @Slash("multiply")
-  @SlashGroup("maths")
+  @Slash('multiply')
+  @SlashGroup('maths')
   multiply(
-    @SlashOption("x", { description: "x value" })
+    @SlashOption('x', { description: 'x value' })
     x: number,
-    @SlashOption("y", { description: "y value" })
+    @SlashOption('y', { description: 'y value' })
     y: number,
-    interaction: CommandInteraction
+    interaction: CommandInteraction,
   ) {
     interaction.reply(String(x * y));
   }
