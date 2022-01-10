@@ -1,28 +1,17 @@
-import {
-  ButtonInteraction,
-  CommandInteraction,
-  MessageButton,
-  MessageActionRow,
-  User,
-  GuildMember,
-} from "discord.js";
-import { ButtonComponent, Discord, Slash, SlashOption } from "discordx";
+import { ButtonInteraction, CommandInteraction, MessageButton, MessageActionRow, User, GuildMember } from 'discord.js';
+import { ButtonComponent, Discord, Slash, SlashOption } from 'discordx';
 
 @Discord()
-class buttonExample {
-  @Slash("hello-btn")
+class ButtonExample {
+  @Slash('hello-btn')
   async hello(
-    @SlashOption("user", { type: "USER" })
+    @SlashOption('user', { type: 'USER' })
     user: User | GuildMember | undefined,
-    interaction: CommandInteraction
+    interaction: CommandInteraction,
   ) {
     await interaction.deferReply();
 
-    const helloBtn = new MessageButton()
-      .setLabel("Hello")
-      .setEmoji("👋")
-      .setStyle("PRIMARY")
-      .setCustomId("hello-btn");
+    const helloBtn = new MessageButton().setLabel('Hello').setEmoji('👋').setStyle('PRIMARY').setCustomId('hello-btn');
 
     const row = new MessageActionRow().addComponents(helloBtn);
 
@@ -32,7 +21,7 @@ class buttonExample {
     });
   }
 
-  @ButtonComponent("hello-btn")
+  @ButtonComponent('hello-btn')
   mybtn(interaction: ButtonInteraction) {
     interaction.reply(`👋 ${interaction.member}`);
   }
