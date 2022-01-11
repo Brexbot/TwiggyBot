@@ -1,5 +1,5 @@
-import { CommandInteraction } from 'discord.js';
-import { Discord, SimpleCommand, SimpleCommandMessage, SlashOption, Slash } from 'discordx';
+import { CommandInteraction } from 'discord.js'
+import { Discord, SimpleCommand, SimpleCommandMessage, SlashOption, Slash } from 'discordx'
 
 @Discord()
 class Eightball {
@@ -24,29 +24,29 @@ class Eightball {
     'My sources say no.',
     'Outlook not so good.',
     'Very doubtful. ',
-  ];
+  ]
 
-  private mention = false;
+  private mention = false
 
   @SimpleCommand('eightball')
   simple(command: SimpleCommandMessage) {
-    command.message.reply(this.getMessage());
+    command.message.reply(this.getMessage())
   }
 
   @Slash('eightball', { description: 'Eightball' })
   async slash(
     @SlashOption('message', { type: 'STRING', required: false })
     message: string,
-    interaction: CommandInteraction,
+    interaction: CommandInteraction
   ) {
-    let reply = this.getMessage();
+    let reply = this.getMessage()
     if (message) {
-      reply = `${message} - ${reply}`;
+      reply = `${message} - ${reply}`
     }
-    interaction.reply(reply);
+    interaction.reply(reply)
   }
 
   private getMessage() {
-    return this.replies[Math.floor(Math.random() * this.replies.length)];
+    return this.replies[Math.floor(Math.random() * this.replies.length)]
   }
 }

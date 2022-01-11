@@ -1,5 +1,5 @@
-import { CommandInteraction } from 'discord.js';
-import { Discord, SimpleCommand, SimpleCommandMessage, SlashOption, Slash } from 'discordx';
+import { CommandInteraction } from 'discord.js'
+import { Discord, SimpleCommand, SimpleCommandMessage, SlashOption, Slash } from 'discordx'
 
 @Discord()
 class Fball {
@@ -26,27 +26,27 @@ class Fball {
     "outlook not so good... like microsoft's outlook (gottem)",
     '¡ayy! muchos doubtidos, famigo',
     'yasss o nah',
-  ];
+  ]
 
   @SimpleCommand('fball')
   simple(command: SimpleCommandMessage) {
-    command.message.reply(this.getMessage());
+    command.message.reply(this.getMessage())
   }
 
   @Slash('fball', { description: 'Fball' })
   async slash(
     @SlashOption('message', { type: 'STRING', required: false })
     message: string,
-    interaction: CommandInteraction,
+    interaction: CommandInteraction
   ) {
-    let reply = this.getMessage();
+    let reply = this.getMessage()
     if (message) {
-      reply = `${message} - ${reply}`;
+      reply = `${message} - ${reply}`
     }
-    interaction.reply(reply);
+    interaction.reply(reply)
   }
 
   private getMessage() {
-    return this.replies[Math.floor(Math.random() * this.replies.length)];
+    return this.replies[Math.floor(Math.random() * this.replies.length)]
   }
 }
