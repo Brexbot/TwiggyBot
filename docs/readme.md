@@ -28,5 +28,5 @@ The directory contains useful documentation, and new-dev setup info (keep readin
         4. Add the bot to the specified server. **Currently, please create your own server and add it to only your server for testing.**
     8. Copy your Bot Token, for later.
 4. Code Stuff
-    1. Export your bot token as an environment variable `export BOT_TOKEN=<token>` (bash and similar) or `$Env:BOT_TOKEN = "<token>"` (Powershell)
+    1. Export your bot token as an environment variable `export DISCORD_TOKEN=<token>` (bash and similar) or `$Env:DISCORD_TOKEN = "<token>"` (Powershell)
     2. Run `npm run start`
