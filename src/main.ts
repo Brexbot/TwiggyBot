@@ -15,6 +15,9 @@ const client = new Client({
     Intents.FLAGS.GUILD_VOICE_STATES,
     Intents.FLAGS.DIRECT_MESSAGES,
   ],
+  partials: [
+    'CHANNEL',
+  ],
   // If you only want to use global commands only, comment this line
   botGuilds: [(client) => client.guilds.cache.map((guild) => guild.id)],
 })
