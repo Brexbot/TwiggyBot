@@ -14,7 +14,7 @@ import {
 class RPS {
   private general_channel = '103678524375699456';
 
-  private timeout_duration = 1000 * 5;
+  private timeout_duration = 1000 * 60 * 5;
   private challenger: User | null = null;
   private acceptor: User | null = null;
   private plays: { [user_id: string]: string } = {};
