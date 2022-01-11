@@ -3,12 +3,19 @@ import {
   type ArgsOf,
   Discord,
   On,
+  SlashChoice,
   SimpleCommand,
   SimpleCommandMessage,
   SimpleCommandOption,
   Slash,
   SlashOption,
 } from 'discordx';
+
+enum SlashOptions {
+  Challenge = 'challenge',
+  Accept = 'accept',
+  End = 'end',
+};
 
 @Discord()
 class RPS {
@@ -177,7 +184,8 @@ class RPS {
 
   @Slash('rps', { description: 'challenge, accept, or end a rock paper scissors game' })
   async slash(
-    @SlashOption('text', { type: 'STRING' })
+    @SlashChoice(SlashOptions)
+    @SlashOption('text')
     text: string,
     interaction : CommandInteraction
   ) {
