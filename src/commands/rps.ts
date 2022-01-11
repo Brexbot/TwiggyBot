@@ -49,6 +49,8 @@ class RPS {
   }
 
   private do_rps(text: string, user: User, channel: TextChannel | TextBasedChannel): string {
+    text = text.toLowerCase();
+
     if (text === 'challenge') {
       // If successful, sets this.challenger and this.timeout
       if (this.acceptor) {
