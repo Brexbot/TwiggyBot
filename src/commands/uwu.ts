@@ -6,9 +6,6 @@ import { Discord, SimpleCommand, SimpleCommandMessage, SlashOption, Slash, Simpl
 @Discord()
 class UwU {
 
-  private general_channel = '103678524375699456';
-  private channel: TextChannel | TextBasedChannel | null = null;
-
   private uwuify(text: string): string {
     
     var pattern_index:number
@@ -33,12 +30,9 @@ class UwU {
 
   @SimpleCommand('uwu', { description: 'UwUify text', argSplitter: '\n' })
   simple(@SimpleCommandOption('text', { type: 'STRING' }) text: string | undefined, command: SimpleCommandMessage) {
+    
     if (!text) {
       return command.sendUsageSyntax()
-    }
-
-    if (command.message.channel.id !== this.general_channel) {
-      return;
     }
 
     command.message.channel.send(this.uwuify(text))
