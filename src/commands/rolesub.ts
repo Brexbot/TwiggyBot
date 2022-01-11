@@ -1,9 +1,10 @@
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption } from 'discordx'
+import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import { CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
 
 @Discord()
 class Rolesub {
-  // Mod role id 103679575694774272
-  private modRoleId = '754737174162702448'
+  // todo: Should probably be in some global along with other SU ids
+  private modRoleId = '103679575694774272'
 
   @SimpleCommand('createrole')
   async createRole(
@@ -70,14 +71,47 @@ class Rolesub {
   }
 
   @SimpleCommand('rolesub')
-  async rolesub(@SimpleCommandOption('role_name') roleName: string, command: SimpleCommandMessage) {
-    const guildRoles = command.message.guild?.roles
-    if (!roleName) {
-      command.message.channel.send(
-        'To use this command, get a role from `>rolesub list` and use `>rolesub ROLENAME` to join or leave it. These roles are meant to be quick ways to message everyone in the group when people are planning activities or for setting up channels for certain groups.'
-      )
+  async simpleRolesub(@SimpleCommandOption('role_name') roleName: string, command: SimpleCommandMessage) {
+    const msg = this.rolesub(roleName, command.message.guild?.roles, command.message.member?.roles)
+    await command.message
+      .reply({
+        content: msg,
+        allowedMentions: {
+          repliedUser: false,
+        },
+      })
+      .catch(console.error)
+  }
+
+  @Slash('rolesub', { description: 'Add or remove one of the many community roles!' })
+  async slashRolesub(
+    @SlashOption('role_name', { required: false, description: 'list or a role name' }) roleName: string,
+    interaction: CommandInteraction
+  ) {
+    const memberRoles = interaction.member?.roles
+    if (memberRoles instanceof Array) {
       return
-    } else if (roleName === 'list') {
+    }
+
+    const msg = this.rolesub(roleName, interaction.guild?.roles, memberRoles)
+    await interaction
+      .reply({
+        content: msg,
+        allowedMentions: {
+          repliedUser: false,
+        },
+      })
+      .catch(console.error)
+  }
+
+  private rolesub(
+    roleName: string,
+    guildRoles: RoleManager | undefined,
+    memberRoles: GuildMemberRoleManager | undefined
+  ): string {
+    if (!roleName) {
+      return 'To use this command, get a role from `>rolesub list` and use `>rolesub ROLENAME` to join or leave it. These roles are meant to be quick ways to message everyone in the group when people are planning activities or for setting up channels for certain groups.'
+    } else if (roleName.toLowerCase() === 'list') {
       // todo: make this print a little prettier... text embed?
       const roles = guildRoles?.cache
         .filter((role) => role.name.endsWith('[BOT]'))
@@ -85,45 +119,24 @@ class Rolesub {
         .join(', ')
 
       if (!roles || roles.length < 1) {
-        command.message.channel.send('There are no roles on the server.')
+        return 'There are no roles on the server.'
       } else {
-        command.message.channel.send(roles)
+        return roles
       }
-
-      return
     }
 
     const modifiedRoleName = `${roleName} [BOT]`
     const whichRole = guildRoles?.cache.find((role) => role.name === modifiedRoleName)
     if (whichRole) {
-      const memberRoles = command.message.member?.roles
       if (memberRoles?.cache.some((role) => role.id === whichRole.id)) {
-        await memberRoles
-          ?.remove(whichRole)
-          .then(() =>
-            command.message.reply({
-              content: `${modifiedRoleName} has been removed.`,
-              allowedMentions: {
-                repliedUser: false,
-              },
-            })
-          )
-          .catch(console.error)
+        memberRoles?.remove(whichRole).catch(console.error)
+        return `${modifiedRoleName} has been removed.`
       } else {
-        await memberRoles
-          ?.add(whichRole)
-          .then(() =>
-            command.message.reply({
-              content: `${modifiedRoleName} has been added.`,
-              allowedMentions: {
-                repliedUser: false,
-              },
-            })
-          )
-          .catch(console.error)
+        memberRoles?.add(whichRole).catch(console.error)
+        return `${modifiedRoleName} has been added.`
       }
     } else {
-      command.message.channel.send('That role does not exist on the server.')
+      return 'That role does not exist on the server.'
     }
   }
 }
