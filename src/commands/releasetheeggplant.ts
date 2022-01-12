@@ -12,9 +12,12 @@ class ReleaseTheEggplant {
     let botId = command.message.client.user?.id
     let thisBot = command.message.guild?.members.cache.find((u) => u.id === botId)
     thisBot?.setNickname('🍆🔪')
-    command.message.channel.send(`I'm coming for you, ${name}!`).then((_) => {
-      setTimeout(() => thisBot?.setNickname(null), 5000)
-    })
+    command.message.channel
+      .send(`I'm coming for you, ${name}!`)
+      .then((_) => {
+        setTimeout(() => thisBot?.setNickname(null), 5000)
+      })
+      .catch(console.error)
   }
 
   @Slash('releasetheeggplant', { description: 'Release the eggplant on a user of your choosing' })
@@ -26,8 +29,11 @@ class ReleaseTheEggplant {
     let botId = interaction.channel?.client.user?.id
     let thisBot = interaction.guild?.members.cache.find((u) => u.id === botId)
     thisBot?.setNickname('🍆🔪')
-    interaction.reply(`I'm coming for you, ${name}!`).then((_) => {
-      setTimeout(() => thisBot?.setNickname(null), 5000)
-    })
+    interaction
+      .reply(`I'm coming for you, ${name}!`)
+      .then((_) => {
+        setTimeout(() => thisBot?.setNickname(null), 5000)
+      })
+      .catch(console.error)
   }
 }
