@@ -1,18 +1,24 @@
 {
-    "compilerOptions": {
-      "module": "ESNext", // required
-      "target": "ESNext", // required
-      "noImplicitAny": true,
-      "sourceMap": true,
-      "strict": true,
-      "outDir": "build",
-      "emitDecoratorMetadata": true, // required
-      "experimentalDecorators": true, // required
-      "declaration": false,
-      "importHelpers": true, // required
-      "forceConsistentCasingInFileNames": true,
-      "moduleResolution": "Node", // required
-      "esModuleInterop": true // required
-    },
-    "exclude": ["node_modules"]
-  }
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "ESNext",
+    "noImplicitAny": true,
+    "sourceMap": true,
+    "strict": true,
+    "outDir": "build",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "declaration": false,
+    "importHelpers": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "./build"
+  ]
+}

@@ -1,28 +1,46 @@
 import { ButtonInteraction, CommandInteraction, MessageButton, MessageActionRow, Message } from 'discord.js'
-import { ButtonComponent, Discord, Slash } from 'discordx'
+import { Discord, Slash } from 'discordx'
+import { injectable } from 'tsyringe'
+import { ORM } from '../persistence/ORM'
+
 
 @Discord()
+@injectable()
 class Duel {
+  constructor(private client: ORM) {}
+
   //private challenger: string|undefined
   // private challengerScore = 0
-  private active = false
+  private inProgress = false
 
   private timeout = 10 * 60 // 10 Minutes
   private lastDuel = 0 // Timestamp for last duel
-
+  
   @Slash('duel')
   private async duel(interaction: CommandInteraction) {
     await interaction.deferReply()
 
+    // Get the challenger's details
+    const challengerName = interaction.user.username
+    let challenger = await this.client.duels.findUnique({
+      where: {
+        userName: challengerName
+      }
+    })
+    if (!challenger) {
+      challenger = await this.client.duels.create({ data: { userName: challengerName }})
+    }
+
+    // TODO: check if the challenger has recently lost
+
     const row = new MessageActionRow().addComponents(this.getButton(false))
 
-    const challenger = interaction.member?.user.username
     const challengerScore = this.getRandomScore()
 
-    this.active = true
+    this.inProgress = true
 
     const message = await interaction.followUp({
-      content: `${challenger} is looking for a duel, press the button to accept.`,
+      content: `${challengerName} is looking for a duel, press the button to accept.`,
       fetchReply: true,
       components: [row],
     })
@@ -37,9 +55,26 @@ class Duel {
     collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
       await collectionInteraction.deferUpdate()
 
-      if (this.active && !this.inTimeout()) {
+      const accepterName = interaction.member?.user.username
+      if(!accepterName) {
+        // TODO handle error better
+        return
+      }
+      let accepter = this.client.duels.findUnique({
+        where: {
+          userName: accepterName
+        }
+      })
+
+      if(!accepter) {
+        accepter = this.client.duels.create({data: { userName: accepterName }})
+      }
+
+      // TODO: check if the accepter has recently lost and can't duel right now
+
+      if (this.inProgress && !this.inTimeout()) {
         // Disable duel
-        this.active = false
+        this.inProgress = false
   
         // Disable the button
         const button = this.getButton(true)
@@ -61,10 +96,11 @@ class Duel {
         } else {
           winnerText = "It's a draw!"
         }
+
         await collectionInteraction.followUp({
-          content: `${interaction.member?.user.username} has rolled a ${this.getRandomScore()} and ${challenger} has rolled a ${challengerScore}. ${winnerText}`
+          content: `${accepterName} has rolled a ${this.getRandomScore()} and ${challenger} has rolled a ${challengerScore}. ${winnerText}`
         })
-      } else if (!this.active || this.inTimeout()) {
+      } else if (!this.inProgress || this.inTimeout()) {
         // Disable the button just to be sure
         const button = this.getButton(true)
         const row = new MessageActionRow().addComponents(button)

@@ -110,3 +110,7 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Prisma
+prisma/migrations
+prisma/dev.db
