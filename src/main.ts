@@ -57,7 +57,7 @@ async function run() {
   // await importx(__dirname + "/{events,commands}/**/*.{ts,js}");
   // with ems
   await importx(dirname(import.meta.url) + '/{events,commands}/**/*.{ts,js}')
-  await client.login(process.env.DISCORD_TOKEN ?? '') // provide your bot token
+  client.login(process.env.DISCORD_TOKEN ?? '') // provide your bot token
 }
 
 run()
