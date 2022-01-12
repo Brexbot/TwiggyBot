@@ -25,7 +25,7 @@ class ReleaseTheEggplant {
     let botId = command.message.client.user?.id;
     let thisBot = command.message.guild.members.cache.find(u => u.id === botId);
     thisBot.setNickname("🍆🔪");
-    interaction.reply(`I'm coming for you, ${name}!`);
+    interaction.channel.send(`I'm coming for you, ${name}!`);
     setTimeout(() => thisBot.setNickname(null), 30000);
   }
 }
