@@ -19,3 +19,45 @@ Relevant links:
 
 
 Reach in the #bot-development channel in the [Discord](https://discord.gg/brex) for questions on joining the project.
+
+## How to run
+### Docker
+Prerequisites:
+* Recent version of Docker
+
+Build the image
+```shell
+docker build -t brexbot .
+```
+
+Create a .env file which contains the bot token
+```
+DISCORD_TOKEN=<token>
+```
+
+Start the container
+```shell
+docker run --rm --env-file.env -ti brexbot
+```
+
+### Locally
+Prerequisites:
+* Node.js >= 16
+
+Install the dependencies
+```shell
+npm install
+```
+
+Export the bot token as an environment variable
+```shell
+# Bash and similar
+export DISCORD_TOKEN=<token>
+# Powershell 
+$Env:DISCORD_TOKEN = "<token>"
+```
+
+Run the bot
+```shell
+npm run start
+```
