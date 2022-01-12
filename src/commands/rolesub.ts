@@ -1,11 +1,5 @@
 import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
-import {
-  ApplicationCommandOptionChoice,
-  AutocompleteInteraction,
-  CommandInteraction,
-  GuildMemberRoleManager,
-  RoleManager,
-} from 'discord.js'
+import { ApplicationCommandOptionChoice, AutocompleteInteraction, CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
 
 @Discord()
 class Rolesub {
@@ -30,7 +24,7 @@ class Rolesub {
 
     const modifiedRoleName = `${roleName} [BOT]`
     const guildRoles = command.message.guild?.roles
-    if (guildRoles?.cache.some((role) => role.name === modifiedRoleName)) {
+    if (guildRoles?.cache.some((role) => role.name.toLowerCase() === modifiedRoleName.toLowerCase())) {
       command.message.channel.send(`\`${modifiedRoleName}\` already exists.`)
       return
     }
@@ -38,6 +32,7 @@ class Rolesub {
     guildRoles
       ?.create({
         name: modifiedRoleName,
+        permissions: [],
         mentionable: true,
       })
       .then(() => {
@@ -64,7 +59,7 @@ class Rolesub {
 
     const modifiedRoleName = `${roleName} [BOT]`
     const guildRoles = command.message.guild?.roles
-    const roleToBeDeleted = guildRoles?.cache.find((role) => role.name === modifiedRoleName)
+    const roleToBeDeleted = guildRoles?.cache.find((role) => role.name.toLowerCase() === modifiedRoleName.toLowerCase())
     if (!roleToBeDeleted) {
       command.message.channel.send(`Couldn't find a \`${modifiedRoleName}\` role to delete`)
       return
@@ -129,11 +124,7 @@ class Rolesub {
       .catch(console.error)
   }
 
-  private rolesub(
-    roleName: string,
-    guildRoles: RoleManager | undefined,
-    memberRoles: GuildMemberRoleManager | undefined
-  ): string {
+  private rolesub(roleName: string, guildRoles: RoleManager | undefined, memberRoles: GuildMemberRoleManager | undefined): string {
     if (!roleName) {
       return 'To use this command, get a role from `>rolesub list` and use `>rolesub ROLENAME` to join or leave it. These roles are meant to be quick ways to message everyone in the group when people are planning activities or for setting up channels for certain groups.'
     } else if (roleName.toLowerCase() === 'list') {
