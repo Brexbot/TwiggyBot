@@ -61,7 +61,7 @@ class Rolesub {
     const guildRoles = command.message.guild?.roles
     const roleToBeDeleted = guildRoles?.cache.find((role) => role.name.toLowerCase() === modifiedRoleName.toLowerCase())
     if (!roleToBeDeleted) {
-      command.message.channel.send(`Couldn't find a \`${modifiedRoleName}\` role to delete`)
+      command.message.channel.send(`Couldn't find the \`${modifiedRoleName}\` role to delete`)
       return
     }
 
