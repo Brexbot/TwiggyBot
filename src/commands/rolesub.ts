@@ -1,12 +1,18 @@
 import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
-import { CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
+import {
+  ApplicationCommandOptionChoice,
+  AutocompleteInteraction,
+  CommandInteraction,
+  GuildMemberRoleManager,
+  RoleManager,
+} from 'discord.js'
 
 @Discord()
 class Rolesub {
   // todo: Should probably be in some global along with other SU ids
   private modRoleId = '103679575694774272'
 
-  @SimpleCommand('createrole')
+  @SimpleCommand('createrole', { argSplitter: '\n' })
   async createRole(
     @SimpleCommandOption('role_name', {
       description: 'The name of the role to be created',
@@ -40,7 +46,7 @@ class Rolesub {
       .catch(console.error)
   }
 
-  @SimpleCommand('delrole')
+  @SimpleCommand('delrole', { argSplitter: '\n' })
   async delRole(
     @SimpleCommandOption('role_name', {
       description: 'The name of the role to be created',
@@ -70,7 +76,7 @@ class Rolesub {
       .catch(console.error)
   }
 
-  @SimpleCommand('rolesub')
+  @SimpleCommand('rolesub', { argSplitter: '\n' })
   async simpleRolesub(@SimpleCommandOption('role_name') roleName: string, command: SimpleCommandMessage) {
     const msg = this.rolesub(roleName, command.message.guild?.roles, command.message.member?.roles)
     await command.message
@@ -85,7 +91,26 @@ class Rolesub {
 
   @Slash('rolesub', { description: 'Add or remove one of the many community roles!' })
   async slashRolesub(
-    @SlashOption('role_name', { required: false, description: 'list or a role name' }) roleName: string,
+    @SlashOption('role', {
+      required: false,
+      description: 'Get the role list or select a role to add/remove',
+      autocomplete: (interaction: AutocompleteInteraction) => {
+        const options =
+          interaction.guild?.roles.cache
+            .filter((role) => role.name.endsWith('[BOT]'))
+            .map((role) => {
+              const roleName = role.name.substring(0, role.name.length - 6)
+              return <ApplicationCommandOptionChoice>{
+                name: roleName,
+                value: roleName.toLowerCase(),
+              }
+            }) ?? []
+        options.sort((a, b) => a.name.localeCompare(b.name)).push({ name: 'Role List', value: 'list' })
+        interaction.respond(options)
+      },
+      type: 'STRING',
+    })
+    roleName: string,
     interaction: CommandInteraction
   ) {
     const memberRoles = interaction.member?.roles
@@ -126,14 +151,14 @@ class Rolesub {
     }
 
     const modifiedRoleName = `${roleName} [BOT]`
-    const whichRole = guildRoles?.cache.find((role) => role.name === modifiedRoleName)
+    const whichRole = guildRoles?.cache.find((role) => role.name.toLowerCase() === modifiedRoleName.toLowerCase())
     if (whichRole) {
       if (memberRoles?.cache.some((role) => role.id === whichRole.id)) {
         memberRoles?.remove(whichRole).catch(console.error)
-        return `${modifiedRoleName} has been removed.`
+        return `${whichRole.name} has been removed.`
       } else {
         memberRoles?.add(whichRole).catch(console.error)
-        return `${modifiedRoleName} has been added.`
+        return `${whichRole.name} has been added.`
       }
     } else {
       return 'That role does not exist on the server.'
