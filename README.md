@@ -20,6 +20,30 @@ Relevant links:
 
 Reach in the #bot-development channel in the [Discord](https://discord.gg/brex) for questions on joining the project.
 
+## Set up the database
+The bot uses the [Prisma ORM](https://www.prisma.io/) for persistence.
+By default this uses SQLite.
+
+See [the duel commend](src/commands/duel.ts) for database integration examples.
+
+The schema for the Database is stored in [the Prisma schema file](prisma/schema.prisma).
+
+Create a new empty Database for development
+```shell
+npx prisma migrate dev --name init
+```
+
+Open the file with sqlite
+```shell
+sqlite3 prisma/dev.db
+```
+
+For better output in sqlite enable columns and headers. You can also hardcode these settings in the ~/.sqliterc file.
+```shell
+sqlite> .mode column
+sqlite> .headers ON
+```
+
 ## How to run
 ### Docker
 Prerequisites:
