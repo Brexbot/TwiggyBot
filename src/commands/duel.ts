@@ -36,7 +36,6 @@ class Duel {
     }
 
     // check if the challenger has recently lost
-    console.log(`${challenger.lastLoss.getTime() + this.cooldown} > ${Date.now()}`)
     if (challenger.lastLoss.getTime() + this.cooldown > Date.now()) {
       const remaining = Math.ceil(Math.abs(Date.now() - (challenger.lastLoss.getTime() + this.cooldown)) / 1000)
       await interaction.followUp({
