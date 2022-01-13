@@ -9,6 +9,9 @@ class Duel {
   private inProgress = false
   private cooldown = 5 * 60 * 1000 // Cooldown period after loss in milliseconds
 
+  private timeoutDuration = 5 * 60 * 1000 // Time before the duel is declared dead in milliseconds
+  private timeout: ReturnType<typeof setTimeout> | null = null
+
   public constructor(private client: ORM) {}
 
   @Slash('duel')
@@ -43,6 +46,18 @@ class Duel {
     }
 
     this.inProgress = true
+
+    // Disable the duel after a timeout
+    this.timeout = setTimeout(async () => {
+      // Disable the button
+      const button = this.createButton(true)
+      const row = new MessageActionRow().addComponents(button)
+      await interaction.editReply({
+        content: `${challengerName} failed to find someone to duel.`,
+        components: [row],
+      })
+      this.inProgress = false
+    }, this.timeoutDuration)
 
     const row = new MessageActionRow().addComponents(this.createButton(false))
     const message = await interaction.followUp({
@@ -82,9 +97,18 @@ class Duel {
           content: `You have just duelled and lost. Please wait ${remaining} seconds before trying again.`,
         })
       } else if (!this.inProgress) {
+        // This case is not really supposed to happen because you should not be able to accept a duel after it has expired
+        // We are handling this anyways
+
         // Check if there is no current duel
         await collectionInteraction.followUp({
-          content: `There is no duel right now. Use /duel to create one.`,
+          content: `There is no duel right now, it has probably expired. Use /duel to create one.`,
+        })
+        // Disable the button
+        const button = this.createButton(true)
+        const row = new MessageActionRow().addComponents(button)
+        await collectionInteraction.editReply({
+          components: [row],
         })
         return
       } else {
