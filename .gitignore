@@ -112,5 +112,5 @@ dist
 .tern-port
 
 # Prisma
-prisma/migrations
-prisma/dev.db
+prisma/
+!prisma/schema.prisma
