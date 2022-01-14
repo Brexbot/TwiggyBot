@@ -1,7 +1,9 @@
-import { ButtonInteraction, CommandInteraction, MessageButton, MessageActionRow, Message } from 'discord.js'
+import { ButtonInteraction, CommandInteraction, MessageButton, MessageActionRow, Message, User } from 'discord.js'
 import { Discord, Slash } from 'discordx'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence/ORM'
+
+import { Duels } from '../../prisma/generated/prisma-client-js'
 
 @Discord()
 @injectable()
@@ -19,14 +21,14 @@ class Duel {
     await interaction.deferReply()
 
     // Get the challenger from the DB. Create them if they don't exist yet.
-    const challengerName = interaction.user.username
-    let challenger = await this.client.duels.findUnique({
+    const challenger = interaction.user
+    let challengerStats = await this.client.duels.findUnique({
       where: {
-        userName: challengerName,
-      },
+        userId: challenger.id
+      }
     })
-    if (!challenger) {
-      challenger = await this.client.duels.create({ data: { userName: challengerName } })
+    if (!challengerStats) {
+      challengerStats = await this.client.duels.create({ data: { userId: challenger.id } })
     }
 
     // Check if a duel is currently already going on.
@@ -36,10 +38,10 @@ class Duel {
     }
 
     // check if the challenger has recently lost
-    if (challenger.lastLoss.getTime() + this.cooldown > Date.now()) {
-      const remaining = Math.ceil(Math.abs(Date.now() - (challenger.lastLoss.getTime() + this.cooldown)) / 1000)
+    if (challengerStats.lastLoss.getTime() + this.cooldown > Date.now()) {
+      const remaining = Math.ceil(Math.abs(Date.now() - (challengerStats.lastLoss.getTime() + this.cooldown)) / 1000)
       await interaction.followUp({
-        content: `${challengerName}, you have recently lost. Please wait ${remaining} seconds before trying again.`,
+        content: `${challenger}, you have recently lost. Please wait ${remaining} seconds before trying again.`,
       })
       return
     }
@@ -52,7 +54,7 @@ class Duel {
       const button = this.createButton(true)
       const row = new MessageActionRow().addComponents(button)
       await interaction.editReply({
-        content: `${challengerName} failed to find someone to duel.`,
+        content: `${challenger} failed to find someone to duel.`,
         components: [row],
       })
       this.inProgress = false
@@ -60,7 +62,7 @@ class Duel {
 
     const row = new MessageActionRow().addComponents(this.createButton(false))
     const message = await interaction.followUp({
-      content: `${challengerName} is looking for a duel, press the button to accept.`,
+      content: `${challenger} is looking for a duel, press the button to accept.`,
       fetchReply: true,
       components: [row],
     })
@@ -73,25 +75,25 @@ class Duel {
     collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
       await collectionInteraction.deferUpdate()
 
-      const accepterName = collectionInteraction.member?.user.username
+      const accepter = collectionInteraction.member?.user
       // Prevent accepting your own duels and ensure that the accepter is valid.
-      if (!accepterName || accepterName === challengerName) {
+      if (!accepter || accepter.id === challenger.id) {
         return
       }
 
       // Get the accepter from the DB. Create them if they don't exist yet.
-      let accepter = await this.client.duels.findUnique({
+      let accepterStats = await this.client.duels.findUnique({
         where: {
-          userName: accepterName,
+          userId: accepter.id,
         },
       })
-      if (!accepter) {
-        accepter = await this.client.duels.create({ data: { userName: accepterName } })
+      if (!accepterStats) {
+        accepterStats = await this.client.duels.create({ data: { userId: accepter.id } })
       }
 
       // Check if the accepter has recently lost and can't duel right now. Print their timeout.
-      if (accepter.lastLoss.getTime() + this.cooldown > Date.now()) {
-        const remaining = Math.ceil(Math.abs(Date.now() - (accepter.lastLoss.getTime() + this.cooldown)) / 1000)
+      if (accepterStats.lastLoss.getTime() + this.cooldown > Date.now()) {
+        const remaining = Math.ceil(Math.abs(Date.now() - (accepterStats.lastLoss.getTime() + this.cooldown)) / 1000)
         await collectionInteraction.followUp({
           content: `You have just duelled and lost. Please wait ${remaining} seconds before trying again.`,
         })
@@ -126,24 +128,24 @@ class Duel {
         const challengerScore = this.getRandomScore()
         let winnerText = ''
         if (challengerScore > accepterScore) {
-          await this.updateUserScore(challengerName, 'win')
-          await this.updateUserScore(accepterName, 'loss')
+          await this.updateUserScore(challengerStats, 'win')
+          await this.updateUserScore(accepterStats, 'loss')
 
-          winnerText = `${challengerName} has won!`
+          winnerText = `${challenger} has won!`
         } else if (accepterScore > challengerScore) {
-          await this.updateUserScore(challengerName, 'loss')
-          await this.updateUserScore(accepterName, 'win')
+          await this.updateUserScore(challengerStats, 'loss')
+          await this.updateUserScore(accepterStats, 'win')
 
-          winnerText = `${accepterName} has won!`
+          winnerText = `${accepter} has won!`
         } else {
-          await this.updateUserScore(challengerName, 'draw')
-          await this.updateUserScore(accepterName, 'draw')
+          await this.updateUserScore(challengerStats, 'draw')
+          await this.updateUserScore(accepterStats, 'draw')
 
           winnerText = "It's a draw!"
         }
 
         await collectionInteraction.followUp({
-          content: `${accepterName} has rolled a ${accepterScore} and ${challengerName} has rolled a ${challengerScore}. ${winnerText}`,
+          content: `${accepter} has rolled a ${accepterScore} and ${challenger} has rolled a ${challengerScore}. ${winnerText}`,
         })
       }
     })
@@ -153,120 +155,79 @@ class Duel {
   private async duelStats(interaction: CommandInteraction) {
     await interaction.deferReply()
 
-    const userName = interaction.user.username
+    const user = interaction.user
     const stats = await this.client.duels.findUnique({
       where: {
-        userName: userName,
+        userId: user.id,
       },
     })
     if (stats) {
-      let statsMessage = []
+      const statsMessage = [`${user}: ${stats.wins}-${stats.losses}-${stats.draws}`]
       if (stats.winStreak > 0) {
         // User is currently on a win streak
-        statsMessage = [
-          `${userName}: ${stats.wins}-${stats.losses}-${stats.draws}`,
-          `Win streak: ${stats.winStreak}`,
-          `Best win streak: ${stats.winStreakMax}`,
-          `Worst loss streak: ${stats.lossStreakMax}`,
-        ]
+        statsMessage.push(`Win streak: ${stats.winStreak}`)
       } else if (stats.lossStreak > 0) {
         // User is currently on a loss streak
-        statsMessage = [
-          `${userName}: ${stats.wins}-${stats.losses}-${stats.draws}`,
-          `Loss streak: ${stats.lossStreak}`,
-          `Best win streak: ${stats.winStreakMax}`,
-          `Worst loss streak: ${stats.lossStreakMax}`,
-        ]
+        statsMessage.push(`Loss streak: ${stats.lossStreak}`)
       } else {
         // User's last duel was a draw which reset both streaks
-        statsMessage = [
-          `${userName}: ${stats.wins}-${stats.losses}-${stats.draws}`,
-          `Your last duel was a draw.`,
-          `Best win streak: ${stats.winStreakMax}`,
-          `Worst loss streak: ${stats.lossStreakMax}`,
-        ]
+        statsMessage.push(`Your last duel was a draw.`)
       }
+      statsMessage.push(
+        `Best win streak: ${stats.winStreakMax}`,
+        `Worst loss streak: ${stats.lossStreakMax}`
+      )
       await interaction.followUp(statsMessage.join('\n'))
     } else {
-      await interaction.followUp(`${userName}, you have never duelled before.`)
+      await interaction.followUp(`${user}, you have never duelled before.`)
     }
   }
 
-  private async updateUserScore(userName: string, outcome: 'win' | 'loss' | 'draw') {
-    const user = await this.client.duels.findUnique({
-      where: { userName: userName },
-    })
+  private async updateUserScore(stats: Duels, outcome: 'win' | 'loss' | 'draw') {
     switch (outcome) {
       case 'draw': {
-        await this.client.duels.upsert({
+        await this.client.duels.update({
           where: {
-            userName: userName,
+            userId: stats.userId,
           },
-          update: {
+          data: {
             draws: { increment: 1 },
             lossStreak: 0,
             winStreak: 0,
-          },
-          create: {
-            userName: userName,
-            draws: 1,
-          },
+          }
         })
         break
       }
       case 'win': {
-        if (user === null) {
-          await this.client.duels.create({
-            data: {
-              userName: userName,
-              wins: 1,
-              winStreak: 1,
-              winStreakMax: 1,
-            },
-          })
-        } else {
-          await this.client.duels.update({
-            where: {
-              userName: userName,
-            },
-            data: {
-              wins: { increment: 1 },
-              lossStreak: 0,
-              winStreak: { increment: 1 },
-              // Increment win streak if it's bigger than the current one
-              winStreakMax: user.winStreak + 1 > user.winStreakMax ? user.winStreakMax + 1 : user.winStreakMax,
-            },
-          })
-        }
+        await this.client.duels.update({
+          where: {
+            userId: stats.userId,
+          },
+          data: {
+            wins: { increment: 1 },
+            lossStreak: 0,
+            winStreak: { increment: 1 },
+            // Increment win streak if it's bigger than the current one
+            winStreakMax: stats.winStreak + 1 > stats.winStreakMax ? stats.winStreakMax + 1 : stats.winStreakMax,
+          },
+        })
         break
       }
       default: {
         // loss
-        if (user === null) {
-          await this.client.duels.create({
-            data: {
-              userName: userName,
-              losses: 1,
-              lossStreak: 1,
-              lossStreakMax: 1,
-              lastLoss: new Date(),
-            },
-          })
-        } else {
-          await this.client.duels.update({
-            where: {
-              userName: userName,
-            },
-            data: {
-              losses: { increment: 1 },
-              winStreak: 0,
-              lossStreak: { increment: 1 },
-              // Increment losss streak if it's bigger than the current one
-              lossStreakMax: user.lossStreak + 1 > user.lossStreakMax ? user.lossStreakMax + 1 : user.lossStreakMax,
-              lastLoss: new Date(),
-            },
-          })
-        }
+        await this.client.duels.update({
+          where: {
+            userId: stats.userId,
+          },
+          data: {
+            losses: { increment: 1 },
+            winStreak: 0,
+            lossStreak: { increment: 1 },
+            // Increment losss streak if it's bigger than the current one
+            lossStreakMax: stats.lossStreak + 1 > stats.lossStreakMax ? stats.lossStreakMax + 1 : stats.lossStreakMax,
+            lastLoss: new Date(),
+          },
+        })
       }
     }
   }

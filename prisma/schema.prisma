@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "./generated/prisma-client-js"
 }
 
 datasource db {
@@ -11,7 +12,7 @@ datasource db {
 }
 
 model Duels {
-  userName      String   @unique
+  userId        String   @unique
   lastLoss      DateTime @default(dbgenerated("0"))
   losses        Int      @default(0)
   wins          Int      @default(0)
