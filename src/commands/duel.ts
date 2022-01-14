@@ -128,17 +128,17 @@ class Duel {
         const challengerScore = this.getRandomScore()
         let winnerText = ''
         if (challengerScore > accepterScore) {
-          await this.updateUserScore(challengerStats, 'win')
+          await this.updateUserScore(challengerStats as Duels, 'win')
           await this.updateUserScore(accepterStats, 'loss')
 
           winnerText = `${challenger} has won!`
         } else if (accepterScore > challengerScore) {
-          await this.updateUserScore(challengerStats, 'loss')
+          await this.updateUserScore(challengerStats as Duels, 'loss')
           await this.updateUserScore(accepterStats, 'win')
 
           winnerText = `${accepter} has won!`
         } else {
-          await this.updateUserScore(challengerStats, 'draw')
+          await this.updateUserScore(challengerStats as Duels, 'draw')
           await this.updateUserScore(accepterStats, 'draw')
 
           winnerText = "It's a draw!"
