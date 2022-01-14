@@ -1,7 +1,8 @@
 import 'reflect-metadata'
 import { Intents, Interaction, Message } from 'discord.js'
-import { Client } from 'discordx'
-import { dirname, importx } from '@discordx/importer'
+import { Client, DIService } from 'discordx'
+import { container } from "tsyringe";
+import { importx } from '@discordx/importer'
 
 const client = new Client({
   simpleCommand: {
@@ -52,10 +53,9 @@ client.on('messageCreate', (message: Message) => {
 })
 
 async function run() {
-  // with cjs
-  // await importx(__dirname + "/{events,commands}/**/*.{ts,js}");
-  // with ems
-  await importx(dirname(import.meta.url) + '/{events,commands}/**/*.{ts,js}')
+  DIService.container = container
+
+  await importx(`${__dirname}/{events,commands,persistence}/**/*.{ts,js}`)
   client.login(process.env.DISCORD_TOKEN ?? '') // provide your bot token
 }
 

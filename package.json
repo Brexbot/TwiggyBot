@@ -2,7 +2,7 @@
   "name": "brexbot",
   "version": "0.0.1",
   "description": "Bot for the Bananasaurus_Rex Discord server",
-  "main": "index.js",
+  "main": "./build/main.js",
   "scripts": {
     "build": "tsc",
     "dev": "node --loader ts-node/esm/transpile-only src/main.ts",
@@ -20,7 +20,7 @@
     "url": "https://github.com/Brexbot/DiscordBot/issues"
   },
   "homepage": "https://github.com/Brexbot/DiscordBot#readme",
-  "type": "module",
+  "type": "commonjs",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.9.0",
     "@typescript-eslint/parser": "^5.9.0",
@@ -35,8 +35,10 @@
     "@discordx/importer": "^1.1.2",
     "@discordx/pagination": "^1.1.0",
     "@discordx/utilities": "^3.3.0",
+    "@prisma/client": "^3.8.0",
     "discord.js": "^13.5.1",
     "discordx": "^9.1.9",
+    "prisma": "^3.8.0",
     "reflect-metadata": "^0.1.13",
     "sponge-case": "^1.0.1"
   }
