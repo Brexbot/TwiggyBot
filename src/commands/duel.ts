@@ -14,7 +14,7 @@ class Duel {
 
   public constructor(private client: ORM) {}
 
-  @Slash('duel')
+  @Slash('duel', { description: 'Challenge the chat to a duel' })
   private async duel(interaction: CommandInteraction) {
     await interaction.deferReply()
 
@@ -149,7 +149,7 @@ class Duel {
     })
   }
 
-  @Slash('duelstats')
+  @Slash('duelstats', { description: 'Display your duel statistics' })
   private async duelStats(interaction: CommandInteraction) {
     await interaction.deferReply()
 
