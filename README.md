@@ -28,6 +28,11 @@ See [the duel commend](src/commands/duel.ts) for database integration examples.
 
 The schema for the Database is stored in [the Prisma schema file](prisma/schema.prisma).
 
+Create the client definition
+```shell
+npx prisma generate
+```
+
 Create a new empty Database for development
 ```shell
 npx prisma migrate dev --name init
