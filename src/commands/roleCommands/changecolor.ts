@@ -22,8 +22,6 @@ class ColorRoles {
     '345501570483355648', // BRex Subscriber
   ]
 
-  private static allowedRoles = ColorRoles.modRoles.concat(ColorRoles.allowedMemberRoles)
-
   private static hexExp = /^#?[0-9A-F]{6}$/i
 
   public constructor(private client: ORM) {}
@@ -31,7 +29,7 @@ class ColorRoles {
   @SimpleCommand('uncolor')
   async uncolor(command: SimpleCommandMessage) {
     if (!command.message.member?.roles.cache.some((_, id) => ColorRoles.modRoles.includes(id)) ?? true) {
-      return
+      return Promise.reject()
     }
 
     const mentions = command.message.mentions
@@ -40,8 +38,6 @@ class ColorRoles {
     let mentionedMember: GuildMember | undefined
     if ((mentions.members?.size ?? 0) > 0 && command.message.member?.permissions?.has('MANAGE_ROLES')) {
       mentionedMember = mentions.members?.first()
-    } else {
-      mentionedMember = command.message.member ?? undefined
     }
 
     if (colorRole && mentionedMember) {
@@ -110,7 +106,7 @@ class ColorRoles {
       return Promise.reject()
     }
 
-    if (!memberRoles.cache.some((_, id) => ColorRoles.allowedRoles.includes(id))) {
+    if (!memberRoles.cache.some((_, id) => ColorRoles.getAllowedRoles().includes(id))) {
       return 'Yay! You get to keep your white color!'
     }
 
@@ -182,5 +178,9 @@ class ColorRoles {
       })
       .catch(console.error)
     return `${hexColor} has been set, enjoy your${favoriteString}color!`
+  }
+
+  private static getAllowedRoles(): string[] {
+    return ColorRoles.modRoles.concat(ColorRoles.allowedMemberRoles)
   }
 }
