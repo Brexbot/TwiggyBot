@@ -1,7 +1,7 @@
 import 'reflect-metadata'
 import { Intents, Interaction, Message } from 'discord.js'
 import { Client, DIService } from 'discordx'
-import { container } from "tsyringe";
+import { container } from 'tsyringe'
 import { importx } from '@discordx/importer'
 
 const client = new Client({
@@ -45,11 +45,16 @@ client.once('ready', async () => {
 })
 
 client.on('interactionCreate', (interaction: Interaction) => {
-  client.executeInteraction(interaction)
+  // This should always be a Promise... if it isn't then something is horribly wrong, and we deserve to crash
+  (client.executeInteraction(interaction) as Promise<unknown>).catch((error) => {
+    console.error(`[Interaction] An unexpected error occurred: ${error}`)
+  })
 })
 
 client.on('messageCreate', (message: Message) => {
-  client.executeCommand(message)
+  client.executeCommand(message).catch((error) => {
+    console.error(`[Simple] An unexpected error occurred: ${error}`)
+  })
 })
 
 async function run() {
