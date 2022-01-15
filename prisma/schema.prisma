@@ -4,11 +4,17 @@
 generator client {
   provider = "prisma-client-js"
   output   = "./generated/prisma-client-js"
+  binaryTargets = ["native", "windows"]
 }
 
 datasource db {
   provider = "sqlite"
   url      = "file:./dev.db"
+}
+
+model UserOptions {
+  userId   String  @id @unique
+  favColor String?
 }
 
 model Duels {
