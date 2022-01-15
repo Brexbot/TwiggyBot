@@ -45,11 +45,12 @@ client.once('ready', async () => {
 })
 
 client.on('interactionCreate', (interaction: Interaction) => {
-  client.executeInteraction(interaction)
+  // This should always be a Promise... if it isn't then something is horribly wrong, and we deserve to crash
+  (client.executeInteraction(interaction) as Promise<unknown>).catch(console.error)
 })
 
 client.on('messageCreate', (message: Message) => {
-  client.executeCommand(message)
+  client.executeCommand(message).catch(console.error)
 })
 
 async function run() {
