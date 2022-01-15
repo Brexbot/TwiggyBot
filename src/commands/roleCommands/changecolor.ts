@@ -1,18 +1,64 @@
-import { Discord, SimpleCommandMessage, Slash, SlashOption } from 'discordx'
-import { CommandInteraction, Formatters, GuildMemberRoleManager, HexColorString, RoleManager } from 'discord.js'
+import { Discord, SimpleCommand, SimpleCommandMessage, Slash, SlashOption } from 'discordx'
+import {
+  CommandInteraction,
+  Formatters,
+  GuildMember,
+  GuildMemberRoleManager,
+  HexColorString,
+  RoleManager,
+} from 'discord.js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
 
 @Discord()
 @injectable()
 class ColorRoles {
-  private static allowedRoles = [
-    '345501570483355648', // BRex Subscriber
+  private static modRoles = [
     '103679575694774272', // BRex Mods
+    '104750975268483072', // BRex Ultimate Scum
   ]
+
+  private static allowedMemberRoles = [
+    '345501570483355648', // BRex Subscriber
+  ]
+
+  private static allowedRoles = ColorRoles.modRoles.concat(ColorRoles.allowedMemberRoles)
+
   private static hexExp = /^#?[0-9A-F]{6}$/i
 
   public constructor(private client: ORM) {}
+
+  @SimpleCommand('uncolor')
+  async uncolor(command: SimpleCommandMessage) {
+    if (!command.message.member?.roles.cache.some((_, id) => ColorRoles.modRoles.includes(id)) ?? true) {
+      return
+    }
+
+    const mentions = command.message.mentions
+    const colorRole = command.message.guild?.roles?.cache?.find((role) => ColorRoles.hexExp.test(role.name))
+
+    let mentionedMember: GuildMember | undefined
+    if ((mentions.members?.size ?? 0) > 0 && command.message.member?.permissions?.has('MANAGE_ROLES')) {
+      mentionedMember = mentions.members?.first()
+    } else {
+      mentionedMember = command.message.member ?? undefined
+    }
+
+    if (colorRole && mentionedMember) {
+      mentionedMember.roles
+        .remove(colorRole)
+        .then(async (_) => {
+          if (
+            colorRole &&
+            (colorRole.members.size === 0 ||
+              (colorRole.members.size === 1 && colorRole.members.some((_, id) => id === mentionedMember?.id)))
+          ) {
+            await command.message.guild?.roles.delete(colorRole.id).catch(console.error)
+          }
+        })
+        .catch(console.error)
+    }
+  }
 
   @Slash('changecolor', { description: 'Change your display color' })
   async slashChangeColor(
