@@ -75,7 +75,7 @@ class quoteCommand {
     })
   }
 
-  @Slash('quwuote')
+  @Slash('quwuote', { description: 'Get sewvew quwuote' })
   private async quwuoteSlash(
     @SlashOption('quwuoteid', { type: 'NUMBER', required: false })
     id: number,
