@@ -74,7 +74,10 @@ class quoteCommand {
     })
   }
 
-  private getRandomQuote(): Quote {
+  private getRandomQuote(): Quote|null {
+    if (this.quotes.length == 0) {
+      return null
+    }
     return this.quotes[Math.floor(Math.random() * this.quotes.length)]
   }
 
@@ -89,17 +92,12 @@ class quoteCommand {
     }
   }
 
-  private async fetchQuotes(): Promise<QuoteData | null> {
+  private async fetchQuotes(): Promise<QuoteData> {
     console.log('Fetching quotes from API')
-    try {
-      const data = await fetch(this.endpoint)
-      if (data.ok) {
-        return (await data.json()) as Promise<QuoteData>
-      }
-      return null
-    } catch (e) {
-      console.log(`Error fetching data: ${e}`)
-      return null
-    }
+    return await fetch(this.endpoint).then(async (resp) => {
+      if (resp.ok) {
+        return await resp.json()
+      } else return Promise.reject('An error occurred while fetching quotes')
+    })
   }
 }
