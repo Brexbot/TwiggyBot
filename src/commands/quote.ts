@@ -1,5 +1,6 @@
 import { CommandInteraction } from 'discord.js'
 import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import { uwuify } from './uwu'
 import fetch from 'node-fetch'
 
 interface Quote {
@@ -69,6 +70,59 @@ class quoteCommand {
           await channel.send(randomQuote.body)
         } else {
           await channel.send('Unable to get quotes.')
+        }
+      }
+    })
+  }
+
+  @Slash('quwuote')
+  private async quwuoteSlash(
+    @SlashOption('quwuoteid', { type: 'NUMBER', required: false })
+    id: number,
+    interaction: CommandInteraction
+  ) {
+    await interaction.deferReply()
+
+    await this.updateQuotes().then(async () => {
+      if (id) {
+        const quote = this.quotes.find((quote) => quote.id == id)
+        if (!quote) {
+          await interaction.followUp(`Unable to find quwuote with ID ${id}`)
+        } else {
+          await interaction.followUp(uwuify(quote.body))
+        }
+      } else {
+        const randomQuote = this.getRandomQuote()
+        if (randomQuote) {
+          await interaction.followUp(uwuify(randomQuote.body))
+        } else {
+          await interaction.followUp('Unable to get quwuotes.')
+        }
+      }
+    })
+  }
+
+  @SimpleCommand('quwuote', { description: 'Get sewvew quwuote', argSplitter: '\n' })
+  private async quwuoteSimple(
+    @SimpleCommandOption('id', { type: 'NUMBER' })
+    id: number,
+    command: SimpleCommandMessage
+  ) {
+    await this.updateQuotes().then(async () => {
+      const channel = command.message.channel
+      if (id) {
+        const quote = this.quotes.find((quote) => quote.id == id)
+        if (!quote) {
+          await channel.send(`Unyable to find quwuote with ID ${id}`)
+        } else {
+          await channel.send(uwuify(quote.body))
+        }
+      } else {
+        const randomQuote = this.getRandomQuote()
+        if (randomQuote) {
+          await channel.send(uwuify(randomQuote.body))
+        } else {
+          await channel.send('Unyable to get quwuote.')
         }
       }
     })
