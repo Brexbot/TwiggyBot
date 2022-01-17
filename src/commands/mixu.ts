@@ -2,12 +2,7 @@ import { Guild } from 'discord.js'
 import { Discord, SimpleCommand, SimpleCommandMessage } from 'discordx'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence'
-
-interface BestMixu {
-  owner: string
-  tiles: number[]
-  score: number
-}
+import { BestMixu } from '../../prisma/generated/prisma-client-js'
 
 @Discord()
 @injectable()
@@ -15,8 +10,9 @@ class Mixu {
   private numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
   private queried = false
   private bestMixu: BestMixu = {
+    id: '1',
     owner: '',
-    tiles: [],
+    tiles: '',
     score: 0,
   }
 
@@ -28,18 +24,12 @@ class Mixu {
     if (this.queried) return
 
     // upsert with an empty update {} can be used as a findOrCreate
-    const { owner, tiles, score } = await this.client.bestMixu.upsert({
+    this.bestMixu = await this.client.bestMixu.upsert({
       where: { id: '1' },
       create: {},
       update: {},
     })
-
     this.queried = true
-    this.bestMixu = {
-      owner,
-      tiles: tiles.split(',').map((n) => +n),
-      score,
-    }
   }
 
   private shuffle(): number[] {
@@ -98,19 +88,16 @@ class Mixu {
     await this.findBestMixu()
     if (score > this.bestMixu.score) {
       this.bestMixu = {
+        id: '1',
         owner: command.message.author.username,
-        tiles,
+        tiles: tiles.join(','),
         score,
       }
 
       await this.client.bestMixu
         .update({
           where: { id: '1' },
-          data: {
-            owner: this.bestMixu.owner,
-            tiles: this.bestMixu.tiles.join(','),
-            score: this.bestMixu.score,
-          },
+          data: this.bestMixu,
         })
         .catch(console.error)
     }
@@ -132,7 +119,10 @@ class Mixu {
       return
     }
 
-    const text = this.stringify(this.bestMixu.tiles, command.message.guild)
+    const text = this.stringify(
+      this.bestMixu.tiles.split(',').map((n) => +n),
+      command.message.guild
+    )
     // Sending 2 separate messages to keep the Mixu emotes size big
     command.message.channel.send(`Best Mixu by ${this.bestMixu.owner}`)
     command.message.channel.send(`${text}`)
