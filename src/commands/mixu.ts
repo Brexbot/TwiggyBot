@@ -65,7 +65,9 @@ abstract class Mixu {
     }
 
     const text = this.stringify(tiles, command.message.guild)
-    command.message.channel.send(`:regional_indicator_m::regional_indicator_i::regional_indicator_x::regional_indicator_u:${text}`)
+    command.message.channel.send(
+      `:regional_indicator_m::regional_indicator_i::regional_indicator_x::regional_indicator_u:${text}`
+    )
   }
 
   @SimpleCommand('bestmixu', { directMessage: false })
@@ -83,6 +85,8 @@ abstract class Mixu {
     if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) return
 
     const text = this.stringify(this.numbers, command.message.guild)
-    command.message.channel.send(`:regional_indicator_m::regional_indicator_i::regional_indicator_k::regional_indicator_u:${text}`)
+    command.message.channel.send(
+      `:regional_indicator_m::regional_indicator_i::regional_indicator_k::regional_indicator_u:${text}`
+    )
   }
 }
