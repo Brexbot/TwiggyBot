@@ -22,3 +22,10 @@ model Duels {
   winStreakMax  Int      @default(0)
   lossStreakMax Int      @default(0)
 }
+
+model BestMixu {
+  id    String @unique @default("1")
+  owner String @default("")
+  tiles String @default("")
+  score Int    @default(0)
+}

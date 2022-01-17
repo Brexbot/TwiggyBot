@@ -1,5 +1,7 @@
 import { Guild } from 'discord.js'
 import { Discord, SimpleCommand, SimpleCommandMessage } from 'discordx'
+import { injectable } from 'tsyringe'
+import { ORM } from '../persistence'
 
 interface BestMixu {
   owner: string
@@ -8,8 +10,10 @@ interface BestMixu {
 }
 
 @Discord()
-abstract class Mixu {
+@injectable()
+class Mixu {
   private numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+  private queried = false
   private bestMixu: BestMixu = {
     owner: '',
     tiles: [],
@@ -17,7 +21,26 @@ abstract class Mixu {
   }
 
   private mixuChannel = '340275382093611011'
-  // private mixuChannel = '111135289648349184'
+
+  constructor(private client: ORM) {}
+
+  private async findBestMixu() {
+    if (this.queried) return
+
+    // upsert with an empty update {} can be used as a findOrCreate
+    const { owner, tiles, score } = await this.client.bestMixu.upsert({
+      where: { id: '1' },
+      create: {},
+      update: {},
+    })
+
+    this.queried = true
+    this.bestMixu = {
+      owner,
+      tiles: tiles.split(',').map((n) => +n),
+      score,
+    }
+  }
 
   private shuffle(): number[] {
     return [...this.numbers].sort(() => 0.5 - Math.random())
@@ -64,7 +87,7 @@ abstract class Mixu {
   }
 
   @SimpleCommand('mixu', { directMessage: false })
-  mixuCommand(command: SimpleCommandMessage) {
+  async mixuCommand(command: SimpleCommandMessage) {
     if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) {
       return
     }
@@ -72,12 +95,24 @@ abstract class Mixu {
     const tiles = this.shuffle()
     const score = this.score(tiles)
 
+    await this.findBestMixu()
     if (score > this.bestMixu.score) {
       this.bestMixu = {
         owner: command.message.author.username,
         tiles,
         score,
       }
+
+      await this.client.bestMixu
+        .update({
+          where: { id: '1' },
+          data: {
+            owner: this.bestMixu.owner,
+            tiles: this.bestMixu.tiles.join(','),
+            score: this.bestMixu.score,
+          },
+        })
+        .catch(console.error)
     }
 
     const text = this.stringify(tiles, command.message.guild)
@@ -87,11 +122,12 @@ abstract class Mixu {
   }
 
   @SimpleCommand('bestmixu', { directMessage: false })
-  bestMixuCommand(command: SimpleCommandMessage) {
+  async bestMixuCommand(command: SimpleCommandMessage) {
     if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) {
       return
     }
 
+    await this.findBestMixu()
     if (this.bestMixu.tiles.length !== 16) {
       return
     }
