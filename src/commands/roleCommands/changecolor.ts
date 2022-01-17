@@ -1,4 +1,4 @@
-import { Discord, SimpleCommand, SimpleCommandMessage, Slash, SlashOption } from 'discordx'
+import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
 import {
   CommandInteraction,
   Formatters,
@@ -56,6 +56,22 @@ class ColorRoles {
     }
   }
 
+  @SimpleCommand('changecolor')
+  async createRole(
+    @SimpleCommandOption('color', {
+      description: 'The hex color to change to',
+    })
+    color: string,
+    @SimpleCommandOption('is_favorite', {
+      description: 'Should this color be registered as your favorite',
+    })
+    isFavorite: boolean,
+    command: SimpleCommandMessage
+  ) {
+    const reply = await this.changeUserColor(color, isFavorite ?? false, command).catch(console.error)
+    await command.message.channel.send(reply ?? '').catch(console.error)
+  }
+
   @Slash('changecolor', { description: 'Change your display color' })
   async slashChangeColor(
     @SlashOption('color', {
@@ -69,12 +85,6 @@ class ColorRoles {
     isFavorite: boolean,
     interaction: CommandInteraction
   ) {
-    const memberRoles = interaction.member?.roles
-    const guildRoles = interaction.guild?.roles
-    if (!memberRoles || !(memberRoles instanceof GuildMemberRoleManager) || !guildRoles) {
-      return Promise.reject('An unexpected error occurred')
-    }
-
     const reply = await this.changeUserColor(color, isFavorite ?? false, interaction).catch(console.error)
     await interaction.reply(reply ?? '').catch(console.error)
   }
@@ -98,8 +108,15 @@ class ColorRoles {
       memberRoles = _memberRoles
       guildRoles = _guildRoles
     } else {
+      const _memberRoles = command.message.member?.roles
+      const _guildRoles = command.message.guild?.roles
+      if (!_memberRoles || !_guildRoles) {
+        return Promise.reject('An unexpected error occurred')
+      }
+
       userId = command.message.author.id
-      return Promise.reject('Not yet implemented')
+      memberRoles = _memberRoles
+      guildRoles = _guildRoles
     }
 
     if (!memberRoles || !guildRoles) {
@@ -110,10 +127,10 @@ class ColorRoles {
       return 'Yay! You get to keep your white color!'
     }
 
-    color = color.toUpperCase()
-    if (color.toUpperCase() !== 'LAZY' && !ColorRoles.hexExp.test(color)) {
+    if (!color || (color.toUpperCase() !== 'LAZY' && !ColorRoles.hexExp.test(color))) {
       return 'Please enter a valid 6 digit hex color'
     }
+    color = color.toUpperCase()
 
     if (color === 'LAZY') {
       const userOptions = await this.client.userOptions.findUnique({
