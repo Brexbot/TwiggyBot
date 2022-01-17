@@ -1,12 +1,23 @@
 import { Guild } from 'discord.js'
 import { Discord, SimpleCommand, SimpleCommandMessage } from 'discordx'
 
+interface BestMixu {
+  owner: string
+  tiles: number[]
+  score: number
+}
+
 @Discord()
 abstract class Mixu {
   private numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-  private bestScore = 0
-  private bestMixuTiles: number[] = []
+  private bestMixu: BestMixu = {
+    owner: '',
+    tiles: [],
+    score: 0,
+  }
+
   private mixuChannel = '340275382093611011'
+  // private mixuChannel = '111135289648349184'
 
   private shuffle(): number[] {
     return [...this.numbers].sort(() => 0.5 - Math.random())
@@ -53,15 +64,20 @@ abstract class Mixu {
   }
 
   @SimpleCommand('mixu', { directMessage: false })
-  mixu(command: SimpleCommandMessage) {
-    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) return
+  mixuCommand(command: SimpleCommandMessage) {
+    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) {
+      return
+    }
 
     const tiles = this.shuffle()
     const score = this.score(tiles)
 
-    if (score > this.bestScore) {
-      this.bestScore = score
-      this.bestMixuTiles = tiles
+    if (score > this.bestMixu.score) {
+      this.bestMixu = {
+        owner: command.message.author.username,
+        tiles,
+        score,
+      }
     }
 
     const text = this.stringify(tiles, command.message.guild)
@@ -71,18 +87,26 @@ abstract class Mixu {
   }
 
   @SimpleCommand('bestmixu', { directMessage: false })
-  bestMixu(command: SimpleCommandMessage) {
-    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id) || this.bestMixuTiles.length === 0) {
+  bestMixuCommand(command: SimpleCommandMessage) {
+    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) {
       return
     }
 
-    const text = this.stringify(this.bestMixuTiles, command.message.guild)
+    if (this.bestMixu.tiles.length !== 16) {
+      return
+    }
+
+    const text = this.stringify(this.bestMixu.tiles, command.message.guild)
+    // Sending 2 separate messages to keep the Mixu emotes size big
+    command.message.channel.send(`Best Mixu by ${this.bestMixu.owner}`)
     command.message.channel.send(`${text}`)
   }
 
   @SimpleCommand('mikustare', { directMessage: false })
   mikustare(command: SimpleCommandMessage) {
-    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) return
+    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) {
+      return
+    }
 
     const text = this.stringify(this.numbers, command.message.guild)
     command.message.channel.send(
