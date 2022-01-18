@@ -115,14 +115,12 @@ class Mixu {
     }
 
     await this.findBestMixu()
-    if (this.bestMixu.tiles.length !== 16) {
+    const tiles = this.bestMixu.tiles.split(',').map((n) => +n)
+    if (tiles.length !== 16) {
       return
     }
 
-    const text = this.stringify(
-      this.bestMixu.tiles.split(',').map((n) => +n),
-      command.message.guild
-    )
+    const text = this.stringify(tiles, command.message.guild)
     // Sending 2 separate messages to keep the Mixu emotes size big
     command.message.channel.send(`Best Mixu by ${this.bestMixu.owner}`)
     command.message.channel.send(`${text}`)
