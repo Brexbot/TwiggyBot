@@ -57,7 +57,7 @@ class ColorRoles {
   }
 
   @SimpleCommand('changecolor')
-  async createRole(
+  async simpleChangeColor(
     @SimpleCommandOption('color', {
       description: 'The hex color to change to',
     })
@@ -68,8 +68,11 @@ class ColorRoles {
     isFavorite: boolean,
     command: SimpleCommandMessage
   ) {
-    const reply = await this.changeUserColor(color, isFavorite ?? false, command).catch(console.error)
-    await command.message.channel.send(reply ?? '').catch(console.error)
+    this.changeUserColor(color, isFavorite ?? false, command)
+      .then(async (reply) => {
+        return await command.message.channel.send(reply)
+      })
+      .catch(console.error)
   }
 
   @Slash('changecolor', { description: 'Change your display color' })
@@ -85,8 +88,11 @@ class ColorRoles {
     isFavorite: boolean,
     interaction: CommandInteraction
   ) {
-    const reply = await this.changeUserColor(color, isFavorite ?? false, interaction).catch(console.error)
-    await interaction.reply(reply ?? '').catch(console.error)
+    this.changeUserColor(color, isFavorite ?? false, interaction)
+      .then(async (reply) => {
+        return await interaction.reply(reply)
+      })
+      .catch(console.error)
   }
 
   private async changeUserColor(
@@ -127,11 +133,14 @@ class ColorRoles {
       return 'Yay! You get to keep your white color!'
     }
 
-    if (!color || (color.toUpperCase() !== 'LAZY' && !ColorRoles.hexExp.test(color))) {
+    if (
+      !color ||
+      (color.toUpperCase() !== 'LAZY' && color.toUpperCase() !== 'RANDOM' && !ColorRoles.hexExp.test(color))
+    ) {
       return 'Please enter a valid 6 digit hex color'
     }
-    color = color.toUpperCase()
 
+    color = color.toUpperCase()
     if (color === 'LAZY') {
       const userOptions = await this.client.userOptions.findUnique({
         where: {
@@ -143,6 +152,8 @@ class ColorRoles {
       } else {
         return 'You have not registered a color. Set the `favorite` param to true the next time you change your color.'
       }
+    } else if (color === 'RANDOM') {
+      color = ColorRoles.getRandomColor()
     }
 
     // TODO: Hardcoding the position for Rexcord. We'll need some way to define it dynamically
@@ -195,6 +206,13 @@ class ColorRoles {
       })
       .catch(console.error)
     return `${hexColor} has been set, enjoy your${favoriteString}color!`
+  }
+
+  private static getRandomColor(): string {
+    return Math.floor(Math.random() * 0xffffff)
+      .toString(16) // Convert to Hex
+      .padStart(6, '0') // In case the number is too small to fill all 6 hex digits
+      .toUpperCase()
   }
 
   private static getAllowedRoles(): string[] {
