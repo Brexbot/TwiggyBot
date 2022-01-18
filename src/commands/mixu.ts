@@ -1,12 +1,36 @@
 import { Guild } from 'discord.js'
 import { Discord, SimpleCommand, SimpleCommandMessage } from 'discordx'
+import { injectable } from 'tsyringe'
+import { ORM } from '../persistence'
+import { BestMixu } from '../../prisma/generated/prisma-client-js'
 
 @Discord()
-abstract class Mixu {
+@injectable()
+class Mixu {
   private numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-  private bestScore = 0
-  private bestMixuTiles: number[] = []
+  private queried = false
+  private bestMixu: BestMixu = {
+    id: '1',
+    owner: '',
+    tiles: '',
+    score: 0,
+  }
+
   private mixuChannel = '340275382093611011'
+
+  constructor(private client: ORM) {}
+
+  private async findBestMixu() {
+    if (this.queried) return
+
+    // upsert with an empty update {} can be used as a findOrCreate
+    this.bestMixu = await this.client.bestMixu.upsert({
+      where: { id: '1' },
+      create: {},
+      update: {},
+    })
+    this.queried = true
+  }
 
   private shuffle(): number[] {
     return [...this.numbers].sort(() => 0.5 - Math.random())
@@ -53,36 +77,64 @@ abstract class Mixu {
   }
 
   @SimpleCommand('mixu', { directMessage: false })
-  mixu(command: SimpleCommandMessage) {
-    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) return
+  async mixuCommand(command: SimpleCommandMessage) {
+    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) {
+      return
+    }
 
     const tiles = this.shuffle()
     const score = this.score(tiles)
 
-    if (score > this.bestScore) {
-      this.bestScore = score
-      this.bestMixuTiles = tiles
+    await this.findBestMixu()
+    if (score > this.bestMixu.score) {
+      this.bestMixu = {
+        id: '1',
+        owner: command.message.author.username,
+        tiles: tiles.join(','),
+        score,
+      }
+
+      await this.client.bestMixu
+        .update({
+          where: { id: '1' },
+          data: this.bestMixu,
+        })
+        .catch(console.error)
     }
 
     const text = this.stringify(tiles, command.message.guild)
-    command.message.channel.send(`:regional_indicator_m::regional_indicator_i::regional_indicator_x::regional_indicator_u:${text}`)
+    command.message.channel.send(
+      `:regional_indicator_m::regional_indicator_i::regional_indicator_x::regional_indicator_u:${text}`
+    )
   }
 
   @SimpleCommand('bestmixu', { directMessage: false })
-  bestMixu(command: SimpleCommandMessage) {
-    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id) || this.bestMixuTiles.length === 0) {
+  async bestMixuCommand(command: SimpleCommandMessage) {
+    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) {
       return
     }
 
-    const text = this.stringify(this.bestMixuTiles, command.message.guild)
+    await this.findBestMixu()
+    const tiles = this.bestMixu.tiles.split(',').map((n) => +n)
+    if (tiles.length !== 16) {
+      return
+    }
+
+    const text = this.stringify(tiles, command.message.guild)
+    // Sending 2 separate messages to keep the Mixu emotes size big
+    command.message.channel.send(`Best Mixu by ${this.bestMixu.owner}`)
     command.message.channel.send(`${text}`)
   }
 
   @SimpleCommand('mikustare', { directMessage: false })
   mikustare(command: SimpleCommandMessage) {
-    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) return
+    if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) {
+      return
+    }
 
     const text = this.stringify(this.numbers, command.message.guild)
-    command.message.channel.send(`:regional_indicator_m::regional_indicator_i::regional_indicator_k::regional_indicator_u:${text}`)
+    command.message.channel.send(
+      `:regional_indicator_m::regional_indicator_i::regional_indicator_k::regional_indicator_u:${text}`
+    )
   }
 }
