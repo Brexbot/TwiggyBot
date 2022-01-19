@@ -103,6 +103,11 @@ abstract class Timeout {
       return
     }
 
+    // Max timeout is 10 days
+    if (duration > 10 * 24 * 60 * 60 * 1000) {
+      return
+    }
+
     await user.timeout(duration * 1000, `${command.message.author} used timeout command`)
     if (command.message.author.id === this.gozId) {
       await command.message.channel.send('In the name of the Moon, I shall punish you!')
@@ -132,6 +137,11 @@ abstract class Timeout {
 
     if (!duration) {
       await interaction.reply({ content: 'Duration has to be a number.', ephemeral: true })
+      return
+    }
+
+    // Max timeout is 10 days
+    if (duration > 10 * 24 * 60 * 60 * 1000) {
       return
     }
 
