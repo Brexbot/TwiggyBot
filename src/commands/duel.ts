@@ -1,23 +1,16 @@
-import {
-  ButtonInteraction,
-  CommandInteraction,
-  MessageButton,
-  MessageActionRow,
-  Message,
-  User,
-  GuildMember
-} from 'discord.js'
+import { ButtonInteraction, CommandInteraction, MessageButton, MessageActionRow, Message } from 'discord.js'
 import { Discord, Slash } from 'discordx'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence/ORM'
 
 import { Duels } from '../../prisma/generated/prisma-client-js'
+import { ColorRoles } from './roleCommands/changecolor'
 
 @Discord()
 @injectable()
 class Duel {
   private inProgress = false
-  private cooldown = 1000 //5 * 60 * 1000 // Cooldown period after loss in milliseconds
+  private cooldown = 10 * 60 * 1000 // Cooldown period after loss in milliseconds
 
   private timeoutDuration = 5 * 60 * 1000 // Time before the duel is declared dead in milliseconds
   private timeout: ReturnType<typeof setTimeout> | null = null
@@ -46,7 +39,9 @@ class Duel {
     if (challenger.lastLoss.getTime() + this.cooldown > Date.now()) {
       const remaining = Math.ceil(Math.abs(Date.now() - (challenger.lastLoss.getTime() + this.cooldown)) / 1000)
       await interaction.followUp({
-        content: `${challengerName}, you have recently lost a duel or gamble. Please wait ${remaining} seconds before trying again.`,
+        content: `${challengerName}, you have recently lost a duel or gamble. Please wait ${Math.round(
+          remaining / 60
+        )} minutes before trying again.`,
       })
       return
     }
@@ -127,10 +122,14 @@ class Duel {
           await this.updateUserScore(challenger.duelStats[0], 'win')
           await this.updateUserScore(acceptor.duelStats[0], 'loss')
 
+          await ColorRoles.uncolor(acceptor.id, interaction)
+
           winnerText = `${challengerName} has won!`
         } else if (accepterScore > challengerScore) {
           await this.updateUserScore(challenger.duelStats[0] as Duels, 'loss')
           await this.updateUserScore(acceptor.duelStats[0], 'win')
+
+          await ColorRoles.uncolor(challenger.id, interaction)
 
           winnerText = `${acceptorName} has won!`
         } else {
@@ -245,6 +244,7 @@ class Duel {
   }
 
   private async getUserWithDuelStats(userId: string) {
+    // I'm not sure if we can do conditionals to check if no duelStats exist, so I went the verbose route...
     return this.client.user
       .upsert({
         where: {
