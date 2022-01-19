@@ -56,9 +56,13 @@ client.on('interactionCreate', (interaction: Interaction) => {
 })
 
 client.on('messageCreate', (message: Message) => {
-  client.executeCommand(message).catch((error) => {
-    console.error(`[Simple] An unexpected error occurred: ${error}`)
-  })
+  try {
+    client.executeCommand(message).catch((error) => {
+      console.error(`[Simple] An unexpected error occurred: ${error}`)
+    })
+  } catch (error) {
+    console.error(error)
+  }
 })
 
 async function run() {
