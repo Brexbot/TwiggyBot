@@ -229,16 +229,19 @@ export class ColorRoles {
       color = ColorRoles.getRandomColor()
     }
 
-    // TODO: Hardcoding the position for Rexcord. We'll need some way to define it dynamically
-    // maybe by using a role with a predefined name... get that role and then take it's position + 1 for the new color
     const hexColor: HexColorString = color[0] !== '#' ? `#${color}` : (color as HexColorString)
+    const baseRole = guild.roles.cache.find((role) => role.id === ColorRoles.allowedMemberRoles[0])
+    let rolePosition = baseRole?.position
+    if (rolePosition) {
+      rolePosition -= 1
+    }
     const colorRole =
       guild.roles.cache.find((role) => role.name === hexColor) ??
       (await guild.roles.create({
         name: hexColor,
         color: hexColor,
         permissions: [],
-        position: 8, // Needed to allow priority if there are multiple roles with colors; e.g. Nitro or Subscriber
+        position: rolePosition, // Needed to allow priority if there are multiple roles with colors; e.g. Nitro or Subscriber
         mentionable: false,
       }))
 
