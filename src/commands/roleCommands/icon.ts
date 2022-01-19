@@ -1,12 +1,5 @@
 import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
-import {
-  ApplicationCommandOptionChoice,
-  AutocompleteInteraction,
-  CommandInteraction,
-  GuildEmojiManager,
-  GuildMemberRoleManager,
-  RoleManager,
-} from 'discord.js'
+import { CommandInteraction, GuildEmojiManager, GuildMemberRoleManager, RoleManager } from 'discord.js'
 
 @Discord()
 class Icon {
@@ -95,7 +88,12 @@ class Icon {
     emote: string,
     command: SimpleCommandMessage
   ) {
-    const msg = this.icon(emote, command.message.guild?.emojis, command.message.guild?.roles, command.message.member?.roles)
+    const msg = this.icon(
+      emote,
+      command.message.guild?.emojis,
+      command.message.guild?.roles,
+      command.message.member?.roles
+    )
     await command.message
       .reply({
         content: msg,
@@ -111,21 +109,6 @@ class Icon {
     @SlashOption('emote', {
       required: false,
       description: 'Get the icon list or select an icon to add/remove',
-      autocomplete: (interaction: AutocompleteInteraction) => {
-        const options =
-          interaction.guild?.roles.cache
-            .filter((role) => role.name.endsWith('[ICON]'))
-            .map((role) => {
-              const roleName = role.name.substring(0, role.name.length - 7)
-              const emote = interaction.guild?.emojis?.cache?.find((emoji) => emoji.name === roleName)
-              return <ApplicationCommandOptionChoice>{
-                name: roleName,
-                value: emote?.identifier ?? '',
-              }
-            }) ?? []
-        options.sort((a, b) => a.name.localeCompare(b.name)).push({ name: 'Icon List', value: 'list' })
-        interaction.respond(options)
-      },
       type: 'STRING',
     })
     emote: string,
