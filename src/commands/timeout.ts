@@ -1,5 +1,13 @@
 import { CommandInteraction, Guild, GuildMember, GuildMemberRoleManager, User } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash } from 'discordx'
+import {
+  Discord,
+  Permission,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  Slash,
+  SlashOption,
+} from 'discordx'
 
 @Discord()
 abstract class Timeout {
@@ -43,7 +51,7 @@ abstract class Timeout {
     if (!highestBotRole || !highestMemberRole) {
       return false
     }
-    return !(guild?.ownerId === userId) || highestMemberRole.comparePositionTo(highestBotRole) > 0
+    return !(guild?.ownerId === userId && highestBotRole.comparePositionTo(highestMemberRole) > 0)
   }
 
   sudokuDuration(): number {
@@ -95,9 +103,43 @@ abstract class Timeout {
       return
     }
 
-    await user.timeout(duration * 1000)
+    await user.timeout(duration * 1000, `${command.message.author} used timeout command`)
     if (command.message.author.id === this.gozId) {
       await command.message.channel.send('In the name of the Moon, I shall punish you!')
+    }
+  }
+
+  @Slash('timeout')
+  @Permission(false)
+  // TODO: import roles from global config
+  @Permission({ id: '103679575694774272', type: 'ROLE', permission: true }) // Brex Mods
+  @Permission({ id: '104750975268483072', type: 'ROLE', permission: true }) // Brex scum
+  async timeoutInteraction(
+    @SlashOption('user', { type: 'USER', description: 'User you want to timeout' }) user: GuildMember,
+    @SlashOption('duration', { type: 'NUMBER', description: 'Duration of the timeout in seconds' }) duration: number,
+    interaction: CommandInteraction
+  ) {
+    if (
+      !(interaction.member instanceof GuildMember) ||
+      // This should never fail but I'm not familiar enough
+      // with interaction permissions to know for sure
+      !this.hasModPowers(interaction.member) ||
+      !this.hasPermission(interaction, user)
+    ) {
+      await interaction.reply({ content: 'Cannot timeout user.', ephemeral: true })
+      return
+    }
+
+    if (!duration) {
+      await interaction.reply({ content: 'Duration has to be a number.', ephemeral: true })
+      return
+    }
+
+    await user.timeout(duration * 1000, `${interaction.user} used timeout command`)
+    if (interaction.user.id === this.gozId) {
+      await interaction.reply('In the name of the Moon, I shall punish you!')
+    } else {
+      await interaction.reply({ content: `${user} has been timed out for ${duration} seconds`, ephemeral: true })
     }
   }
 }
