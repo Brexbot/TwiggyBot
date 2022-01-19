@@ -165,9 +165,9 @@ export class ColorRoles {
     }
 
     // User Role Check
-    // if (!member.roles.cache.some((_, id) => ColorRoles.getAllowedRoles().includes(id))) {
-    //   return 'Yay! You get to keep your white color!'
-    // }
+    if (!member.roles.cache.some((_, id) => ColorRoles.getAllowedRoles().includes(id))) {
+      return 'Yay! You get to keep your white color!'
+    }
 
     // User Cooldown Check
     if (!ColorRoles.guildOptions) {
@@ -225,6 +225,12 @@ export class ColorRoles {
         return 'Huzzah. You get to keep your color.'
       }
     } else if (color === 'RANDOM') {
+      await this.client.user.update({
+        where: { id: member.id },
+        data: {
+          lastLoss: new Date(),
+        },
+      })
       randomed = true
       color = ColorRoles.getRandomColor()
     }
@@ -233,7 +239,7 @@ export class ColorRoles {
     const baseRole = guild.roles.cache.find((role) => role.id === ColorRoles.allowedMemberRoles[0])
     let rolePosition = baseRole?.position
     if (rolePosition) {
-      rolePosition -= 1
+      rolePosition += 1
     }
     const colorRole =
       guild.roles.cache.find((role) => role.name === hexColor) ??
