@@ -25,7 +25,7 @@ class Weather {
 const aboutMessage = `Weather data provided by OpenWeather (TM) <https://openweathermap.org>
 Data made available under the Creative Commons Attribution-ShareAlike 4.0 International licence (CC BY-SA 4.0) <https://creativecommons.org/licenses/by-sa/4.0/>`
 
-const apiKey = ''
+const apiKey = process.env.OPEN_WEATHER_TOKEN
 
 const weatherURL = 'https://api.openweathermap.org/data/2.5/weather'
 
