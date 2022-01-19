@@ -86,7 +86,9 @@ class Duel {
       if (acceptor.lastLoss.getTime() + this.cooldown > Date.now()) {
         const remaining = Math.ceil(Math.abs(Date.now() - (acceptor.lastLoss.getTime() + this.cooldown)) / 1000)
         await collectionInteraction.followUp({
-          content: `${acceptorName}, you have recently lost a duel or gamble. Please wait ${remaining} seconds before trying again.`,
+          content: `${acceptorName}, you have recently lost a duel or gamble. Please wait ${Math.round(
+            remaining / 60
+          )} minutes before trying again.`,
         })
       } else if (!this.inProgress) {
         // This case is not really supposed to happen because you should not be able to accept a duel after it has expired
