@@ -271,7 +271,7 @@ class Duel {
             },
             data: {
               duelStats: {
-                create: [{ userId: user.id }],
+                create: [{ }],
               },
             },
             include: {
