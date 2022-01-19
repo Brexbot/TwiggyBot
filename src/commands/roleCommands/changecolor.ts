@@ -72,10 +72,9 @@ export class ColorRoles {
     isFavorite: boolean,
     interaction: CommandInteraction
   ) {
-    await interaction.deferReply()
     this.changeUserColor(color, isFavorite ?? false, interaction)
       .then(async (reply) => {
-        await interaction.followUp(reply)
+        await interaction.reply(reply)
       })
       .catch(console.error)
   }
@@ -91,10 +90,9 @@ export class ColorRoles {
 
   @Slash('random', { description: 'Change to a random display color' })
   async slashRandomColor(interaction: CommandInteraction) {
-    await interaction.deferReply()
     this.changeUserColor('RANDOM', false, interaction)
       .then(async (reply) => {
-        await interaction.followUp(reply)
+        await interaction.reply(reply)
       })
       .catch(console.error)
   }
@@ -110,10 +108,9 @@ export class ColorRoles {
 
   @Slash('lazy', { description: 'Change to your favorite display color' })
   async slashLazyColor(interaction: CommandInteraction) {
-    await interaction.deferReply()
     this.changeUserColor('LAZY', false, interaction)
       .then(async (reply) => {
-        await interaction.followUp(reply)
+        await interaction.reply(reply)
       })
       .catch(console.error)
   }
@@ -129,10 +126,9 @@ export class ColorRoles {
 
   @Slash('gamble', { description: 'Tempt The Wheel of Fate for a new color... or not!' })
   async slashGamble(interaction: CommandInteraction) {
-    await interaction.deferReply()
     this.changeUserColor('GAMBLE', false, interaction)
       .then(async (reply) => {
-        return await interaction.followUp(reply)
+        return await interaction.reply(reply)
       })
       .catch(console.error)
   }
@@ -169,9 +165,9 @@ export class ColorRoles {
     }
 
     // User Role Check
-    if (!member.roles.cache.some((_, id) => ColorRoles.getAllowedRoles().includes(id))) {
-      return 'Yay! You get to keep your white color!'
-    }
+    // if (!member.roles.cache.some((_, id) => ColorRoles.getAllowedRoles().includes(id))) {
+    //   return 'Yay! You get to keep your white color!'
+    // }
 
     // User Cooldown Check
     if (!ColorRoles.guildOptions) {
