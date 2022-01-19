@@ -1,5 +1,5 @@
 import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
-import { ApplicationCommandOptionChoice, AutocompleteInteraction, CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
+import { CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
 
 @Discord()
 class Rolesub {
@@ -89,20 +89,6 @@ class Rolesub {
     @SlashOption('role', {
       required: false,
       description: 'Get the role list or select a role to add/remove',
-      autocomplete: (interaction: AutocompleteInteraction) => {
-        const options =
-          interaction.guild?.roles.cache
-            .filter((role) => role.name.endsWith('[BOT]'))
-            .map((role) => {
-              const roleName = role.name.substring(0, role.name.length - 6)
-              return <ApplicationCommandOptionChoice>{
-                name: roleName,
-                value: roleName.toLowerCase(),
-              }
-            }) ?? []
-        options.sort((a, b) => a.name.localeCompare(b.name)).push({ name: 'Role List', value: 'list' })
-        interaction.respond(options)
-      },
       type: 'STRING',
     })
     roleName: string,
@@ -124,7 +110,11 @@ class Rolesub {
       .catch(console.error)
   }
 
-  private rolesub(roleName: string, guildRoles: RoleManager | undefined, memberRoles: GuildMemberRoleManager | undefined): string {
+  private rolesub(
+    roleName: string,
+    guildRoles: RoleManager | undefined,
+    memberRoles: GuildMemberRoleManager | undefined
+  ): string {
     if (!roleName) {
       return 'To use this command, get a role from `>rolesub list` and use `>rolesub ROLENAME` to join or leave it. These roles are meant to be quick ways to message everyone in the group when people are planning activities or for setting up channels for certain groups.'
     } else if (roleName.toLowerCase() === 'list') {
