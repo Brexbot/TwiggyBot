@@ -27,7 +27,7 @@ export class ColorRoles {
   @Guard(IsSuperUser)
   async simpleUncolor(command: SimpleCommandMessage) {
     let mentionedMember: GuildMember | undefined
-    if ((command.message.mentions.members?.size ?? 0) > 0 && command.message.member?.permissions?.has('MANAGE_ROLES')) {
+    if ((command.message.mentions.members?.size ?? 0) > 0) {
       mentionedMember = command.message.mentions.members?.first()
     }
 
