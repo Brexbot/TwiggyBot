@@ -1,11 +1,19 @@
-import { Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import {
+  Discord,
+  Permission,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  Slash,
+  SlashOption
+} from 'discordx'
 import { CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
-import { IsSuperUser } from '../../guards/RoleChecks'
+import { SuperUsers } from '../../guards/RoleChecks'
 
 @Discord()
 class Icon {
   @SimpleCommand('createicon')
-  @Guard(IsSuperUser)
+  @Permission(SuperUsers)
   async createIconRole(
     @SimpleCommandOption('emote', {
       description: 'The emote to create an icon role from',
@@ -45,7 +53,7 @@ class Icon {
   }
 
   @SimpleCommand('delicon')
-  @Guard(IsSuperUser)
+  @Permission(SuperUsers)
   async delRole(
     @SimpleCommandOption('emote', {
       description: 'The emote of the icon to delete',

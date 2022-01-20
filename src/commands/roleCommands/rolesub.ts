@@ -1,11 +1,19 @@
-import { Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import {
+  Discord,
+  Permission,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  Slash,
+  SlashOption
+} from 'discordx'
 import { CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
-import { IsSuperUser } from '../../guards/RoleChecks'
+import { SuperUsers } from '../../guards/RoleChecks'
 
 @Discord()
 class Rolesub {
   @SimpleCommand('createrole', { argSplitter: '\n' })
-  @Guard(IsSuperUser)
+  @Permission(SuperUsers)
   async createRole(
     @SimpleCommandOption('role_name', {
       description: 'The name of the role to be created',
@@ -37,7 +45,7 @@ class Rolesub {
   }
 
   @SimpleCommand('delrole', { argSplitter: '\n' })
-  @Guard(IsSuperUser)
+  @Permission(SuperUsers)
   async delRole(
     @SimpleCommandOption('role_name', {
       description: 'The name of the role to be created',

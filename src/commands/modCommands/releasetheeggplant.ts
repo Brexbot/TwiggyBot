@@ -1,14 +1,15 @@
 import { User } from 'discord.js'
-import { Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption } from 'discordx'
-import { IsSuperUser } from '../../guards/RoleChecks'
+import {Discord, Permission, SimpleCommand, SimpleCommandMessage, SimpleCommandOption} from 'discordx'
+import { SuperUsers } from '../../guards/RoleChecks'
 
 @Discord()
+@Permission(false)
+@Permission(SuperUsers)
 class ReleaseTheEggplant {
   @SimpleCommand('releasetheeggplant', {
     description: 'Release the eggplant on a user of your choosing',
     argSplitter: '\n',
   })
-  @Guard(IsSuperUser)
   simple(@SimpleCommandOption('name') name: User, command: SimpleCommandMessage) {
     if (!name) return command.message.reply('usage: ``>releasetheeggplant <user>``')
     let botId = command.message.client.user?.id
