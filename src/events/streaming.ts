@@ -1,10 +1,12 @@
 import { Presence } from 'discord.js'
-import type { ArgsOf } from 'discordx'
+import type { ArgsOf, IGuild } from 'discordx'
 import { Discord, On } from 'discordx'
 
 @Discord()
 export abstract class AppDiscord {
-  private streamingRoleId = '730137929124675615'
+  private static guildRoleMap = new Map<IGuild, string>([
+    ['103678524375699456', '730137929124675615'], // The Banana Hammock
+  ])
 
   private isStreaming(presence: Presence): boolean {
     return presence.activities.some((activity) => activity.type === 'STREAMING')
@@ -12,7 +14,13 @@ export abstract class AppDiscord {
 
   @On('presenceUpdate')
   async onUpdate([oldPresence, newPresence]: ArgsOf<'presenceUpdate'>) {
-    const role = newPresence.guild?.roles.cache.find((role) => role.id === this.streamingRoleId)
+    if (!AppDiscord.guildRoleMap.has(newPresence.guild?.id ?? '')) {
+      return
+    }
+
+    const role = newPresence.guild?.roles.cache.find(
+      (role) => role.id === AppDiscord.guildRoleMap.get(newPresence.guild?.id ?? '')
+    )
     if (!role) {
       console.error('Could not find the streaming role.')
       return
