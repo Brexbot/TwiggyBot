@@ -12,7 +12,7 @@ abstract class hibob {
     [message]: ArgsOf<'messageCreate'>
   ) {
     if (message.author.id === this.bobID && !this.inTimeout()) {
-      message.channel.send(`Hi, ${message.member}!`)
+      message.channel.send(`Hi, blob!`)
       this.lastHibob = Math.floor(new Date().getTime() / 1000)
     }
   }
