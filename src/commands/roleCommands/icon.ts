@@ -13,6 +13,7 @@ import { SuperUsers } from '../../guards/RoleChecks'
 @Discord()
 class Icon {
   @SimpleCommand('createicon')
+  @Permission(false)
   @Permission(SuperUsers)
   async createIconRole(
     @SimpleCommandOption('emote', {
@@ -53,6 +54,7 @@ class Icon {
   }
 
   @SimpleCommand('delicon')
+  @Permission(false)
   @Permission(SuperUsers)
   async delRole(
     @SimpleCommandOption('emote', {

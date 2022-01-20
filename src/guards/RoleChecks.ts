@@ -13,7 +13,7 @@ import {
 
 export const superUserIds = [
   '89926310410850304', // BRex
-  //'117728334854619142', // Zuzuvelas
+  '117728334854619142', // Zuzuvelas
 ].map((id): ApplicationCommandPermissions => ({ id: id, type: 'USER', permission: true }))
 
 export const superUserRoles = [

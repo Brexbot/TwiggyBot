@@ -32,6 +32,7 @@ export class ColorRoles {
   public constructor(private client: ORM) {}
 
   @SimpleCommand('uncolor')
+  @Permission(false)
   @Permission(SuperUsers)
   async simpleUncolor(command: SimpleCommandMessage) {
     let mentionedMember: GuildMember | undefined

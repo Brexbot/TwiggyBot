@@ -12,6 +12,7 @@ class SetGamble {
   public constructor(private client: ORM) {}
 
   @SimpleCommand('gamblechance')
+  @Permission(false)
   @Permission(SuperUsers)
   async simpleGambleChance(
     @SimpleCommandOption('gamblechance')

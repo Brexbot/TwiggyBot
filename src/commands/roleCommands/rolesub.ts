@@ -13,6 +13,7 @@ import { SuperUsers } from '../../guards/RoleChecks'
 @Discord()
 class Rolesub {
   @SimpleCommand('createrole', { argSplitter: '\n' })
+  @Permission(false)
   @Permission(SuperUsers)
   async createRole(
     @SimpleCommandOption('role_name', {
@@ -45,6 +46,7 @@ class Rolesub {
   }
 
   @SimpleCommand('delrole', { argSplitter: '\n' })
+  @Permission(false)
   @Permission(SuperUsers)
   async delRole(
     @SimpleCommandOption('role_name', {
