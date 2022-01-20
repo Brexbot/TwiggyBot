@@ -1,10 +1,10 @@
 import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
-import { CommandInteraction, GuildEmojiManager, GuildMemberRoleManager, RoleManager } from 'discord.js'
+import { CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
 
 @Discord()
 class Icon {
   // todo: Should probably be in some global along with other SU ids
-  private modRoleId = '754737174162702448' //'103679575694774272'
+  private modRoleId = '754737174162702448'
 
   @SimpleCommand('createicon')
   async createIconRole(
@@ -88,12 +88,7 @@ class Icon {
     emote: string,
     command: SimpleCommandMessage
   ) {
-    const msg = this.icon(
-      emote,
-      command.message.guild?.emojis,
-      command.message.guild?.roles,
-      command.message.member?.roles
-    )
+    const msg = await this.icon(emote, command.message.guild?.roles, command.message.member?.roles)
     await command.message
       .reply({
         content: msg,
@@ -119,7 +114,7 @@ class Icon {
       return
     }
 
-    const msg = this.icon(emote, interaction.guild?.emojis, interaction.guild?.roles, memberRoles)
+    const msg = await this.icon(emote, interaction.guild?.roles, memberRoles)
     await interaction
       .reply({
         content: msg,
@@ -130,38 +125,39 @@ class Icon {
       .catch(console.error)
   }
 
-  private icon(
-    roleName: string,
-    guildEmotes: GuildEmojiManager | undefined,
+  private async icon(
+    emoteName: string,
     guildRoles: RoleManager | undefined,
     memberRoles: GuildMemberRoleManager | undefined
-  ): string {
-    if (!roleName) {
-      return 'To use this command, get an icon from `>icon list` and use `>icon :emote:` to add or remove it.'
-    } else if (roleName.toLowerCase() === 'list') {
+  ): Promise<string> {
+    if (!emoteName) {
+      return 'To use this command, get an icon from `>icon list` and use `>icon [EmoteName]` to add or remove it.'
+    } else if (emoteName.toLowerCase() === 'list') {
       // todo: make this print a little prettier... text embed?
-      const roles = guildRoles?.cache
+      const iconRoles = guildRoles?.cache
         .filter((role) => role.name.endsWith('[ICON]'))
-        .map((role) => {
-          const emote: string = guildEmotes?.cache?.find((emote) => emote.name === roleName)?.toString() ?? ''
-          ;`${emote} ${role.name}`
-        })
+        .map((role) => `${role.icon} ${role.name}`)
         .join(', ')
 
-      if (!roles || roles.length < 1) {
+      if (!iconRoles || iconRoles.length < 1) {
         return 'There are no icons on the server.'
       } else {
-        return roles
+        return iconRoles
       }
     }
 
-    const modifiedRoleName = `${roleName} [ICON]`
+    const modifiedRoleName = `${emoteName} [ICON]`
     const whichRole = guildRoles?.cache.find((role) => role.name.toLowerCase() === modifiedRoleName.toLowerCase())
     if (whichRole) {
       if (memberRoles?.cache.some((role) => role.id === whichRole.id)) {
-        memberRoles?.remove(whichRole).catch(console.error)
+        await memberRoles?.remove(whichRole).catch(console.error)
         return `${whichRole.name} has been removed.`
       } else {
+        const existingRole = memberRoles?.cache.find((role) => role.name.endsWith('[ICON]'))
+        if (existingRole) {
+          await memberRoles?.remove(existingRole).catch(console.error)
+        }
+
         memberRoles?.add(whichRole).catch(console.error)
         return `${whichRole.name} has been added.`
       }
