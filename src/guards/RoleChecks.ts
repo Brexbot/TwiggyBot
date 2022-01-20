@@ -1,4 +1,4 @@
-import type { ArgsOf } from 'discordx'
+import { ArgsOf, Permission } from 'discordx'
 import { GuardFunction, SimpleCommandMessage } from 'discordx'
 import {
   ApplicationCommandPermissions,
@@ -22,6 +22,19 @@ export const superUserRoles = [
 ].map((id): ApplicationCommandPermissions => ({ id: id, type: 'ROLE', permission: true }))
 
 export const SuperUsers = superUserIds.concat(superUserRoles)
+
+export const PermissionSuperUserOnly = () => {
+  return PermissionFactory(SuperUsers)
+}
+
+const PermissionFactory = (perm: ApplicationCommandPermissions | ApplicationCommandPermissions[]) => {
+  // Seems like this has to be `any` sadly
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (target: Record<string, any>, propertyKey: string, descriptor: PropertyDescriptor): void => {
+    Permission(false)(target, propertyKey, descriptor)
+    Permission(perm)(target, propertyKey, descriptor)
+  }
+}
 
 // From https://discord-ts.js.org/docs/decorators/general/guard/#guard-datas
 export const NotBot: GuardFunction<

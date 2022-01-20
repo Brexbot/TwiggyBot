@@ -1,26 +1,10 @@
 import { CommandInteraction, Guild, GuildMember, GuildMemberRoleManager, User } from 'discord.js'
-import {
-  Discord,
-  Permission,
-  SimpleCommand,
-  SimpleCommandMessage,
-  SimpleCommandOption,
-  Slash,
-  SlashOption,
-} from 'discordx'
+import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import { PermissionSuperUserOnly } from '../guards/RoleChecks'
 
 @Discord()
 abstract class Timeout {
-  // TODO: import roles from global config
-  private modRoles = [
-    '103679575694774272', // Brex Mods
-    '104750975268483072', // Brex scum
-  ]
   private gozId = '104819134017118208'
-
-  hasModPowers(member: GuildMember | null): boolean {
-    return member?.roles.cache.some((role) => this.modRoles.includes(role.id)) ?? false
-  }
 
   hasPermission(command: SimpleCommandMessage | CommandInteraction, target?: GuildMember): boolean {
     let guild: Guild | null
@@ -85,16 +69,13 @@ abstract class Timeout {
   }
 
   @SimpleCommand('timeout')
+  @PermissionSuperUserOnly()
   async timeoutCommand(
     @SimpleCommandOption('user', { type: 'USER' }) user: GuildMember | User | undefined,
     @SimpleCommandOption('duration', { type: 'NUMBER' }) duration: number | undefined,
     command: SimpleCommandMessage
   ) {
-    if (
-      !(user instanceof GuildMember) ||
-      !this.hasModPowers(command.message.member) ||
-      !this.hasPermission(command, user)
-    ) {
+    if (!(user instanceof GuildMember) || !this.hasPermission(command, user)) {
       return
     }
 
@@ -115,22 +96,13 @@ abstract class Timeout {
   }
 
   @Slash('timeout')
-  @Permission(false)
-  // TODO: import roles from global config
-  @Permission({ id: '103679575694774272', type: 'ROLE', permission: true }) // Brex Mods
-  @Permission({ id: '104750975268483072', type: 'ROLE', permission: true }) // Brex scum
+  @PermissionSuperUserOnly()
   async timeoutInteraction(
     @SlashOption('user', { type: 'USER', description: 'User you want to timeout' }) user: GuildMember,
     @SlashOption('duration', { type: 'NUMBER', description: 'Duration of the timeout in seconds' }) duration: number,
     interaction: CommandInteraction
   ) {
-    if (
-      !(interaction.member instanceof GuildMember) ||
-      // This should never fail but I'm not familiar enough
-      // with interaction permissions to know for sure
-      !this.hasModPowers(interaction.member) ||
-      !this.hasPermission(interaction, user)
-    ) {
+    if (!(interaction.member instanceof GuildMember) || !this.hasPermission(interaction, user)) {
       await interaction.reply({ content: 'Cannot timeout user.', ephemeral: true })
       return
     }
