@@ -4,7 +4,7 @@
   "description": "Bot for the Bananasaurus_Rex Discord server",
   "main": "./build/main.js",
   "scripts": {
-    "build": "tsc",
+    "build": "rimraf ./build && tsc",
     "dev": "node --loader ts-node/esm/transpile-only src/main.ts",
     "start": "nodemon --exec node --loader ts-node/esm/transpile-only src/main.ts",
     "serve": "node build/main.js",
@@ -29,6 +29,7 @@
     "eslint-plugin-prettier": "^4.0.0",
     "nodemon": "^2.0.15",
     "prettier": "^2.5.1",
+    "rimraf": "^3.0.2",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.4"
   },
