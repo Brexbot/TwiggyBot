@@ -1,5 +1,6 @@
 import { CommandInteraction } from 'discord.js'
 import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import { uwuify } from './uwu'
 import fetch from 'node-fetch'
 
 interface Quote {
@@ -24,57 +25,69 @@ class quoteCommand {
   @Slash('quote', { description: 'Get server quote' })
   private async quoteSlash(
     @SlashOption('quoteid', { type: 'NUMBER', required: false })
-    id: number,
+    id: number | undefined,
     interaction: CommandInteraction
   ) {
     await interaction.deferReply()
-
-    await this.updateQuotes().then(async () => {
-      if (id) {
-        const quote = this.quotes.find((quote) => quote.id == id)
-        if (!quote) {
-          await interaction.followUp(`Unable to find quote with ID ${id}`)
-        } else {
-          await interaction.followUp(quote.body)
-        }
-      } else {
-        const randomQuote = this.getRandomQuote()
-        if (randomQuote) {
-          await interaction.followUp(randomQuote.body)
-        } else {
-          await interaction.followUp('Unable to get quotes.')
-        }
-      }
-    })
+    await this.generateMessage(id).then(
+      async ([message, error]) => await interaction.followUp({ content: message, ephemeral: error })
+    )
   }
 
   @SimpleCommand('quote', { description: 'Get server quote', argSplitter: '\n' })
   private async quoteSimple(
     @SimpleCommandOption('id', { type: 'NUMBER' })
-    id: number,
+    id: number | undefined,
     command: SimpleCommandMessage
   ) {
-    await this.updateQuotes().then(async () => {
-      const channel = command.message.channel
-      if (id) {
-        const quote = this.quotes.find((quote) => quote.id == id)
-        if (!quote) {
-          await channel.send(`Unable to find quote with ID ${id}`)
-        } else {
-          await channel.send(quote.body)
-        }
+    await this.generateMessage(id).then(
+      async ([message, _]) => await command.message.reply({ content: message, allowedMentions: { repliedUser: false } })
+    )
+  }
+
+  @Slash('quwuote', { description: 'Get sewvew quwuote' })
+  private async quwuoteSlash(
+    @SlashOption('quwuoteid', { type: 'NUMBER', required: false })
+    id: number | undefined,
+    interaction: CommandInteraction
+  ) {
+    await interaction.deferReply()
+    await this.generateMessage(id, uwuify).then(
+      async ([message, error]) => await interaction.followUp({ content: message, ephemeral: error })
+    )
+  }
+
+  @SimpleCommand('quwuote', { description: 'Get sewvew quwuote', argSplitter: '\n' })
+  private async quwuoteSimple(
+    @SimpleCommandOption('id', { type: 'NUMBER' })
+    id: number | undefined,
+    command: SimpleCommandMessage
+  ) {
+    await this.generateMessage(id, uwuify).then(
+      async ([message, _]) => await command.message.reply({ content: message, allowedMentions: { repliedUser: false } })
+    )
+  }
+
+  private async generateMessage(quoteId?: number, modifier = (a: string) => a): Promise<[string, boolean]> {
+    return await this.updateQuotes().then(async () => {
+      let quote: Quote | undefined | null = undefined
+      if (quoteId) {
+        quote = this.quotes.find((quote) => quote.id == quoteId)
       } else {
-        const randomQuote = this.getRandomQuote()
-        if (randomQuote) {
-          await channel.send(randomQuote.body)
-        } else {
-          await channel.send('Unable to get quotes.')
-        }
+        quote = this.getRandomQuote()
       }
+
+      if (!quote) {
+        if (quoteId) {
+          return [modifier(`Unable to find quote #${quoteId}`), true]
+        }
+        return [modifier('Unable to get quote. Something went wrong.'), true]
+      }
+      return [modifier(quote.body), false]
     })
   }
 
-  private getRandomQuote(): Quote|null {
+  private getRandomQuote(): Quote | null {
     if (this.quotes.length == 0) {
       return null
     }
