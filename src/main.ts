@@ -49,7 +49,7 @@ client.once('ready', async () => {
 client.on('interactionCreate', (interaction: Interaction) => {
   // This should always be a Promise... if it isn't then something is horribly wrong, and we deserve to crash
   try {
-    ;(client.executeInteraction(interaction) as Promise<unknown>).catch((error) => {
+    (client.executeInteraction(interaction) as Promise<unknown>).catch((error) => {
       console.error(`[Interaction] An unexpected error occurred: ${error}`)
     })
   } catch (error) {
