@@ -120,16 +120,15 @@ class Rolesub {
     if (!roleName) {
       return 'To use this command, get a role from `>rolesub list` and use `>rolesub ROLENAME` to join or leave it. These roles are meant to be quick ways to message everyone in the group when people are planning activities or for setting up channels for certain groups.'
     } else if (roleName.toLowerCase() === 'list') {
-      // todo: make this print a little prettier... text embed?
       const roles = guildRoles?.cache
         .filter((role) => role.name.endsWith('[BOT]'))
-        .map((role) => role.name)
-        .join(', ')
+        .map((role) => role.name.replace(' [BOT]', ''))
 
       if (!roles || roles.length < 1) {
         return 'There are no roles on the server.'
       } else {
-        return roles
+        roles.sort()
+        return `**Roles:** ${roles.join(', ')}`
       }
     }
 

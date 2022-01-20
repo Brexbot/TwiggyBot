@@ -135,16 +135,15 @@ class Icon {
     if (!emoteName) {
       return 'To use this command, get an icon from `>icon list` and use `>icon [EmoteName]` to add or remove it.'
     } else if (emoteName.toLowerCase() === 'list') {
-      // todo: make this print a little prettier... text embed?
       const iconRoles = guildRoles?.cache
         .filter((role) => role.name.endsWith('[ICON]'))
-        .map((role) => role.name)
-        .join(', ')
+        .map((role) => role.name.replace(' [ICON]', ''))
 
       if (!iconRoles || iconRoles.length < 1) {
         return 'There are no icons on the server.'
       } else {
-        return iconRoles
+        iconRoles.sort()
+        return `**Icons:** ${iconRoles.join(', ')}`
       }
     }
 
