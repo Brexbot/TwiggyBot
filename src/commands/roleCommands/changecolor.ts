@@ -1,8 +1,9 @@
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import { Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
 import { CommandInteraction, Formatters, Guild, GuildMember, HexColorString } from 'discord.js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
 import { GuildOptions, Prisma } from '../../../prisma/generated/prisma-client-js'
+import { IsSuperUser } from '../../guards/RoleChecks'
 
 @Discord()
 @injectable()
@@ -23,11 +24,8 @@ export class ColorRoles {
   public constructor(private client: ORM) {}
 
   @SimpleCommand('uncolor')
+  @Guard(IsSuperUser)
   async simpleUncolor(command: SimpleCommandMessage) {
-    if (!command.message.member?.roles.cache.some((_, id) => ColorRoles.modRoles.includes(id)) ?? true) {
-      return Promise.reject('Caller was not a mod')
-    }
-
     let mentionedMember: GuildMember | undefined
     if ((command.message.mentions.members?.size ?? 0) > 0 && command.message.member?.permissions?.has('MANAGE_ROLES')) {
       mentionedMember = command.message.mentions.members?.first()

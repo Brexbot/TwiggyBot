@@ -1,22 +1,15 @@
-import { CommandInteraction, User } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import { User } from 'discord.js'
+import { Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption } from 'discordx'
+import { IsSuperUser } from '../../guards/RoleChecks'
 
 @Discord()
 class ReleaseTheEggplant {
-  private static modRoles = [
-    '103679575694774272', // BRex Mods
-    '104750975268483072', // BRex Ultimate Scum
-  ]
-
   @SimpleCommand('releasetheeggplant', {
     description: 'Release the eggplant on a user of your choosing',
     argSplitter: '\n',
   })
+  @Guard(IsSuperUser)
   simple(@SimpleCommandOption('name') name: User, command: SimpleCommandMessage) {
-    if (!command.message.member?.roles.cache.some((_, id) => ReleaseTheEggplant.modRoles.includes(id)) ?? true) {
-      return Promise.reject('Caller was not a mod')
-    }
-
     if (!name) return command.message.reply('usage: ``>releasetheeggplant <user>``')
     let botId = command.message.client.user?.id
     let thisBot = command.message.guild?.members.cache.find((u) => u.id === botId)

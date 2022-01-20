@@ -1,12 +1,11 @@
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import { Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
 import { CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
+import { IsSuperUser } from '../../guards/RoleChecks'
 
 @Discord()
 class Icon {
-  // todo: Should probably be in some global along with other SU ids
-  private modRoleId = '754737174162702448'
-
   @SimpleCommand('createicon')
+  @Guard(IsSuperUser)
   async createIconRole(
     @SimpleCommandOption('emote', {
       description: 'The emote to create an icon role from',
@@ -14,10 +13,6 @@ class Icon {
     emote: string,
     command: SimpleCommandMessage
   ) {
-    if (!command.message.member?.roles?.cache.some((role) => role.id === this.modRoleId)) {
-      return
-    }
-
     if (!emote) {
       return command.sendUsageSyntax()
     }
@@ -50,6 +45,7 @@ class Icon {
   }
 
   @SimpleCommand('delicon')
+  @Guard(IsSuperUser)
   async delRole(
     @SimpleCommandOption('emote', {
       description: 'The emote of the icon to delete',
@@ -57,10 +53,6 @@ class Icon {
     emote: string,
     command: SimpleCommandMessage
   ) {
-    if (!command.message.member?.roles?.cache.some((role) => role.id === this.modRoleId)) {
-      return
-    }
-
     if (!emote) {
       return command.sendUsageSyntax()
     }

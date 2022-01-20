@@ -1,30 +1,23 @@
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption } from 'discordx'
+import { Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption } from 'discordx'
 import { GuildOptions, Prisma } from '../../../prisma/generated/prisma-client-js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
+import { IsSuperUser } from '../../guards/RoleChecks'
 
 @Discord()
 @injectable()
 class SetGamble {
-  private static modRoles = [
-    '103679575694774272', // BRex Mods
-    '104750975268483072', // BRex Ultimate Scum
-  ]
-
   private static guildOptions: GuildOptions
 
   public constructor(private client: ORM) {}
 
   @SimpleCommand('gamblechance')
+  @Guard(IsSuperUser)
   async simpleGambleChance(
     @SimpleCommandOption('gamblechance')
     gambleChance: number,
     command: SimpleCommandMessage
   ) {
-    if (!command.message.member?.roles.cache.some((_, id) => SetGamble.modRoles.includes(id)) ?? true) {
-      return Promise.reject('Caller was not a mod')
-    }
-
     const guildId = command.message.guildId ?? '-1'
     if (!SetGamble.guildOptions) {
       SetGamble.guildOptions = await this.client.guildOptions.upsert({
