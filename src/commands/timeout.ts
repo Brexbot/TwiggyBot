@@ -142,6 +142,7 @@ abstract class Timeout {
 
     // Max timeout is 10 days
     if (duration > 10 * 24 * 60 * 60 * 1000) {
+      await interaction.reply({ content: 'Duration exceeds the 10 days limit.', ephemeral: true })
       return
     }
 
