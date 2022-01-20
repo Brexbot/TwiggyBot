@@ -2,8 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "./generated/prisma-client-js"
+  provider      = "prisma-client-js"
+  output        = "./generated/prisma-client-js"
   binaryTargets = ["native"]
 }
 
@@ -12,21 +12,29 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-model UserOptions {
-  userId   String  @id @unique
-  favColor String?
+model GuildOptions {
+  guildId      String  @id @unique
+  gambleChance Decimal @default(33.33)
+}
+
+model User {
+  id        String   @id @unique
+  favColor  String?
+  duelStats Duels[]
+  lastLoss  DateTime @default(dbgenerated("0"))
 }
 
 model Duels {
-  userId        String   @unique
-  lastLoss      DateTime @default(dbgenerated("0"))
-  losses        Int      @default(0)
-  wins          Int      @default(0)
-  draws         Int      @default(0)
-  winStreak     Int      @default(0)
-  lossStreak    Int      @default(0)
-  winStreakMax  Int      @default(0)
-  lossStreakMax Int      @default(0)
+  id            Int    @id @default(autoincrement())
+  user          User   @relation(fields: [userId], references: [id])
+  userId        String
+  losses        Int    @default(0)
+  wins          Int    @default(0)
+  draws         Int    @default(0)
+  winStreak     Int    @default(0)
+  lossStreak    Int    @default(0)
+  winStreakMax  Int    @default(0)
+  lossStreakMax Int    @default(0)
 }
 
 model BestMixu {

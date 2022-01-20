@@ -3,6 +3,7 @@ import { Intents, Interaction, Message } from 'discord.js'
 import { Client, DIService } from 'discordx'
 import { container } from 'tsyringe'
 import { importx } from '@discordx/importer'
+import { NotBot } from './guards/RoleChecks'
 
 const client = new Client({
   simpleCommand: {
@@ -20,6 +21,7 @@ const client = new Client({
   partials: ['CHANNEL'],
   // If you only want to use global commands only, comment this line
   botGuilds: [(client) => client.guilds.cache.map((guild) => guild.id)],
+  guards: [NotBot],
 })
 
 client.once('ready', async () => {
@@ -46,15 +48,23 @@ client.once('ready', async () => {
 
 client.on('interactionCreate', (interaction: Interaction) => {
   // This should always be a Promise... if it isn't then something is horribly wrong, and we deserve to crash
-  (client.executeInteraction(interaction) as Promise<unknown>).catch((error) => {
-    console.error(`[Interaction] An unexpected error occurred: ${error}`)
-  })
+  try {
+    (client.executeInteraction(interaction) as Promise<unknown>).catch((error) => {
+      console.error(`[Interaction] An unexpected error occurred: ${error}`)
+    })
+  } catch (error) {
+    console.error(error)
+  }
 })
 
 client.on('messageCreate', (message: Message) => {
-  client.executeCommand(message).catch((error) => {
-    console.error(`[Simple] An unexpected error occurred: ${error}`)
-  })
+  try {
+    client.executeCommand(message).catch((error) => {
+      console.error(`[Simple] An unexpected error occurred: ${error}`)
+    })
+  } catch (error) {
+    console.error(error)
+  }
 })
 
 async function run() {
