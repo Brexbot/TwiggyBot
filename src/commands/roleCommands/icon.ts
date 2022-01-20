@@ -138,7 +138,7 @@ class Icon {
       // todo: make this print a little prettier... text embed?
       const iconRoles = guildRoles?.cache
         .filter((role) => role.name.endsWith('[ICON]'))
-        .map((role) => `${role.icon} ${role.name}`)
+        .map((role) => role.name)
         .join(', ')
 
       if (!iconRoles || iconRoles.length < 1) {
