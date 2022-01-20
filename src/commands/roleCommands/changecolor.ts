@@ -205,6 +205,10 @@ export class ColorRoles {
     if (color === 'LAZY') {
       if (userOptions.favColor) {
         color = userOptions.favColor
+
+        if (member.roles.cache.some((role) => role.name === color)) {
+          return 'Wow, you really are lazy... you already have your favorite color! 🎉'
+        }
       } else {
         return 'You have not registered a color. Set the `favorite` param to true the next time you change your color.'
       }
