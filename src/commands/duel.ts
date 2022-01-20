@@ -1,4 +1,4 @@
-import { ButtonInteraction, CommandInteraction, MessageButton, MessageActionRow, Message } from 'discord.js'
+import { ButtonInteraction, CommandInteraction, MessageButton, MessageActionRow, Message, Formatters } from 'discord.js'
 import { Discord, Slash } from 'discordx'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence/ORM'
@@ -31,7 +31,10 @@ class Duel {
 
     // Check if a duel is currently already going on.
     if (this.inProgress) {
-      await interaction.followUp('A duel is already in progress.')
+      await interaction.followUp({
+        content: 'A duel is already in progress.',
+        ephemeral: true,
+      })
       return
     }
 
@@ -42,6 +45,7 @@ class Duel {
         content: `${challengerName}, you have recently lost a duel or gamble. Please wait ${Math.round(
           remaining / 60
         )} minutes before trying again.`,
+        ephemeral: true,
       })
       return
     }
@@ -54,7 +58,7 @@ class Duel {
       const button = this.createButton(true)
       const row = new MessageActionRow().addComponents(button)
       await interaction.editReply({
-        content: `${challenger} failed to find someone to duel.`,
+        content: `${challengerName} failed to find someone to duel.`,
         components: [row],
       })
       this.inProgress = false
@@ -89,6 +93,7 @@ class Duel {
           content: `${acceptorName}, you have recently lost a duel or gamble. Please wait ${Math.round(
             remaining / 60
           )} minutes before trying again.`,
+          ephemeral: true,
         })
       } else if (!this.inProgress) {
         // This case is not really supposed to happen because you should not be able to accept a duel after it has expired
@@ -96,7 +101,10 @@ class Duel {
 
         // Check if there is no current duel
         await collectionInteraction.followUp({
-          content: `There is no duel right now, it has probably expired. Use /duel to create one.`,
+          content: `Someone beat you to the challenge! (or the duel expired... who knows!). You may issue a new challenge with ${Formatters.inlineCode(
+            '/duel'
+          )}.`,
+          ephemeral: true,
         })
         // Disable the button
         const button = this.createButton(true)
@@ -271,7 +279,7 @@ class Duel {
             },
             data: {
               duelStats: {
-                create: [{ }],
+                create: [{}],
               },
             },
             include: {

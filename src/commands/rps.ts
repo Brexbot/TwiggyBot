@@ -138,7 +138,8 @@ class RPS {
     if (this.plays[player.id]) {
       return;
     }
-    if (message.content !== 'rock' && message.content !== 'paper' && message.content !== 'scissors') {
+    const playerChoice = message.content.toLowerCase()
+    if (playerChoice !== 'rock' && playerChoice !== 'paper' && playerChoice !== 'scissors') {
       this.expect_play(player);
     }
 

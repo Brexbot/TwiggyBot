@@ -1,12 +1,20 @@
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import {
+  Discord,
+  Permission,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  Slash,
+  SlashOption
+} from 'discordx'
 import { CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
+import { SuperUsers } from '../../guards/RoleChecks'
 
 @Discord()
 class Rolesub {
-  // todo: Should probably be in some global along with other SU ids
-  private modRoleId = '103679575694774272'
-
   @SimpleCommand('createrole', { argSplitter: '\n' })
+  @Permission(false)
+  @Permission(SuperUsers)
   async createRole(
     @SimpleCommandOption('role_name', {
       description: 'The name of the role to be created',
@@ -14,10 +22,6 @@ class Rolesub {
     roleName: string,
     command: SimpleCommandMessage
   ) {
-    if (!command.message.member?.roles?.cache.some((role) => role.id === this.modRoleId)) {
-      return
-    }
-
     if (!roleName) {
       return command.sendUsageSyntax()
     }
@@ -42,6 +46,8 @@ class Rolesub {
   }
 
   @SimpleCommand('delrole', { argSplitter: '\n' })
+  @Permission(false)
+  @Permission(SuperUsers)
   async delRole(
     @SimpleCommandOption('role_name', {
       description: 'The name of the role to be created',
@@ -49,10 +55,6 @@ class Rolesub {
     roleName: string,
     command: SimpleCommandMessage
   ) {
-    if (!command.message.member?.roles?.cache.some((role) => role.id === this.modRoleId)) {
-      return
-    }
-
     if (!roleName) {
       return command.sendUsageSyntax()
     }

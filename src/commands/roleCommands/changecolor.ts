@@ -1,8 +1,17 @@
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import {
+  Discord,
+  Permission,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  Slash,
+  SlashOption
+} from 'discordx'
 import { CommandInteraction, Formatters, Guild, GuildMember, HexColorString } from 'discord.js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
 import { GuildOptions, Prisma } from '../../../prisma/generated/prisma-client-js'
+import { SuperUsers } from '../../guards/RoleChecks'
 
 @Discord()
 @injectable()
@@ -23,13 +32,11 @@ export class ColorRoles {
   public constructor(private client: ORM) {}
 
   @SimpleCommand('uncolor')
+  @Permission(false)
+  @Permission(SuperUsers)
   async simpleUncolor(command: SimpleCommandMessage) {
-    if (!command.message.member?.roles.cache.some((_, id) => ColorRoles.modRoles.includes(id)) ?? true) {
-      return Promise.reject('Caller was not a mod')
-    }
-
     let mentionedMember: GuildMember | undefined
-    if ((command.message.mentions.members?.size ?? 0) > 0 && command.message.member?.permissions?.has('MANAGE_ROLES')) {
+    if ((command.message.mentions.members?.size ?? 0) > 0) {
       mentionedMember = command.message.mentions.members?.first()
     }
 
@@ -207,6 +214,10 @@ export class ColorRoles {
     if (color === 'LAZY') {
       if (userOptions.favColor) {
         color = userOptions.favColor
+
+        if (member.roles.cache.some((role) => role.name === color)) {
+          return 'Wow, you really are lazy... you already have your favorite color! 🎉'
+        }
       } else {
         return 'You have not registered a color. Set the `favorite` param to true the next time you change your color.'
       }

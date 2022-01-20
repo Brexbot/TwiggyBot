@@ -3,6 +3,7 @@ import { Intents, Interaction, Message } from 'discord.js'
 import { Client, DIService } from 'discordx'
 import { container } from 'tsyringe'
 import { importx } from '@discordx/importer'
+import { NotBot } from './guards/RoleChecks'
 
 const client = new Client({
   simpleCommand: {
@@ -20,6 +21,7 @@ const client = new Client({
   partials: ['CHANNEL'],
   // If you only want to use global commands only, comment this line
   botGuilds: [(client) => client.guilds.cache.map((guild) => guild.id)],
+  guards: [NotBot],
 })
 
 client.once('ready', async () => {
