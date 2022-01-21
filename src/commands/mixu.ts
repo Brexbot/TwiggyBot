@@ -49,7 +49,7 @@ class Mixu {
       }
       if (
         i % 4 != 3 && // not the last tile in the row
-        tile % 4 != 0 && // not a row end tile
+        (tile + 1) % 4 != 0 && // not a row end tile
         i + 1 < tiles.length &&
         tiles[i + 1] - tile === 1
       ) {
