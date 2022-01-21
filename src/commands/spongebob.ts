@@ -4,16 +4,16 @@ import { spongeCase } from 'sponge-case'
 
 @Discord()
 class Spongebob {
-  private mixuChannel = '930121577335496785'
+  private mainChannel = '103678524375699456'
 
   @SimpleCommand('sb', { description: 'Spongebobify text', argSplitter: '\n' })
   async simple(@SimpleCommandOption('text', { type: 'STRING' }) text: string | undefined, command: SimpleCommandMessage) {
     if (!text) {
-      await command.message.reply({content: "Usage: >sb <text> (More than 200 characters only in the #mixu channel" , allowedMentions: { repliedUser: false }})
+      await command.message.reply({content: "Usage: >sb <text> (More than 200 characters only outside of the main channel)" , allowedMentions: { repliedUser: false }})
       return
     }
-    if(text.length > 200 && command.message.channel.id !== this.mixuChannel) {
-      await command.message.reply({ content: 'Messages longer than 200 characters are only allowed in the #mixu channel.', allowedMentions: { repliedUser: false } })
+    if(text.length > 200 && command.message.channel.id === this.mainChannel) {
+      await command.message.reply({ content: 'Messages longer than 200 characters are only allowed outside of the main channel.', allowedMentions: { repliedUser: false } })
       return
     }
     await command.message.reply({content: spongeCase(text), allowedMentions: { repliedUser: false } } )
@@ -25,8 +25,8 @@ class Spongebob {
     message: string,
     interaction: CommandInteraction
   ) {
-    if(message.length > 200 && interaction.channel?.id !== this.mixuChannel) {
-      await interaction.reply({ content: 'Messages longer than 200 characters are only allowed in the #mixu channel.', ephemeral: true })
+    if(message.length > 200 && interaction.channel?.id === this.mainChannel) {
+      await interaction.reply({ content: 'Messages longer than 200 characters are only allowed outside of the main channel.', ephemeral: true })
       return
     }
     await interaction.reply(spongeCase(message))

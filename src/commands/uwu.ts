@@ -22,7 +22,7 @@ export const uwuify = (text: string): string => {
 
 @Discord()
 class UwU {
-  private mixuChannel = '930121577335496785'
+  private mainChannel = '103678524375699456'
 
   @SimpleCommand('uwu', { description: 'UwUify text', argSplitter: '\n' })
   async simple(
@@ -30,12 +30,12 @@ class UwU {
     command: SimpleCommandMessage
   ) {
     if (!text) {
-      await command.message.reply({content: "Usage: >uwu <text> (More than 200 characters only in the #mixu channel" , allowedMentions: { repliedUser: false }})
+      await command.message.reply({content: "Usage: >uwu <text> (More than 200 characters only outside of the main channel)" , allowedMentions: { repliedUser: false }})
       return
     }
 
-    if(text.length > 200 && command.message.channel.id !== this.mixuChannel) {
-      await command.message.reply({ content: 'Messages longer than 200 characters are only allowed in the #mixu channel.', allowedMentions: { repliedUser: false } })
+    if(text.length > 200 && command.message.channel.id === this.mainChannel) {
+      await command.message.reply({ content: 'Messages longer than 200 characters are only allowed outside of the main channel.', allowedMentions: { repliedUser: false } })
       return
     }
     await command.message.reply({content: uwuify(text), allowedMentions: { repliedUser: false } } )
@@ -47,7 +47,7 @@ class UwU {
     text: string,
     interaction: CommandInteraction
   ) {
-    if(text.length > 200 && interaction.channel?.id !== this.mixuChannel) {
+    if(text.length > 200 && interaction.channel?.id === this.mainChannel) {
       interaction.reply({ content: 'Messages longer than 200 characters are only allowed in the #mixu channel.', ephemeral: true })
       return
     }
