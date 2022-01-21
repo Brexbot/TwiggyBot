@@ -1,4 +1,13 @@
-import { ButtonInteraction, CommandInteraction, MessageButton, MessageActionRow, Message, Formatters } from 'discord.js'
+import {
+  ButtonInteraction,
+  CommandInteraction,
+  MessageButton,
+  MessageActionRow,
+  Message,
+  Formatters,
+  GuildMember,
+  MessageEmbed,
+} from 'discord.js'
 import { Discord, Slash } from 'discordx'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence/ORM'
@@ -156,9 +165,17 @@ class Duel {
     })
   }
 
+  plural(streak: number, outcome: 'win' | 'loss'): string {
+    if (outcome === 'win') {
+      return streak === 1 ? 'win' : 'wins'
+    } else {
+      return streak === 1 ? 'loss' : 'losses'
+    }
+  }
+
   @Slash('duelstats', { description: 'Display your duel statistics' })
   private async duelStats(interaction: CommandInteraction) {
-    await interaction.deferReply()
+    await interaction.deferReply({ ephemeral: true })
 
     // TODO: Once/If we implement seasons this will need to change from findFirst
     const user = interaction.user
@@ -167,20 +184,35 @@ class Duel {
         userId: user.id,
       },
     })
-    if (stats) {
-      const statsMessage = [`${user}: ${stats.wins}-${stats.losses}-${stats.draws}`]
-      if (stats.winStreak > 0) {
+
+    const member = interaction.member
+    if (stats && member instanceof GuildMember) {
+      const { wins, winStreak, winStreakMax, losses, lossStreak, lossStreakMax, draws } = stats
+
+      let currentStreak = 'Current streak: '
+      if (winStreak > 0) {
         // User is currently on a win streak
-        statsMessage.push(`Win streak: ${stats.winStreak}`)
-      } else if (stats.lossStreak > 0) {
+        currentStreak += `**${winStreak} ${this.plural(winStreak, 'win')}**`
+      } else if (lossStreak > 0) {
         // User is currently on a loss streak
-        statsMessage.push(`Loss streak: ${stats.lossStreak}`)
+        currentStreak += `**${lossStreak} ${this.plural(lossStreak, 'loss')}**`
       } else {
         // User's last duel was a draw which reset both streaks
-        statsMessage.push(`Your last duel was a draw.`)
+        currentStreak = 'Your last duel was a draw'
       }
-      statsMessage.push(`Best win streak: ${stats.winStreakMax}`, `Worst loss streak: ${stats.lossStreakMax}`)
-      await interaction.followUp(statsMessage.join('\n'))
+      const bestStreak = `Best streak: **${winStreakMax} ${this.plural(winStreakMax, 'win')}**`
+      const worstStreak = `Worst streak: **${lossStreakMax} ${this.plural(lossStreakMax, 'loss')}**`
+
+      const statsEmbed = new MessageEmbed()
+        // Color is either the user or Firynth's
+        .setColor(member?.displayHexColor ?? '#77618F')
+        .setAuthor({
+          iconURL: member.user.avatarURL() ?? '',
+          name: `${member.nickname ?? member.user.username}'s scoresheet: ${wins}-${losses}-${draws}`,
+        })
+        .setDescription([currentStreak, bestStreak, worstStreak].join('\n'))
+
+      await interaction.followUp({ embeds: [statsEmbed] })
     } else {
       await interaction.followUp(`${user}, you have never duelled before.`)
     }
