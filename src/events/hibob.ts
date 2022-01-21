@@ -3,22 +3,26 @@ import { Discord, On } from 'discordx'
 
 @Discord()
 abstract class hibob {
-  private timeout = 60 * 60 * 24 // Cooldown of 1 day.
-  private lastHibob = 0 // Initializes most recent succesful message time.
-  private bobID = '104908485266817024' // Bob's user ID.
+  private cooldown = 60 * 60 * 6 // [seconds]. Cooldown of 6 hours.
+  private lastBlobMessage = 0 // Initializes most recent message time from Blob.
+  private blobID = '104908485266817024' // Blob's user ID.
   
   @On('messageCreate')
   private onMessage(
     [message]: ArgsOf<'messageCreate'>
   ) {
-    if (message.author.id === this.bobID && !this.inTimeout()) {
-      message.channel.send(`Hi, ${message.member}!`)
-      this.lastHibob = Math.floor(new Date().getTime() / 1000)
+    if (message.author.id === this.blobID) {
+      // Check whether it has been <cooldown> seconds since last message.
+      if (!this.hasCooldown()) {
+        message.channel.send(`Hi, Blob!`)
+      }
+      // Update most recent message time.
+      this.lastBlobMessage = Math.floor(Date.now())
     }
   }
   
-  private inTimeout(): boolean {
-    return (Math.floor(new Date().getTime() / 1000)
-             - this.lastHibob) < this.timeout
+  private hasCooldown(): boolean {
+    return (Math.floor(Date.now()) - this.lastBlobMessage)
+             < this.cooldown * 1000
   }
 }
