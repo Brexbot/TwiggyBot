@@ -5,7 +5,7 @@ import {
   SimpleCommandMessage,
   SimpleCommandOption,
   Slash,
-  SlashOption
+  SlashOption,
 } from 'discordx'
 import { CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
 import { SuperUsers } from '../../guards/RoleChecks'
@@ -147,7 +147,7 @@ class Icon {
       }
     }
 
-    const modifiedRoleName = `${emoteName} [ICON]`
+    const modifiedRoleName = `${Icon.parseEmoteName(emoteName)} [ICON]`
     const whichRole = guildRoles?.cache.find((role) => role.name.toLowerCase() === modifiedRoleName.toLowerCase())
     if (whichRole) {
       if (memberRoles?.cache.some((role) => role.id === whichRole.id)) {
@@ -167,12 +167,8 @@ class Icon {
     }
   }
 
-  private static parseEmoteName(emote: string): string | undefined {
+  private static parseEmoteName(emote: string): string {
     const emoteName = emote.match(RegExp(':(.+):'))
-    if (emoteName) {
-      return emoteName[1]
-    } else {
-      return undefined
-    }
+    return emoteName ? emoteName[1] : emote
   }
 }
