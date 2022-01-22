@@ -168,12 +168,7 @@ class Icon {
   }
 
   private static parseEmoteName(emote: string): string {
-    if (emote.includes(':')) {
-      const emoteName = emote.match(RegExp(':(.+):'))
-      if (emoteName) {
-        return emoteName[1]
-      }
-    }
-    return emote
+    const emoteName = emote.match(RegExp(':(.+):'))
+    return emoteName ? emoteName[1] : emote
   }
 }
