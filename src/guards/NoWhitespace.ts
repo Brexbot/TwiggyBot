@@ -8,6 +8,7 @@ export const NoWhitespace: GuardFunction<ArgsOf<'messageCreate'> | SimpleCommand
 
   // We found that this could sometimes be null... not 100% sure why/how that happens
   if (!argObj) {
+    await next()
     return
   }
 
@@ -17,6 +18,7 @@ export const NoWhitespace: GuardFunction<ArgsOf<'messageCreate'> | SimpleCommand
   } else if (argObj instanceof Message) {
     message = argObj.content
   } else {
+    await next()
     return
   }
 
