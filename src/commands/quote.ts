@@ -83,7 +83,7 @@ class quoteCommand {
         }
         return [modifier('Unable to get quote. Something went wrong.'), true]
       }
-      return [modifier(quote.body), false]
+      return [modifier(`[${quote.id}] ${quote.body}`), false]
     })
   }
 
