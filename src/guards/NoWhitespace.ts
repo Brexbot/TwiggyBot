@@ -9,6 +9,7 @@ export const NoWhitespace: GuardFunction<ArgsOf<'messageCreate'> | SimpleCommand
   // We found that this could sometimes be null... not 100% sure why/how that happens
   if (!argObj) {
     await next()
+    return
   }
 
   let message: string
