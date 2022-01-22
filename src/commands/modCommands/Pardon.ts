@@ -11,7 +11,7 @@ class Pardon {
   public constructor(private client: ORM) {}
 
   @SimpleCommand('pardon')
-  async simpleUncolor(command: SimpleCommandMessage) {
+  async simplePardon(command: SimpleCommandMessage) {
     let mentionedMember: GuildMember | undefined
     if ((command.message.mentions.members?.size ?? 0) > 0) {
       mentionedMember = command.message.mentions.members?.first()
@@ -21,14 +21,16 @@ class Pardon {
       return
     }
 
-    await this.client.user.update({
-      where: {
-        id: mentionedMember.id,
-      },
-      data: {
-        lastLoss: new Date(0),
-        lastRandom: new Date(0),
-      },
-    })
+    await this.client.user
+      .update({
+        where: {
+          id: mentionedMember.id,
+        },
+        data: {
+          lastLoss: new Date(0),
+          lastRandom: new Date(0),
+        },
+      })
+      .then((_) => command.message.channel.send(`${mentionedMember?.nickname}, consider your sentence served.`))
   }
 }
