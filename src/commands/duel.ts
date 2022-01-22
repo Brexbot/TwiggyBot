@@ -175,7 +175,7 @@ class Duel {
 
   @Slash('duelstats', { description: 'Display your duel statistics' })
   private async duelStats(interaction: CommandInteraction) {
-    await interaction.deferReply({ ephemeral: true })
+    await interaction.deferReply()
 
     // TODO: Once/If we implement seasons this will need to change from findFirst
     const user = interaction.user
