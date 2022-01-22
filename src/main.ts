@@ -4,7 +4,7 @@ import { Client, DIService } from 'discordx'
 import { container } from 'tsyringe'
 import { importx } from '@discordx/importer'
 import { NotBot } from './guards/RoleChecks'
-import {NoWhitespace} from "./guards/NoWhitespace";
+import { NoWhitespace } from './guards/NoWhitespace'
 
 const client = new Client({
   simpleCommand: {
