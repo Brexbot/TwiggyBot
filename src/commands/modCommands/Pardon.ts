@@ -1,12 +1,12 @@
 import { Discord, SimpleCommand, SimpleCommandMessage } from 'discordx'
-import { PermissionSuperUserOnly } from '../../guards/RoleChecks'
 import { GuildMember } from 'discord.js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
+import { PermissionSuperUserOnly } from '../../guards/RoleChecks'
 
 @Discord()
 @injectable()
-@PermissionSuperUserOnly()
+@PermissionSuperUserOnly
 class Pardon {
   public constructor(private client: ORM) {}
 
@@ -31,6 +31,10 @@ class Pardon {
           lastRandom: new Date(0),
         },
       })
-      .then((_) => command.message.channel.send(`${mentionedMember?.nickname}, consider your sentence served.`))
+      .then((_) =>
+        command.message.channel.send(
+          `${mentionedMember?.nickname ?? mentionedMember?.user.username}, consider your sentence served.`
+        )
+      )
   }
 }
