@@ -147,7 +147,7 @@ class Icon {
       }
     }
 
-    const modifiedRoleName = `${emoteName} [ICON]`
+    const modifiedRoleName = `${Icon.parseEmoteName(emoteName)} [ICON]`
     const whichRole = guildRoles?.cache.find((role) => role.name.toLowerCase() === modifiedRoleName.toLowerCase())
     if (whichRole) {
       if (memberRoles?.cache.some((role) => role.id === whichRole.id)) {
