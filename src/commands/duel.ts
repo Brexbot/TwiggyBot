@@ -49,13 +49,10 @@ class Duel {
     }
 
     // check if the challenger has recently lost
-    if (
-      challenger.lastLoss.getTime() + this.cooldown > Date.now() &&
-      !superUserIds.some((id) => id.id === challenger.id)
-    ) {
+    if (challenger.lastLoss.getTime() + this.cooldown > Date.now()) {
       const remaining = Math.ceil(Math.abs(Date.now() - (challenger.lastLoss.getTime() + this.cooldown)) / 1000)
       await interaction.followUp({
-        content: `${challengerName}, you have recently lost a duel or gamble. Please wait ${Math.round(
+        content: `${challengerName}, you have recently lost a duel. Please wait ${Math.round(
           remaining / 60
         )} minutes before trying again.`,
         ephemeral: true,
@@ -100,13 +97,10 @@ class Duel {
       }
 
       // Check if the acceptor has recently lost and can't duel right now. Print their timeout.
-      if (
-        acceptor.lastLoss.getTime() + this.cooldown > Date.now() &&
-        !superUserIds.some((id) => id.id === acceptor.id)
-      ) {
+      if (acceptor.lastLoss.getTime() + this.cooldown > Date.now()) {
         const remaining = Math.ceil(Math.abs(Date.now() - (acceptor.lastLoss.getTime() + this.cooldown)) / 1000)
         await collectionInteraction.followUp({
-          content: `${acceptorName}, you have recently lost a duel or gamble. Please wait ${Math.round(
+          content: `${acceptorName}, you have recently lost a duel. Please wait ${Math.round(
             remaining / 60
           )} minutes before trying again.`,
           ephemeral: true,
