@@ -1,26 +1,13 @@
-import {
-  Discord,
-  Permission,
-  SimpleCommand,
-  SimpleCommandMessage,
-  SimpleCommandOption,
-  Slash,
-  SlashOption
-} from 'discordx'
+import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
 import { CommandInteraction, Formatters, Guild, GuildMember, HexColorString } from 'discord.js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
 import { GuildOptions, Prisma } from '../../../prisma/generated/prisma-client-js'
-import { SuperUsers } from '../../guards/RoleChecks'
+import { PermissionSuperUserOnly, superUserRoles } from '../../guards/RoleChecks'
 
 @Discord()
 @injectable()
 export class ColorRoles {
-  private static modRoles = [
-    '103679575694774272', // BRex Mods
-    '104750975268483072', // BRex Ultimate Scum
-  ]
-
   private static allowedMemberRoles = [
     '345501570483355648', // BRex Subscriber
   ]
@@ -32,8 +19,7 @@ export class ColorRoles {
   public constructor(private client: ORM) {}
 
   @SimpleCommand('uncolor')
-  @Permission(false)
-  @Permission(SuperUsers)
+  @PermissionSuperUserOnly()
   async simpleUncolor(command: SimpleCommandMessage) {
     let mentionedMember: GuildMember | undefined
     if ((command.message.mentions.members?.size ?? 0) > 0) {
@@ -322,8 +308,8 @@ export class ColorRoles {
       guild = _guild
     }
 
-    const colorRole = guild.roles?.cache?.find((role) => ColorRoles.hexExp.test(role.name))
     const unColoredMember = guild.members.cache.find((member) => member.id === userId)
+    const colorRole = unColoredMember?.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
     if (colorRole && unColoredMember) {
       unColoredMember.roles
         .remove(colorRole)
@@ -348,6 +334,6 @@ export class ColorRoles {
   }
 
   private static getAllowedRoles(): string[] {
-    return ColorRoles.modRoles.concat(ColorRoles.allowedMemberRoles)
+    return superUserRoles.map((su) => su.id).concat(ColorRoles.allowedMemberRoles)
   }
 }
