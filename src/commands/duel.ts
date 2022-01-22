@@ -125,6 +125,10 @@ class Duel {
       } else {
         // Disable duel
         this.inProgress = false
+        // Disable the timeout that will change the message
+        if (this.timeout) {
+          clearTimeout(this.timeout)
+        }
 
         // Disable the button
         const button = this.createButton(true)
@@ -158,7 +162,7 @@ class Duel {
           winnerText = "It's a draw!"
         }
 
-        await collectionInteraction.followUp({
+        await collectionInteraction.editReply({
           content: `${acceptorName} has rolled a ${accepterScore} and ${challengerName} has rolled a ${challengerScore}. ${winnerText}`,
         })
       }
