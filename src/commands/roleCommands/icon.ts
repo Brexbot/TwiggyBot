@@ -5,7 +5,7 @@ import {
   SimpleCommandMessage,
   SimpleCommandOption,
   Slash,
-  SlashOption
+  SlashOption,
 } from 'discordx'
 import { CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
 import { SuperUsers } from '../../guards/RoleChecks'
@@ -167,12 +167,13 @@ class Icon {
     }
   }
 
-  private static parseEmoteName(emote: string): string | undefined {
-    const emoteName = emote.match(RegExp(':(.+):'))
-    if (emoteName) {
-      return emoteName[1]
-    } else {
-      return undefined
+  private static parseEmoteName(emote: string): string {
+    if (emote.includes(':')) {
+      const emoteName = emote.match(RegExp(':(.+):'))
+      if (emoteName) {
+        return emoteName[1]
+      }
     }
+    return emote
   }
 }
