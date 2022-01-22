@@ -125,6 +125,10 @@ class Duel {
       } else {
         // Disable duel
         this.inProgress = false
+        // Disable the timeout that will change the message
+        if (this.timeout) {
+          clearTimeout(this.timeout)
+        }
 
         // Disable the button
         const button = this.createButton(true)
