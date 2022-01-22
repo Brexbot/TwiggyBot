@@ -1,6 +1,12 @@
-import { CommandInteraction } from 'discord.js'
+import { ColorResolvable, CommandInteraction, MessageEmbed } from 'discord.js'
 import { Discord, SimpleCommand, SimpleCommandMessage, SlashOption, Slash, SimpleCommandOption } from 'discordx'
 import fetch from 'node-fetch'
+import hslRgb from 'hsl-rgb'
+
+interface weatherResponse {
+  msg: MessageEmbed,
+  ephemeral: boolean
+}
 
 @Discord()
 class Weather {
@@ -9,7 +15,8 @@ class Weather {
     if (!text) {
       return command.sendUsageSyntax()
     }
-    command.message.channel.send(await weather(text))
+    const weatherInfo: weatherResponse = await weather(text)
+    command.message.channel.send({ embeds: [weatherInfo.msg] })
   }
 
   @Slash('weather', { description: 'Get the weather for a location' })
@@ -18,14 +25,17 @@ class Weather {
     message: string,
     interaction: CommandInteraction
   ) {
-    interaction.reply(await weather(message, true))
+    const weatherInfo: weatherResponse = await weather(message)
+    interaction.reply({ embeds: [weatherInfo.msg], ephemeral: weatherInfo.ephemeral })
   }
 }
 
-const aboutMessage = `Weather data provided by OpenWeather (TM) <https://openweathermap.org>
-Data made available under the Creative Commons Attribution-ShareAlike 4.0 International licence (CC BY-SA 4.0) <https://creativecommons.org/licenses/by-sa/4.0/>`
+const aboutMessage = `Weather data provided by [OpenWeather (TM)](https://openweathermap.org)
+Data made available under the [Creative Commons Attribution-ShareAlike 4.0 International licence (CC BY-SA 4.0)](<https://creativecommons.org/licenses/by-sa/4.0/>)`
 
-const apiKey = process.env.OPEN_WEATHER_TOKEN
+const missingApiKey = `This function is currently unavailable.\n**Reason**: Weather API key is missing.`
+
+const apiKey = process.env.OPEN_WEATHER_TOKEN ?? ''
 
 const weatherURL = 'https://api.openweathermap.org/data/2.5/weather'
 
@@ -180,10 +190,15 @@ function sunsetInfo(sunrise: number, sunset: number, latitude: number, timezoneO
   return `**Sunrise:** ${timestampTo12Hour(timezoneOffset, sunrise)}, **Sunset:** ${timestampTo12Hour(timezoneOffset, sunset)}`
 }
 
-function formatWeather(data: any): string {
+function colorFromTemp(celsius: number): ColorResolvable {
+  const scaledCelsius: number = celsius > 0 ? celsius * 6 : celsius * 3.5
+  return hslRgb((200 - scaledCelsius) % 360, .75, .6)
+}
+
+function formatWeather(data: any): weatherResponse {
 
   const outputStrings: Array<string> = [
-    `${data.name}, ${data.sys.country}     ${timestampTo12Hour(data.timezone)}`,
+    //`**${data.name}**, ${data.sys.country} — ${timestampTo12Hour(data.timezone)}`,
     `**Currently:** ${weatherDescription(data.weather)}`,
     `**Cloud Cover:** ${data.clouds.all}%${visibilityText(data.visibility)}`,
     `**Temp:** ${localiseTemperature(data.main.temp)}, **Feels like:** ${localiseTemperature(data.main.feels_like)}`,
@@ -193,32 +208,44 @@ function formatWeather(data: any): string {
     sunsetInfo(data.sys.sunrise, data.sys.sunset, data.coord.lat, data.timezone)
   ]
 
-  return outputStrings.join('\n')
+  return {
+    msg: new MessageEmbed()
+    .setAuthor({
+      name: `${data.name}, ${data.sys.country} — ${timestampTo12Hour(data.timezone)}`,
+      iconURL: `http://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`
+    })
+    .setColor(colorFromTemp(data.main.temp))
+    .setDescription(outputStrings.join('\n')),
+    ephemeral: false
+  }
 
 }
 
-function formatError(data: any, searchLocation: string, slashMessage: boolean): string {
-  // Include the user input when they use a slash message, to make sure it's visible
-  const locationHint = slashMessage ? ` (Location: ${makeSafe(searchLocation)})` : ''
+function newBasicEmbed(description: string = '', color: ColorResolvable = '#808080'): MessageEmbed {
+  return new MessageEmbed()
+  .setColor(color)
+  .setAuthor({ name: 'Weather' })
+  .setDescription(description)
+}
+
+function formatError(data: any): weatherResponse {
+  let errorMsg: string
 
   if (data?.message) {
     // Pick the best emoji for the response
     const whichEmoji = data.message.endsWith('not found') ? '🔎' : '🤔'
-    // Try to avoid including the location, unless it's not printed anywhere
-    const includeHint = !data.message.includes(searchLocation) ? locationHint : ''
     // I think saw a request time out, and the response included the URL,
     //  so lets avoid showing the API key in that situation.
-    return `${whichEmoji} ${titleCase(data.message.replace(apiKey, '[redacted]'))}${includeHint}`
+    errorMsg = `${whichEmoji} ${titleCase(data.message.replace(apiKey, '[redacted]'))}`
   } else {
     // Not the most helpful of error messages :)
-    return `😵 What happened?!${locationHint}`
+    errorMsg = `😵 What happened?!`
   }
-}
 
-// Escapes markup, and urls, in user input, so it's suitable for printing
-const makeSafeRegEx = /(>|\*|_|~|\`|:\/\/)/g
-function makeSafe(text: string): string {
-    return text.replace(makeSafeRegEx, '\\$1')
+  return {
+    msg: newBasicEmbed(errorMsg, '#e3377b'),
+    ephemeral: true
+  }
 }
 
 async function fetchWeather(searchLocation: string): Promise<any> {
@@ -233,18 +260,31 @@ async function fetchWeather(searchLocation: string): Promise<any> {
     .catch(error => Promise.reject(error) )
 }
 
-async function weather(searchLocation: string, slashMessage: boolean = false): Promise<string> {
-  let output: string
-
+async function weather(searchLocation: string): Promise<weatherResponse> {
   if (searchLocation.toLowerCase() === 'about') {
-    return aboutMessage
+    return {
+      msg: newBasicEmbed(aboutMessage, '#eb6e4b'),
+      ephemeral: false
+    }
   }
 
+  if (!apiKey) {
+    return {
+      msg: newBasicEmbed(missingApiKey, '#e3377b'),
+      ephemeral: true
+    }
+  }
+
+  if (searchLocation === "Stephenville" || searchLocation === "rex") {
+    searchLocation = "Stephenville, CA"
+  }
+
+  let output: weatherResponse
   try {
     const weather = await fetchWeather(searchLocation)
     output = formatWeather(weather)
   } catch (error) {
-    output = formatError(error, searchLocation, slashMessage)
+    output = formatError(error)
   }
   return output
 }
