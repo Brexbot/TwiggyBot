@@ -14,6 +14,7 @@ import { ORM } from '../persistence/ORM'
 
 import { Duels } from '../../prisma/generated/prisma-client-js'
 import { ColorRoles } from './roleCommands/changecolor'
+import { superUserIds } from '../guards/RoleChecks'
 
 @Discord()
 @injectable()
@@ -48,7 +49,10 @@ class Duel {
     }
 
     // check if the challenger has recently lost
-    if (challenger.lastLoss.getTime() + this.cooldown > Date.now()) {
+    if (
+      challenger.lastLoss.getTime() + this.cooldown > Date.now() &&
+      !superUserIds.some((id) => id.id === challenger.id)
+    ) {
       const remaining = Math.ceil(Math.abs(Date.now() - (challenger.lastLoss.getTime() + this.cooldown)) / 1000)
       await interaction.followUp({
         content: `${challengerName}, you have recently lost a duel or gamble. Please wait ${Math.round(
@@ -96,7 +100,10 @@ class Duel {
       }
 
       // Check if the acceptor has recently lost and can't duel right now. Print their timeout.
-      if (acceptor.lastLoss.getTime() + this.cooldown > Date.now()) {
+      if (
+        acceptor.lastLoss.getTime() + this.cooldown > Date.now() &&
+        !superUserIds.some((id) => id.id === acceptor.id)
+      ) {
         const remaining = Math.ceil(Math.abs(Date.now() - (acceptor.lastLoss.getTime() + this.cooldown)) / 1000)
         await collectionInteraction.followUp({
           content: `${acceptorName}, you have recently lost a duel or gamble. Please wait ${Math.round(

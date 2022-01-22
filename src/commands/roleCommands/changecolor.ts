@@ -3,7 +3,7 @@ import { CommandInteraction, Formatters, Guild, GuildMember, HexColorString } fr
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
 import { GuildOptions, Prisma } from '../../../prisma/generated/prisma-client-js'
-import { PermissionSuperUserOnly, superUserRoles } from '../../guards/RoleChecks'
+import { PermissionSuperUserOnly, superUserIds, superUserRoles } from '../../guards/RoleChecks'
 
 @Discord()
 @injectable()
@@ -178,7 +178,7 @@ export class ColorRoles {
     })
 
     const timeLeftInMillis = userOptions.lastLoss.getTime() + ColorRoles.cooldown
-    if (timeLeftInMillis > Date.now()) {
+    if (timeLeftInMillis > Date.now() && !superUserIds.some((id) => id.id === member.id)) {
       const timeLeftInMinutes = Math.round((timeLeftInMillis - Date.now()) / 1000 / 60)
       return `${member.user}, You have recently lost a duel or gamble. Wait another ${timeLeftInMinutes} minutes.`
     }
