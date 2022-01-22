@@ -158,7 +158,7 @@ class Duel {
           winnerText = "It's a draw!"
         }
 
-        await collectionInteraction.followUp({
+        await collectionInteraction.editReply({
           content: `${acceptorName} has rolled a ${accepterScore} and ${challengerName} has rolled a ${challengerScore}. ${winnerText}`,
         })
       }
