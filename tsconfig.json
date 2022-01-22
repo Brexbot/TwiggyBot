@@ -12,7 +12,10 @@
     "importHelpers": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "types": [
+      "./src/@types/hsl-rgb"
+    ]
   },
   "include": [
     "src/**/*"
