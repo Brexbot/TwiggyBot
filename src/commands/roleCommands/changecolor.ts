@@ -177,7 +177,10 @@ export class ColorRoles {
       update: {},
     })
 
-    const timeLeftInMillis = userOptions.lastLoss.getTime() + ColorRoles.cooldown
+    const timeLeftInMillis = Math.max(
+      userOptions.lastRandom.getTime() + ColorRoles.cooldown,
+      userOptions.lastLoss.getTime() + ColorRoles.cooldown
+    )
     if (timeLeftInMillis > Date.now() && !superUserIds.some((id) => id.id === member.id)) {
       const timeLeftInMinutes = Math.round((timeLeftInMillis - Date.now()) / 1000 / 60)
       return `${member.user}, You have recently lost a duel or gamble. Wait another ${timeLeftInMinutes} minutes.`
@@ -213,7 +216,7 @@ export class ColorRoles {
         await this.client.user.update({
           where: { id: member.id },
           data: {
-            lastLoss: new Date(),
+            lastRandom: new Date(),
           },
         })
         randomed = true
@@ -225,7 +228,7 @@ export class ColorRoles {
       await this.client.user.update({
         where: { id: member.id },
         data: {
-          lastLoss: new Date(),
+          lastRandom: new Date(),
         },
       })
       randomed = true

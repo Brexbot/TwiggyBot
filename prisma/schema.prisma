@@ -18,10 +18,11 @@ model GuildOptions {
 }
 
 model User {
-  id        String   @id @unique
-  favColor  String?
-  duelStats Duels[]
-  lastLoss  DateTime @default(dbgenerated("0"))
+  id         String   @id @unique
+  favColor   String?
+  duelStats  Duels[]
+  lastRandom DateTime @default(dbgenerated("0"))
+  lastLoss   DateTime @default(dbgenerated("0"))
 }
 
 model Duels {
