@@ -1,4 +1,4 @@
-import { ArgsOf, Permission } from 'discordx'
+import { ArgsOf, ClassMethodDecorator, Permission } from 'discordx'
 import { GuardFunction, SimpleCommandMessage } from 'discordx'
 import {
   ApplicationCommandPermissions,
@@ -10,6 +10,7 @@ import {
   SelectMenuInteraction,
   VoiceState,
 } from 'discord.js'
+import constructor from 'tsyringe/dist/typings/types/constructor'
 
 export const superUserIds = [
   ...(process.env.DISCORD_SUPER_USER_ID ? [process.env.DISCORD_SUPER_USER_ID] : []), // Local Dev SU Role
@@ -25,18 +26,16 @@ export const superUserRoles = [
 
 export const SuperUsers = superUserIds.concat(superUserRoles)
 
-export const PermissionSuperUserOnly = () => {
-  return PermissionFactory(SuperUsers)
-}
-
 const PermissionFactory = (perm: ApplicationCommandPermissions | ApplicationCommandPermissions[]) => {
   // Seems like this has to be `any` sadly
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (target: Record<string, any>, propertyKey: string, descriptor: PropertyDescriptor): void => {
+  return (target: Record<string, any>, propertyKey?: string, descriptor?: PropertyDescriptor): void => {
     Permission(false)(target, propertyKey, descriptor)
     Permission(perm)(target, propertyKey, descriptor)
   }
 }
+
+export const PermissionSuperUserOnly = PermissionFactory(SuperUsers)
 
 // From https://discord-ts.js.org/docs/decorators/general/guard/#guard-datas
 export const NotBot: GuardFunction<

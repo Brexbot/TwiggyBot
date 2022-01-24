@@ -69,7 +69,7 @@ abstract class Timeout {
   }
 
   @SimpleCommand('timeout')
-  @PermissionSuperUserOnly()
+  @PermissionSuperUserOnly
   async timeoutCommand(
     @SimpleCommandOption('user', { type: 'USER' }) user: GuildMember | User | undefined,
     @SimpleCommandOption('duration', { type: 'NUMBER' }) duration: number | undefined,
@@ -96,7 +96,7 @@ abstract class Timeout {
   }
 
   @Slash('timeout')
-  @PermissionSuperUserOnly()
+  @PermissionSuperUserOnly
   async timeoutInteraction(
     @SlashOption('user', { type: 'USER', description: 'User you want to timeout' }) user: GuildMember,
     @SlashOption('duration', { type: 'NUMBER', description: 'Duration of the timeout in seconds' }) duration: number,
