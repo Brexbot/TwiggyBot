@@ -38,6 +38,8 @@
     "@discordx/pagination": "^1.1.0",
     "@discordx/utilities": "^3.3.0",
     "@prisma/client": "^3.8.0",
+    "@twurple/api": "^5.0.13",
+    "@twurple/auth": "^5.0.13",
     "discord.js": "^13.5.1",
     "discordx": "^9.1.9",
     "hsl-rgb": "^1.0.0",
