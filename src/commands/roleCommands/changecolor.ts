@@ -5,6 +5,8 @@ import { ORM } from '../../persistence'
 import { GuildOptions, Prisma } from '../../../prisma/generated/prisma-client-js'
 import { PermissionSuperUserOnly, superUserIds, superUserRoles } from '../../guards/RoleChecks'
 import { getGuildAndCallerFromCommand, getGuildFromCommand } from '../../utils/CommandUtils'
+import { Duel } from '../duel'
+import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils'
 
 @Discord()
 @injectable()
@@ -160,13 +162,18 @@ export class ColorRoles {
       update: {},
     })
 
-    const timeLeftInMillis = Math.max(
-      userOptions.lastRandom.getTime() + ColorRoles.cooldown,
-      userOptions.lastLoss.getTime() + ColorRoles.cooldown
-    )
-    if (timeLeftInMillis > Date.now() && !superUserIds.some((id) => id.id === member.id)) {
-      const timeLeftInMinutes = Math.round((timeLeftInMillis - Date.now()) / 1000 / 60)
-      return `${member.user}, You have recently lost a duel or gamble. Wait another ${timeLeftInMinutes} minutes.`
+    if (!superUserIds.some((id) => id.id === member.id)) {
+      if (userOptions.lastLoss.getTime() + Duel.cooldown > Date.now()) {
+        return `${member.user}, you have recently lost a duel. Please wait ${getTimeLeftInReadableFormat(
+          userOptions.lastLoss,
+          Duel.cooldown
+        )} before trying again.`
+      } else if (userOptions.lastRandom.getTime() + ColorRoles.cooldown > Date.now()) {
+        return `${member.user}, you have recently randomed/gambled. Please wait ${getTimeLeftInReadableFormat(
+          userOptions.lastRandom,
+          Duel.cooldown
+        )} before trying again.`
+      }
     }
 
     // Valid option check

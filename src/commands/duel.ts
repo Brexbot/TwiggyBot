@@ -1,11 +1,11 @@
 import {
   ButtonInteraction,
   CommandInteraction,
-  MessageButton,
-  MessageActionRow,
-  Message,
   Formatters,
   GuildMember,
+  Message,
+  MessageActionRow,
+  MessageButton,
   MessageEmbed,
 } from 'discord.js'
 import { Discord, Slash } from 'discordx'
@@ -14,13 +14,15 @@ import { ORM } from '../persistence/ORM'
 
 import { Duels } from '../../prisma/generated/prisma-client-js'
 import { ColorRoles } from './roleCommands/changecolor'
-import { superUserIds } from '../guards/RoleChecks'
+import { getCallerFromCommand, getGuildAndCallerFromCommand } from '../utils/CommandUtils'
+import { getTimeLeftInReadableFormat } from '../utils/CooldownUtils'
 
 @Discord()
 @injectable()
-class Duel {
+export class Duel {
+  static cooldown = 10 * 60 * 1000 // Cooldown period after loss in milliseconds
+
   private inProgress = false
-  private cooldown = 10 * 60 * 1000 // Cooldown period after loss in milliseconds
 
   private timeoutDuration = 5 * 60 * 1000 // Time before the duel is declared dead in milliseconds
   private timeout: ReturnType<typeof setTimeout> | null = null
@@ -32,7 +34,7 @@ class Duel {
     await interaction.deferReply()
 
     // Get the challenger from the DB. Create them if they don't exist yet.
-    const challengerName = interaction.user
+    const challengerMember = getCallerFromCommand(interaction)
     const challenger = await this.getUserWithDuelStats(interaction.user.id)
     if (!challenger) {
       await interaction.followUp('An unexpected error occurred.')
@@ -49,17 +51,16 @@ class Duel {
     }
 
     // check if the challenger has recently lost
-    if (challenger.lastLoss.getTime() + this.cooldown > Date.now()) {
-      const remaining = Math.ceil(Math.abs(Date.now() - (challenger.lastLoss.getTime() + this.cooldown)) / 1000)
+    if (challenger.lastLoss.getTime() + Duel.cooldown > Date.now()) {
       await interaction.followUp({
-        content: `${challengerName}, you have recently lost a duel. Please wait ${Math.round(
-          remaining / 60
-        )} minutes before trying again.`,
+        content: `${challengerMember?.user}, you have recently lost a duel. Please wait ${getTimeLeftInReadableFormat(
+          challenger.lastLoss,
+          Duel.cooldown
+        )} before trying again.`,
         ephemeral: true,
       })
       return
     }
-
     this.inProgress = true
 
     // Disable the duel after a timeout
@@ -68,7 +69,7 @@ class Duel {
       const button = this.createButton(true)
       const row = new MessageActionRow().addComponents(button)
       await interaction.editReply({
-        content: `${challengerName} failed to find someone to duel.`,
+        content: `${challengerMember?.user} failed to find someone to duel.`,
         components: [row],
       })
       this.inProgress = false
@@ -76,7 +77,7 @@ class Duel {
 
     const row = new MessageActionRow().addComponents(this.createButton(false))
     const message = await interaction.followUp({
-      content: `${challengerName} is looking for a duel, press the button to accept.`,
+      content: `${challengerMember?.user} is looking for a duel, press the button to accept.`,
       fetchReply: true,
       components: [row],
     })
@@ -90,19 +91,19 @@ class Duel {
       await collectionInteraction.deferUpdate()
 
       // Prevent accepting your own duels and ensure that the acceptor is valid.
-      const acceptorName = collectionInteraction.user
+      const acceptorMember = getCallerFromCommand(collectionInteraction)
       const acceptor = await this.getUserWithDuelStats(collectionInteraction.user.id)
       if (!acceptor || acceptor.id === challenger.id) {
         return
       }
 
       // Check if the acceptor has recently lost and can't duel right now. Print their timeout.
-      if (acceptor.lastLoss.getTime() + this.cooldown > Date.now()) {
-        const remaining = Math.ceil(Math.abs(Date.now() - (acceptor.lastLoss.getTime() + this.cooldown)) / 1000)
+      if (acceptor.lastLoss.getTime() + Duel.cooldown > Date.now()) {
         await collectionInteraction.followUp({
-          content: `${acceptorName}, you have recently lost a duel. Please wait ${Math.round(
-            remaining / 60
-          )} minutes before trying again.`,
+          content: `${acceptorMember?.user}, you have recently lost a duel. Please wait ${getTimeLeftInReadableFormat(
+            acceptor.lastLoss,
+            Duel.cooldown
+          )} before trying again.`,
           ephemeral: true,
         })
       } else if (!this.inProgress) {
@@ -146,25 +147,31 @@ class Duel {
           await this.updateUserScore(challenger.duelStats[0], 'win')
           await this.updateUserScore(acceptor.duelStats[0], 'loss')
 
-          await ColorRoles.uncolor(acceptor.id, interaction)
+          const [guild, member] = getGuildAndCallerFromCommand(collectionInteraction)
+          await ColorRoles.setColor('#FFFFFF', member, guild)
 
-          winnerText = `${challengerName} has won!`
+          winnerText = `${challengerMember?.user} has won!`
         } else if (accepterScore > challengerScore) {
           await this.updateUserScore(challenger.duelStats[0] as Duels, 'loss')
           await this.updateUserScore(acceptor.duelStats[0], 'win')
 
-          await ColorRoles.uncolor(challenger.id, interaction)
+          const [guild, member] = getGuildAndCallerFromCommand(interaction)
+          await ColorRoles.setColor('#FFFFFF', member, guild)
 
-          winnerText = `${acceptorName} has won!`
+          winnerText = `${acceptorMember?.user} has won!`
         } else {
           await this.updateUserScore(challenger.duelStats[0] as Duels, 'draw')
           await this.updateUserScore(acceptor.duelStats[0], 'draw')
+
+          const tenMinutesInMillis = 10 * 60 * 1000
+          challengerMember?.timeout(tenMinutesInMillis, 'Tied a duel!')
+          acceptorMember?.timeout(tenMinutesInMillis, 'Tied a duel!')
 
           winnerText = "It's a draw!"
         }
 
         await collectionInteraction.editReply({
-          content: `${acceptorName} has rolled a ${accepterScore} and ${challengerName} has rolled a ${challengerScore}. ${winnerText}`,
+          content: `${acceptorMember?.user} has rolled a ${accepterScore} and ${challengerMember?.user} has rolled a ${challengerScore}. ${winnerText}`,
         })
       }
     })
