@@ -182,7 +182,8 @@ export class ColorRoles {
       (color.toUpperCase() !== 'LAZY' &&
         color.toUpperCase() !== 'GAMBLE' &&
         color.toUpperCase() !== 'RANDOM' &&
-        !ColorRoles.hexExp.test(color))
+        !ColorRoles.hexExp.test(color)) ||
+      color.includes('000000')
     ) {
       return 'Please enter a valid 6 digit hex color'
     }
@@ -301,6 +302,8 @@ export class ColorRoles {
   }
 
   private static getRandomColor(): string {
+    // This could technically return 0x000000, which is an invalid role color in Discord (doesn't crash)
+    // we prevent the user from setting this but I'm gonna leave it here as a god roll/easter egg
     return Math.floor(Math.random() * 0xffffff)
       .toString(16) // Convert to Hex
       .padStart(6, '0') // In case the number is too small to fill all 6 hex digits
