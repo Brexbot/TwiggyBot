@@ -7,6 +7,15 @@ interface weatherResponse {
   msg: MessageEmbed,
   ephemeral: boolean
 }
+interface weatherInfo {
+  id: number,
+  main: string,
+  description: string,
+  icon: string
+}
+interface weatherDirections {
+  [key: string]: Array<number>
+}
 
 @Discord()
 class Weather {
@@ -15,7 +24,7 @@ class Weather {
     if (!text) {
       return command.sendUsageSyntax()
     }
-    const weatherInfo: weatherResponse = await weather(text)
+    const weatherInfo: weatherResponse = await this.handleInput(text)
     command.message.channel.send({ embeds: [weatherInfo.msg] })
   }
 
@@ -25,266 +34,271 @@ class Weather {
     message: string,
     interaction: CommandInteraction
   ) {
-    const weatherInfo: weatherResponse = await weather(message)
+    const weatherInfo: weatherResponse = await this.handleInput(message)
     interaction.reply({ embeds: [weatherInfo.msg], ephemeral: weatherInfo.ephemeral })
   }
-}
 
-const aboutMessage = `Weather data provided by [OpenWeather (TM)](https://openweathermap.org)
-Data made available under the [Creative Commons Attribution-ShareAlike 4.0 International licence (CC BY-SA 4.0)](<https://creativecommons.org/licenses/by-sa/4.0/>)`
-
-const missingApiKey = `This function is currently unavailable.\n**Reason**: Weather API key is missing.`
-
-const apiKey = process.env.OPEN_WEATHER_TOKEN ?? ''
-
-const weatherURL = 'https://api.openweathermap.org/data/2.5/weather'
-
-// Very basic check for a postal code, working on the assumpion that they include numbers and cities don't
-const possiblyAPostCode = /\d/
-
-function determineType(searchLocation: string): string {
-  if (possiblyAPostCode.test(searchLocation)) {
-    // Post code
-    return 'zip'
-  } else {
-    // City name
-    return 'q'
-  }
-}
-
-// The API doesn't seem to handle whitespace around commas too well
-// This is noticable when using a postal code
-// Not found: "bs1 4uz, gb", Found: "bs1 4uz,gb"
-const commaWhitespaceRegex = /(\s{0,}\,\s{0,})/g
-function sortOutWhitespace(text: string): string {
-  return text.replace(commaWhitespaceRegex, ',')
-}
-
-function buildRequestURL(searchLocation: string): string {
-  const fragments: string = [
-    [determineType(searchLocation), encodeURIComponent(sortOutWhitespace(searchLocation))],
-    ['units', 'metric'],
-    ['appid', apiKey]
-  ].map(frag => frag.join('=')).join('&')
-  return `${weatherURL}?${fragments}`
-}
-
-
-// Text formatting
-function titleCase(text: string): string {
-  return text
-    .split(' ')
-    .map(word =>
-      word.substring(0, 1).toUpperCase() + word.substring(1).toLowerCase()
-    )
-    .join(' ')
-}
-
-// Wind
-type directions = {
-  [key: string]: Array<number>
-}
-const windLUT: directions = {
-  N: [348.75, 11.25],
-  NNE: [11.25, 33.75],
-  NE: [33.75, 56.25],
-  ENE: [56.25, 78.75],
-  E: [78.75, 101.25],
-  ESE: [101.25, 123.75],
-  SE: [123.75, 146.25],
-  SSE: [146.25, 168.75],
-  S: [168.75, 191.25],
-  SSW: [191.25, 213.75],
-  SW: [213.75, 236.25],
-  WSW: [236.25, 258.75],
-  W: [258.75, 281.25],
-  WNW: [281.25, 303.75],
-  NW: [303.75, 326.25],
-  NNW: [326.25, 348.75]
-}
-function cardinalDirection(degree: number): string {
-  return Object.keys(windLUT).find(dir => {
-    if (windLUT[dir][1] < windLUT[dir][0]) {
-      return degree >= windLUT[dir][0] || degree <= windLUT[dir][1]
+  private static aboutMessage = `Weather data provided by [OpenWeather (TM)](https://openweathermap.org)
+  Data made available under the [Creative Commons Attribution-ShareAlike 4.0 International licence (CC BY-SA 4.0)](<https://creativecommons.org/licenses/by-sa/4.0/>)`
+  
+  private static missingApiKey = `This function is currently unavailable.\n**Reason**: Weather API key is missing.`
+  
+  private static apiKey = process.env.OPEN_WEATHER_TOKEN ?? ''
+  
+  private static weatherURL = 'https://api.openweathermap.org/data/2.5/weather'
+  
+  // Very basic check for a postal code, working on the assumpion that they include numbers and cities don't
+  private static possiblyAPostCode = /\d/
+  
+  private determineType(searchLocation: string): string {
+    if (Weather.possiblyAPostCode.test(searchLocation)) {
+      // Post code
+      return 'zip'
     } else {
-      return degree >= windLUT[dir][0] && degree <= windLUT[dir][1]
-    }
-  }) || '?'
-}
-
-// Temperature
-function localiseTemperature(celsius: number): string {
-  const fahrenheit = 32 + celsius * 1.8
-  return `${celsius.toFixed(1)}°C/${fahrenheit.toFixed(1)}°F`
-}
-
-// Speed
-function localiseMSec(mSec: number): string {
-  const mph = mSec * 2.236936
-  const kph = mSec * 3.6
-  return `${kph.toFixed(1)} KPH/${mph.toFixed(1)} MPH`
-}
-
-// Distance
-function localiseMetres(metres: number): string {
-  const kilometres = metres / 1000
-  const miles = kilometres * 0.621371
-  const feet = metres * 3.2808
-  const imperial = miles < 1 ? `${feet.toLocaleString()} ft` : `${miles.toFixed(1)} mi`
-  return `${kilometres.toFixed(1)} km/${imperial}`
-}
-function visibilityText(visibility: number | undefined) {
-  /*
-    Fog:  Less than 1 km (3,300 ft)
-    Mist: Between 1 km (0.62 mi) and 2 km (1.2 mi)
-    Haze: From 2 km (1.2 mi) to 5 km (3.1 mi)
-  */
-  if (!visibility || visibility > 5000) { return '' }
-  return `, **Visibility:** ${localiseMetres(visibility)}`
-}
-
-// Locations can be expericing more than one type of weather at the same time
-interface weatherInfo {
-  id: number,
-  main: string,
-  description: string,
-  icon: string
-}
-function weatherDescription(weather: Array<weatherInfo>): string {
-  return weather.map(w => titleCase(w.description)).join(', ')
-}
-
-// Localise and format a time
-function timestampTo12Hour(timezoneOffset: number, timestamp: number = 0): string {
-  const dateObj = new Date(
-    timestamp === 0 ?
-      (timezoneOffset * 1000) + Date.now() :
-      (timezoneOffset + timestamp) * 1000
-  )
-
-  let hours = dateObj.getUTCHours()
-  const amPM = hours > 12 ? 'PM' : 'AM'
-  hours %= 12
-
-  if (hours === 0) { hours = 12 }
-
-  const mins = String(dateObj.getUTCMinutes()).padStart(2, '0')
-
-  return `${hours}:${mins} ${amPM}`
-}
-
-function sunsetInfo(sunrise: number, sunset: number, latitude: number, timezoneOffset: number): string {
-  if (sunrise === 0 && sunset === 0) {
-    const currentMonth = new Date().getMonth()
-
-    if (
-      (latitude > 0 && (currentMonth < 2 || currentMonth > 8)) ||
-      (latitude < 0 && (currentMonth > 3 && currentMonth < 7))
-    ) {
-      return '🌚 Polar night is occuring 🌚'
-    } else {
-      return '🌞 Midnight sun is occuring 🌞'
+      // City name
+      return 'q'
     }
   }
-
-  return `**Sunrise:** ${timestampTo12Hour(timezoneOffset, sunrise)}, **Sunset:** ${timestampTo12Hour(timezoneOffset, sunset)}`
-}
-
-function colorFromTemp(celsius: number): ColorResolvable {
-  const scaledCelsius: number = celsius > 0 ? celsius * 6 : celsius * 3.5
-  return hslRgb((200 - scaledCelsius) % 360, .75, .6)
-}
-
-function formatWeather(data: any): weatherResponse {
-
-  const outputStrings: Array<string> = [
-    //`**${data.name}**, ${data.sys.country} — ${timestampTo12Hour(data.timezone)}`,
-    `**Currently:** ${weatherDescription(data.weather)}`,
-    `**Cloud Cover:** ${data.clouds.all}%${visibilityText(data.visibility)}`,
-    `**Temp:** ${localiseTemperature(data.main.temp)}, **Feels like:** ${localiseTemperature(data.main.feels_like)}`,
-    `**Min:** ${localiseTemperature(data.main.temp_min)}, **Max:** ${localiseTemperature(data.main.temp_max)}`,
-    `**Humidity:** ${data.main.humidity}%`,
-    `**Wind:** ${localiseMSec(data.wind.speed)} @ ${data.wind.deg}°/${cardinalDirection(data.wind.deg)}`,
-    sunsetInfo(data.sys.sunrise, data.sys.sunset, data.coord.lat, data.timezone)
-  ]
-
-  return {
-    msg: new MessageEmbed()
-    .setAuthor({
-      name: `${data.name}, ${data.sys.country} — ${timestampTo12Hour(data.timezone)}`,
-      iconURL: `http://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`
-    })
-    .setColor(colorFromTemp(data.main.temp))
-    .setDescription(outputStrings.join('\n')),
-    ephemeral: false
+  
+  // The API doesn't seem to handle whitespace around commas too well
+  // This is noticable when using a postal code
+  // Not found: "bs1 4uz, gb", Found: "bs1 4uz,gb"
+  private static commaWhitespaceRegex = /(\s{0,}\,\s{0,})/g
+  private sortOutWhitespace(text: string): string {
+    return text.replace(Weather.commaWhitespaceRegex, ',')
   }
-
-}
-
-function newBasicEmbed(description: string = '', color: ColorResolvable = '#808080'): MessageEmbed {
-  return new MessageEmbed()
-  .setColor(color)
-  .setAuthor({ name: 'Weather' })
-  .setDescription(description)
-}
-
-function formatError(data: any): weatherResponse {
-  let errorMsg: string
-
-  if (data?.message) {
-    // Pick the best emoji for the response
-    const whichEmoji = data.message.endsWith('not found') ? '🔎' : '🤔'
-    // I think saw a request time out, and the response included the URL,
-    //  so lets avoid showing the API key in that situation.
-    errorMsg = `${whichEmoji} ${titleCase(data.message.replace(apiKey, '[redacted]'))}`
-  } else {
-    // Not the most helpful of error messages :)
-    errorMsg = `😵 What happened?!`
+  
+  private buildRequestURL(searchLocation: string): string {
+    const fragments: string = [
+      [this.determineType(searchLocation), encodeURIComponent(this.sortOutWhitespace(searchLocation))],
+      ['units', 'metric'],
+      ['appid', Weather.apiKey]
+    ].map(frag => frag.join('=')).join('&')
+    return `${Weather.weatherURL}?${fragments}`
   }
-
-  return {
-    msg: newBasicEmbed(errorMsg, '#e3377b'),
-    ephemeral: true
+  
+  
+  // Text formatting
+  private titleCase(text: string): string {
+    return text
+      .split(' ')
+      .map(word =>
+        word.substring(0, 1).toUpperCase() + word.substring(1).toLowerCase()
+      )
+      .join(' ')
   }
-}
-
-async function fetchWeather(searchLocation: string): Promise<any> {
-  return await fetch(buildRequestURL(searchLocation))
-    .then(async (resp) => {
-      if (resp.ok) {
-        return await resp.json()
+  
+  // Wind
+  private windLUT: weatherDirections = {
+    N: [348.75, 11.25],
+    NNE: [11.25, 33.75],
+    NE: [33.75, 56.25],
+    ENE: [56.25, 78.75],
+    E: [78.75, 101.25],
+    ESE: [101.25, 123.75],
+    SE: [123.75, 146.25],
+    SSE: [146.25, 168.75],
+    S: [168.75, 191.25],
+    SSW: [191.25, 213.75],
+    SW: [213.75, 236.25],
+    WSW: [236.25, 258.75],
+    W: [258.75, 281.25],
+    WNW: [281.25, 303.75],
+    NW: [303.75, 326.25],
+    NNW: [326.25, 348.75]
+  }
+  private cardinalDirection(degree: number): string {
+    return Object.keys(this.windLUT).find(dir => {
+      if (this.windLUT[dir][1] < this.windLUT[dir][0]) {
+        return degree >= this.windLUT[dir][0] || degree <= this.windLUT[dir][1]
       } else {
-        return Promise.reject(await resp.json())
+        return degree >= this.windLUT[dir][0] && degree <= this.windLUT[dir][1]
       }
-    })
-    .catch(error => Promise.reject(error) )
-}
-
-async function weather(searchLocation: string): Promise<weatherResponse> {
-  if (searchLocation.toLowerCase() === 'about') {
+    }) || '?'
+  }
+  
+  // Temperature
+  private localiseTemperature(celsius: number): string {
+    const fahrenheit = 32 + celsius * 1.8
+    return `${celsius.toFixed(1)}°C/${fahrenheit.toFixed(1)}°F`
+  }
+  
+  // Speed
+  private localiseMSec(mSec: number): string {
+    const mph = mSec * 2.236936
+    const kph = mSec * 3.6
+    return `${kph.toFixed(1)} KPH/${mph.toFixed(1)} MPH`
+  }
+  
+  // Distance
+  private localiseMetres(metres: number): string {
+    const kilometres = metres / 1000
+    const miles = kilometres * 0.621371
+    const feet = metres * 3.2808
+    const imperial = miles < 1 ?
+      `${feet.toLocaleString(undefined, {maximumFractionDigits: 0})} ft` :
+      `${miles.toFixed(1)} mi`
+    return `${kilometres.toFixed(1)} km/${imperial}`
+  }
+  private visibilityText(visibility: number | undefined) {
+    /*
+      Fog:  Less than 1 km (3,300 ft)
+      Mist: Between 1 km (0.62 mi) and 2 km (1.2 mi)
+      Haze: From 2 km (1.2 mi) to 5 km (3.1 mi)
+    */
+    if (!visibility || visibility > 5000) { return '' }
+    return `, **Visibility:** ${this.localiseMetres(visibility)}`
+  }
+  
+  // Locations can be expericing more than one type of weather at the same time
+  private weatherDescription(weather: Array<weatherInfo>): string {
+    return weather.map(w => this.titleCase(w.description)).join(', ')
+  }
+  
+  // Localise and format a time
+  private timestampTo12Hour(
+    timezoneOffset: number,
+    timestamp: number = 0
+  ): string {
+    const dateObj = new Date(
+      timestamp === 0 ?
+        (timezoneOffset * 1000) + Date.now() :
+        (timezoneOffset + timestamp) * 1000
+    )
+  
+    let hours = dateObj.getUTCHours()
+    const amPM = hours > 12 ? 'PM' : 'AM'
+    hours %= 12
+  
+    if (hours === 0) { hours = 12 }
+  
+    const mins = String(dateObj.getUTCMinutes()).padStart(2, '0')
+  
+    return `${hours}:${mins} ${amPM}`
+  }
+  
+  private sunsetInfo(
+    sunrise: number,
+    sunset: number,
+    latitude: number,
+    timezoneOffset: number
+  ): string {
+    if (sunrise === 0 && sunset === 0) {
+      const currentMonth = new Date().getMonth()
+  
+      if (
+        (latitude > 0 && (currentMonth < 2 || currentMonth > 8)) ||
+        (latitude < 0 && (currentMonth > 3 && currentMonth < 7))
+      ) {
+        return '🌚 Polar night is occuring 🌚'
+      } else {
+        return '🌞 Midnight sun is occuring 🌞'
+      }
+    }
+  
+    return `**Sunrise:** ${this.timestampTo12Hour(timezoneOffset, sunrise)}, **Sunset:** ${this.timestampTo12Hour(timezoneOffset, sunset)}`
+  }
+  
+  private colorFromTemp(celsius: number): ColorResolvable {
+    const scaledCelsius: number = celsius > 0 ? celsius * 6 : celsius * 3.5
+    return hslRgb((200 - scaledCelsius) % 360, .75, .6)
+  }
+  
+  private formatWeather(data: any): weatherResponse {
+  
+    const outputStrings: Array<string> = [
+      //`**${data.name}**, ${data.sys.country} — ${timestampTo12Hour(data.timezone)}`,
+      `**Currently:** ${this.weatherDescription(data.weather)}`,
+      `**Cloud Cover:** ${data.clouds.all}%${this.visibilityText(data.visibility)}`,
+      `**Temp:** ${this.localiseTemperature(data.main.temp)}, **Feels like:** ${this.localiseTemperature(data.main.feels_like)}`,
+      `**Min:** ${this.localiseTemperature(data.main.temp_min)}, **Max:** ${this.localiseTemperature(data.main.temp_max)}`,
+      `**Humidity:** ${data.main.humidity}%`,
+      `**Wind:** ${this.localiseMSec(data.wind.speed)} @ ${data.wind.deg}°/${this.cardinalDirection(data.wind.deg)}`,
+      this.sunsetInfo(data.sys.sunrise, data.sys.sunset, data.coord.lat, data.timezone)
+    ]
+  
     return {
-      msg: newBasicEmbed(aboutMessage, '#eb6e4b'),
+      msg: new MessageEmbed()
+      .setAuthor({
+        name: `${data.name}, ${data.sys.country} — ${this.timestampTo12Hour(data.timezone)}`,
+        iconURL: `http://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`
+      })
+      .setColor(this.colorFromTemp(data.main.temp))
+      .setDescription(outputStrings.join('\n')),
       ephemeral: false
     }
+  
   }
-
-  if (!apiKey) {
+  
+  private newBasicEmbed(
+    description: string = '',
+    color: ColorResolvable = '#ffffff'
+  ): MessageEmbed {
+    return new MessageEmbed()
+    .setColor(color)
+    .setAuthor({ name: 'Weather' })
+    .setDescription(description)
+  }
+  
+  private formatError(data: any): weatherResponse {
+    let errorMsg: string
+  
+    if (data?.message) {
+      // Pick the best emoji for the response
+      const whichEmoji = data.message.endsWith('not found') ? '🔎' : '🤔'
+      // I think saw a request time out, and the response included the URL,
+      //  so lets avoid showing the API key in that situation.
+      errorMsg = `${whichEmoji} ${this.titleCase(data.message.replace(Weather.apiKey, '[redacted]'))}`
+    } else {
+      // Not the most helpful of error messages :)
+      errorMsg = `😵 What happened?!`
+    }
+  
     return {
-      msg: newBasicEmbed(missingApiKey, '#e3377b'),
+      msg: this.newBasicEmbed(errorMsg, '#e3377b'),
       ephemeral: true
     }
   }
-
-  if (searchLocation === "Stephenville" || searchLocation === "rex") {
-    searchLocation = "Stephenville, CA"
+  
+  private async fetchWeather(searchLocation: string): Promise<any> {
+    return await fetch(this.buildRequestURL(searchLocation))
+      .then(async (resp) => {
+        if (resp.ok) {
+          return await resp.json()
+        } else {
+          return Promise.reject(await resp.json())
+        }
+      })
+      .catch(error => Promise.reject(error) )
+  }
+  
+  private async handleInput(searchLocation: string): Promise<weatherResponse> {
+    if (searchLocation.toLowerCase() === 'about') {
+      return {
+        msg: this.newBasicEmbed(Weather.aboutMessage, '#eb6e4b'),
+        ephemeral: false
+      }
+    }
+  
+    if (!Weather.apiKey) {
+      return {
+        msg: this.newBasicEmbed(Weather.missingApiKey, '#e3377b'),
+        ephemeral: true
+      }
+    }
+  
+    if (searchLocation === "Stephenville" || searchLocation === "rex") {
+      searchLocation = "Stephenville, CA"
+    }
+  
+    let output: weatherResponse
+    try {
+      const weather = await this.fetchWeather(searchLocation)
+      output = this.formatWeather(weather)
+    } catch (error) {
+      output = this.formatError(error)
+    }
+    return output
   }
 
-  let output: weatherResponse
-  try {
-    const weather = await fetchWeather(searchLocation)
-    output = formatWeather(weather)
-  } catch (error) {
-    output = formatError(error)
-  }
-  return output
 }
