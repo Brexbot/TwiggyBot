@@ -284,7 +284,7 @@ export class Duel {
   }
 
   private getRandomScore(): number {
-    return Math.floor(Math.random() * 100)
+    return Math.floor(Math.random() * 101)
   }
 
   private createButton(disabled: boolean): MessageButton {
