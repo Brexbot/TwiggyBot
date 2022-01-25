@@ -4,13 +4,15 @@ import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
 import { GuildOptions, Prisma } from '../../../prisma/generated/prisma-client-js'
 import { PermissionSuperUserOnly, superUserIds, superUserRoles } from '../../guards/RoleChecks'
+import { getGuildAndCallerFromCommand, getGuildFromCommand } from '../../utils/CommandUtils'
 
 @Discord()
 @injectable()
 export class ColorRoles {
-  private static allowedMemberRoles = [
-    '345501570483355648', // BRex Subscriber
-  ]
+  // guildId, roleId
+  private static allowedMemberRoles = new Map<string, string[]>([
+    ['103678524375699456', ['345501570483355648']], // BRex Subscriber
+  ])
 
   private static hexExp = /^#?[0-9A-F]{6}$/i
   private static cooldown = 60 * 60 * 1000
@@ -21,16 +23,17 @@ export class ColorRoles {
   @SimpleCommand('uncolor')
   @PermissionSuperUserOnly
   async simpleUncolor(command: SimpleCommandMessage) {
+    const guild = getGuildFromCommand(command)
     let mentionedMember: GuildMember | undefined
     if ((command.message.mentions.members?.size ?? 0) > 0) {
       mentionedMember = command.message.mentions.members?.first()
     }
 
-    if (!mentionedMember) {
+    if (!guild || !mentionedMember) {
       return
     }
 
-    await ColorRoles.uncolor(mentionedMember.id, command)
+    await ColorRoles.setColor('uncolor', mentionedMember, guild)
   }
 
   @SimpleCommand('changecolor')
@@ -131,34 +134,14 @@ export class ColorRoles {
     isFavorite: boolean,
     command: CommandInteraction | SimpleCommandMessage
   ): Promise<string> {
-    let member: GuildMember
-    let guild: Guild
-    if (command instanceof CommandInteraction) {
-      const _member = command.member
-      const _guild = command.guild
-      if (!_member || !(_member instanceof GuildMember) || !_guild) {
-        return Promise.reject('An unexpected error occurred')
-      }
-
-      member = _member
-      guild = _guild
-    } else {
-      const _member = command.message.member
-      const _guild = command.message.guild
-      if (!_member || !_guild) {
-        return Promise.reject('An unexpected error occurred')
-      }
-
-      member = _member
-      guild = _guild
-    }
+    const [guild, member] = getGuildAndCallerFromCommand(command)
 
     if (!member || !guild) {
       return Promise.reject()
     }
 
     // User Role Check
-    if (!member.roles.cache.some((_, id) => ColorRoles.getAllowedRoles().includes(id))) {
+    if (!member.roles.cache.some((_, id) => ColorRoles.getAllowedRoles(guild.id).includes(id))) {
       return 'Yay! You get to keep your white color!'
     }
 
@@ -202,7 +185,7 @@ export class ColorRoles {
     color = color.toUpperCase()
     if (color === 'LAZY') {
       if (userOptions.favColor) {
-        color = userOptions.favColor
+        color = userOptions.favColor.toUpperCase()
 
         if (member.roles.cache.some((role) => role.name === color)) {
           return 'Wow, you really are lazy... you already have your favorite color! 🎉'
@@ -235,21 +218,48 @@ export class ColorRoles {
       color = ColorRoles.getRandomColor()
     }
 
+    // Update role and favorite color
     const hexColor: HexColorString = color[0] !== '#' ? `#${color}` : (color as HexColorString)
-    const baseRole = guild.roles.cache.find((role) => role.id === ColorRoles.allowedMemberRoles[0])
+    let favoriteString = ' '
+    if (isFavorite || hexColor === userOptions.favColor?.toUpperCase()) {
+      favoriteString += Formatters.italic('favorite') + ' '
+    }
+
+    await ColorRoles.setColor(hexColor, member, guild)
+      .then(async (_) => {
+        if (isFavorite) {
+          await this.client.user
+            .update({
+              where: {
+                id: member.id,
+              },
+              data: {
+                favColor: hexColor,
+              },
+            })
+            .catch(console.error)
+        }
+      })
+      .catch(console.error)
+
+    if (randomed) {
+      return `Hahaha. Get stuck with ${hexColor} for an hour.`
+    } else {
+      return `${hexColor} has been set, enjoy your${favoriteString}color!`
+    }
+  }
+
+  static async setColor(color: HexColorString | 'uncolor', member?: GuildMember, guild?: Guild) {
+    if (!member || !guild) {
+      return Promise.reject('An unexpected error occurred')
+    }
+
+    // Needed to allow priority if there are multiple roles with colors; e.g. Nitro or Subscriber
+    const baseRole = guild.roles.cache.find((role) => role.id === ColorRoles.allowedMemberRoles.get(guild.id)?.at(0))
     let rolePosition = baseRole?.position
     if (rolePosition) {
-      rolePosition += 1
+      rolePosition += 1 // Higher priority == more important
     }
-    const colorRole =
-      guild.roles.cache.find((role) => role.name === hexColor) ??
-      (await guild.roles.create({
-        name: hexColor,
-        color: hexColor,
-        permissions: [],
-        position: rolePosition, // Needed to allow priority if there are multiple roles with colors; e.g. Nitro or Subscriber
-        mentionable: false,
-      }))
 
     // Remove and delete existing role if exists
     const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
@@ -265,67 +275,21 @@ export class ColorRoles {
       }
     }
 
-    // Update role and favorite color
-    let favoriteString = ' '
-    await member.roles
-      .add(colorRole)
-      .then(async (_) => {
-        if (isFavorite) {
-          await this.client.user
-            .update({
-              where: {
-                id: member.id,
-              },
-              data: {
-                favColor: hexColor,
-              },
-            })
-            .catch(console.error)
-          favoriteString += Formatters.italic('favorite') + ' '
-        }
-      })
-      .catch(console.error)
-
-    if (randomed) {
-      return `Hahaha. Get stuck with ${hexColor} for an hour.`
+    if (color === 'uncolor') {
+      return member
     } else {
-      return `${hexColor} has been set, enjoy your${favoriteString}color!`
-    }
-  }
-
-  static async uncolor(userId: string, command: CommandInteraction | SimpleCommandMessage) {
-    let guild: Guild
-    if (command instanceof CommandInteraction) {
-      const _guild = command.guild
-      if (!_guild) {
-        return Promise.reject('An unexpected error occurred')
-      }
-
-      guild = _guild
-    } else {
-      const _guild = command.message.guild
-      if (!_guild) {
-        return Promise.reject('An unexpected error occurred')
-      }
-
-      guild = _guild
-    }
-
-    const unColoredMember = guild.members.cache.find((member) => member.id === userId)
-    const colorRole = unColoredMember?.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
-    if (colorRole && unColoredMember) {
-      unColoredMember.roles
-        .remove(colorRole)
-        .then(async (_) => {
-          if (
-            colorRole &&
-            (colorRole.members.size === 0 ||
-              (colorRole.members.size === 1 && colorRole.members.some((_, id) => id === userId)))
-          ) {
-            await guild.roles.delete(colorRole.id)
-          }
-        })
-        .catch(console.error)
+      // Finally add the new role to the member
+      color = color.toUpperCase() as HexColorString
+      const colorRole =
+        guild.roles.cache.find((role) => role.name === color) ??
+        (await guild.roles.create({
+          name: color,
+          color: color,
+          permissions: [],
+          position: rolePosition,
+          mentionable: false,
+        }))
+      return member.roles.add(colorRole)
     }
   }
 
@@ -336,7 +300,7 @@ export class ColorRoles {
       .toUpperCase()
   }
 
-  private static getAllowedRoles(): string[] {
-    return superUserRoles.map((su) => su.id).concat(ColorRoles.allowedMemberRoles)
+  private static getAllowedRoles(guildId: string): string[] {
+    return superUserRoles.map((su) => su.id).concat(ColorRoles.allowedMemberRoles.get(guildId) ?? [])
   }
 }
