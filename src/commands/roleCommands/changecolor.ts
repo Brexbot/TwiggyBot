@@ -163,12 +163,12 @@ export class ColorRoles {
     })
 
     if (!superUserIds.some((id) => id.id === member.id)) {
-      if (userOptions.lastLoss.getTime() + Duel.cooldown > Date.now()) {
+      if ((userOptions.lastLoss.getTime() + Duel.cooldown) > Date.now()) {
         return `${member.user}, you have recently lost a duel. Please wait ${getTimeLeftInReadableFormat(
           userOptions.lastLoss,
           Duel.cooldown
         )} before trying again.`
-      } else if (userOptions.lastRandom.getTime() + ColorRoles.cooldown > Date.now()) {
+      } else if ((userOptions.lastRandom.getTime() + ColorRoles.cooldown) > Date.now()) {
         return `${member.user}, you have recently randomed/gambled. Please wait ${getTimeLeftInReadableFormat(
           userOptions.lastRandom,
           Duel.cooldown
