@@ -171,7 +171,7 @@ export class ColorRoles {
       } else if ((userOptions.lastRandom.getTime() + ColorRoles.cooldown) > Date.now()) {
         return `${member.user}, you have recently randomed/gambled. Please wait ${getTimeLeftInReadableFormat(
           userOptions.lastRandom,
-          Duel.cooldown
+          ColorRoles.cooldown
         )} before trying again.`
       }
     }
