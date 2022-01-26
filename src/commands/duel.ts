@@ -167,7 +167,7 @@ export class Duel {
           challengerMember?.timeout(tenMinutesInMillis, 'Tied a duel!')
           acceptorMember?.timeout(tenMinutesInMillis, 'Tied a duel!')
 
-          winnerText = "It's a draw!"
+          winnerText = "It's a draw! Now go sit in a corner for 10 minutes and think about your actions..."
         }
 
         await collectionInteraction.editReply({
