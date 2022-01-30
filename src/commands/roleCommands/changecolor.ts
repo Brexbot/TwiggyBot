@@ -163,12 +163,12 @@ export class ColorRoles {
     })
 
     if (!superUserIds.some((id) => id.id === member.id)) {
-      if ((userOptions.lastLoss.getTime() + Duel.cooldown) > Date.now()) {
+      if (userOptions.lastLoss.getTime() + Duel.cooldown > Date.now()) {
         return `${member.user}, you have recently lost a duel. Please wait ${getTimeLeftInReadableFormat(
           userOptions.lastLoss,
           Duel.cooldown
         )} before trying again.`
-      } else if ((userOptions.lastRandom.getTime() + ColorRoles.cooldown) > Date.now()) {
+      } else if (userOptions.lastRandom.getTime() + ColorRoles.cooldown > Date.now()) {
         return `${member.user}, you have recently randomed/gambled. Please wait ${getTimeLeftInReadableFormat(
           userOptions.lastRandom,
           ColorRoles.cooldown
@@ -269,20 +269,6 @@ export class ColorRoles {
       rolePosition += 1 // Higher priority == more important
     }
 
-    // Remove and delete existing role if exists
-    const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
-    if (existingRole) {
-      await member.roles.remove(existingRole).catch(console.error)
-      const roleToDelete = guild.roles.cache.find((role) => role.id === existingRole.id)
-      if (
-        roleToDelete &&
-        (roleToDelete.members.size === 0 ||
-          (roleToDelete.members.size === 1 && roleToDelete.members.some((_, id) => id === member.id)))
-      ) {
-        await guild.roles.delete(existingRole.id).catch(console.error)
-      }
-    }
-
     if (color === 'uncolor') {
       return member
     } else {
@@ -297,7 +283,24 @@ export class ColorRoles {
           position: rolePosition,
           mentionable: false,
         }))
-      return member.roles.add(colorRole)
+
+      // Remove and delete existing role if exists
+      const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
+      return member.roles.add(colorRole).then(async (guildMember) => {
+        if (existingRole) {
+          member.roles.remove(existingRole).catch(console.error)
+          const roleToDelete = guild.roles.cache.find((role) => role.id === existingRole.id)
+          if (
+            roleToDelete &&
+            (roleToDelete.members.size === 0 ||
+              (roleToDelete.members.size === 1 && roleToDelete.members.some((_, id) => id === member.id)))
+          ) {
+            guild.roles.delete(existingRole.id).catch(console.error)
+          }
+        }
+
+        return guildMember
+      })
     }
   }
 
