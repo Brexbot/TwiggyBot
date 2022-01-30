@@ -286,7 +286,7 @@ export class ColorRoles {
 
       // Remove and delete existing role if exists
       const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
-      return member.roles.add(colorRole).then(async (_) => {
+      return member.roles.add(colorRole).then(async (guildMember) => {
         if (existingRole) {
           member.roles.remove(existingRole).catch(console.error)
           const roleToDelete = guild.roles.cache.find((role) => role.id === existingRole.id)
@@ -298,6 +298,8 @@ export class ColorRoles {
             guild.roles.delete(existingRole.id).catch(console.error)
           }
         }
+
+        return guildMember
       })
     }
   }
