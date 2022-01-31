@@ -264,16 +264,13 @@ export class ColorRoles {
 
     // Needed to allow priority if there are multiple roles with colors; e.g. Nitro or Subscriber
     const baseRole = guild.roles.cache.find((role) => role.id === ColorRoles.allowedMemberRoles.get(guild.id)?.at(0))
-    let rolePosition = baseRole?.position
-    if (rolePosition) {
-      rolePosition += 1 // Higher priority == more important
-    }
+    let rolePosition = (baseRole?.position ?? -1) + 1 // Higher priority == more important
 
-    // Lastly remove an existing role if it exists
+    // Get any existing color role before we add/remove
     const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
 
     if (color !== 'uncolor') {
-      // Finally add the new role to the member
+      // Add the new role to the member
       color = color.toUpperCase() as HexColorString
       const colorRole =
         guild.roles.cache.find((role) => role.name === color) ??
@@ -287,16 +284,19 @@ export class ColorRoles {
       await member.roles.add(colorRole).catch(console.error)
     }
 
-    if (existingRole) {
-      member.roles.remove(existingRole).catch(console.error)
-      const roleToDelete = guild.roles.cache.find((role) => role.id === existingRole.id)
-      if (
-        roleToDelete &&
-        (roleToDelete.members.size === 0 ||
-          (roleToDelete.members.size === 1 && roleToDelete.members.some((_, id) => id === member.id)))
-      ) {
-        guild.roles.delete(existingRole.id).catch(console.error)
-      }
+    // Lastly remove an existing role if it exists
+    if (existingRole && existingRole.name !== color) {
+      member.roles
+        .remove(existingRole)
+        .then((_) => {
+          return guild.roles.fetch(existingRole.id)
+        })
+        .then((role) => {
+          if (role && role.members.size === 0) {
+            return guild.roles.delete(existingRole.id)
+          }
+        })
+        .catch(console.error)
     }
 
     return member
