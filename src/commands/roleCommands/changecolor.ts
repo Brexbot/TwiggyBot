@@ -289,9 +289,11 @@ export class ColorRoles {
       member.roles
         .remove(existingRole)
         .then((_) => {
+          // Force the guild role cache to refresh
           return guild.roles.fetch(existingRole.id)
         })
         .then((role) => {
+          // Now that we've forced a role cache refresh; delete role if it is now an orphan :(
           if (role && role.members.size === 0) {
             return guild.roles.delete(existingRole.id)
           }
