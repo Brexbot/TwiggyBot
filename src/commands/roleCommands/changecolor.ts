@@ -269,6 +269,9 @@ export class ColorRoles {
       rolePosition += 1 // Higher priority == more important
     }
 
+    // Lastly remove an existing role if it exists
+    const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
+
     if (color !== 'uncolor') {
       // Finally add the new role to the member
       color = color.toUpperCase() as HexColorString
@@ -284,8 +287,6 @@ export class ColorRoles {
       await member.roles.add(colorRole).catch(console.error)
     }
 
-    // Lastly remove an existing role if it exists
-    const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
     if (existingRole) {
       member.roles.remove(existingRole).catch(console.error)
       const roleToDelete = guild.roles.cache.find((role) => role.id === existingRole.id)
