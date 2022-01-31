@@ -269,9 +269,7 @@ export class ColorRoles {
       rolePosition += 1 // Higher priority == more important
     }
 
-    if (color === 'uncolor') {
-      return member
-    } else {
+    if (color !== 'uncolor') {
       // Finally add the new role to the member
       color = color.toUpperCase() as HexColorString
       const colorRole =
@@ -285,23 +283,23 @@ export class ColorRoles {
         }))
 
       // Remove and delete existing role if exists
-      const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
-      return member.roles.add(colorRole).then(async (guildMember) => {
-        if (existingRole) {
-          member.roles.remove(existingRole).catch(console.error)
-          const roleToDelete = guild.roles.cache.find((role) => role.id === existingRole.id)
-          if (
-            roleToDelete &&
-            (roleToDelete.members.size === 0 ||
-              (roleToDelete.members.size === 1 && roleToDelete.members.some((_, id) => id === member.id)))
-          ) {
-            guild.roles.delete(existingRole.id).catch(console.error)
-          }
-        }
-
-        return guildMember
-      })
+      await member.roles.add(colorRole)
     }
+
+    const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
+    if (existingRole) {
+      member.roles.remove(existingRole).catch(console.error)
+      const roleToDelete = guild.roles.cache.find((role) => role.id === existingRole.id)
+      if (
+        roleToDelete &&
+        (roleToDelete.members.size === 0 ||
+          (roleToDelete.members.size === 1 && roleToDelete.members.some((_, id) => id === member.id)))
+      ) {
+        guild.roles.delete(existingRole.id).catch(console.error)
+      }
+    }
+
+    return member
   }
 
   private static getRandomColor(): string {
