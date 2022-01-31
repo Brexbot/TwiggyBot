@@ -281,11 +281,10 @@ export class ColorRoles {
           position: rolePosition,
           mentionable: false,
         }))
-
-      // Remove and delete existing role if exists
-      await member.roles.add(colorRole)
+      await member.roles.add(colorRole).catch(console.error)
     }
 
+    // Lastly remove an existing role if it exists
     const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
     if (existingRole) {
       member.roles.remove(existingRole).catch(console.error)
