@@ -264,15 +264,13 @@ export class ColorRoles {
 
     // Needed to allow priority if there are multiple roles with colors; e.g. Nitro or Subscriber
     const baseRole = guild.roles.cache.find((role) => role.id === ColorRoles.allowedMemberRoles.get(guild.id)?.at(0))
-    let rolePosition = baseRole?.position
-    if (rolePosition) {
-      rolePosition += 1 // Higher priority == more important
-    }
+    let rolePosition = (baseRole?.position ?? -1) + 1 // Higher priority == more important
 
-    if (color === 'uncolor') {
-      return member
-    } else {
-      // Finally add the new role to the member
+    // Get any existing color role before we add/remove
+    const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
+
+    if (color !== 'uncolor') {
+      // Add the new role to the member
       color = color.toUpperCase() as HexColorString
       const colorRole =
         guild.roles.cache.find((role) => role.name === color) ??
@@ -283,25 +281,27 @@ export class ColorRoles {
           position: rolePosition,
           mentionable: false,
         }))
-
-      // Remove and delete existing role if exists
-      const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
-      return member.roles.add(colorRole).then(async (guildMember) => {
-        if (existingRole) {
-          member.roles.remove(existingRole).catch(console.error)
-          const roleToDelete = guild.roles.cache.find((role) => role.id === existingRole.id)
-          if (
-            roleToDelete &&
-            (roleToDelete.members.size === 0 ||
-              (roleToDelete.members.size === 1 && roleToDelete.members.some((_, id) => id === member.id)))
-          ) {
-            guild.roles.delete(existingRole.id).catch(console.error)
-          }
-        }
-
-        return guildMember
-      })
+      await member.roles.add(colorRole).catch(console.error)
     }
+
+    // Lastly remove an existing role if it exists
+    if (existingRole && existingRole.name !== color) {
+      member.roles
+        .remove(existingRole)
+        .then((_) => {
+          // Force the guild role cache to refresh
+          return guild.roles.fetch(existingRole.id)
+        })
+        .then((role) => {
+          // Now that we've forced a role cache refresh; delete role if it is now an orphan :(
+          if (role && role.members.size === 0) {
+            return guild.roles.delete(existingRole.id)
+          }
+        })
+        .catch(console.error)
+    }
+
+    return member
   }
 
   private static getRandomColor(): string {
