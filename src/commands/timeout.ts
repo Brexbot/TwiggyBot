@@ -1,4 +1,4 @@
-import { CommandInteraction, Guild, GuildMember, GuildMemberRoleManager, User } from 'discord.js'
+import { CommandInteraction, Formatters, Guild, GuildMember, GuildMemberRoleManager, User } from 'discord.js'
 import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
 import { PermissionSuperUserOnly } from '../guards/RoleChecks'
 
@@ -42,19 +42,41 @@ abstract class Timeout {
     return Math.floor(Math.random() * (690 - 420 + 1)) + 420
   }
 
-  @SimpleCommand('sudoku')
-  async sudokuCommand(command: SimpleCommandMessage) {
+  async sudoku(member: GuildMember | null, message?: string): Promise<string> {
+    const time = this.sudokuDuration()
+    await member?.timeout(time * 1000, "Sudoku'd").catch(console.error)
+    const msg = message && message.length < 150 ? `\n${Formatters.quote(message)}` : ''
+
+    return `${member}, you're timed out for ${time} seconds.${msg}`
+  }
+
+  @SimpleCommand('sudoku', { argSplitter: '\n' })
+  async sudokuCommand(
+    // message: everything after the command and before a new line
+    @SimpleCommandOption('message', {
+      type: 'STRING',
+      description: 'Your last message before committing sudoku',
+    })
+    message: string | undefined,
+    command: SimpleCommandMessage
+  ) {
     if (!this.hasPermission(command)) {
       return
     }
 
-    const time = this.sudokuDuration()
-    await command.message.member?.timeout(time * 1000, "Sudoku'd")
-    await command.message.channel.send(`${command.message.author}, you're timed out for ${time} seconds.`)
+    await command.message.channel.send(await this.sudoku(command.message.member, message))
   }
 
   @Slash('sudoku', { description: 'Commit sudoku' })
-  async sudokuInteraction(interaction: CommandInteraction) {
+  async sudokuInteraction(
+    @SlashOption('message', {
+      type: 'STRING',
+      description: 'Your last message before committing sudoku',
+      required: false,
+    })
+    message: string | undefined,
+    interaction: CommandInteraction
+  ) {
     if (!(interaction.member instanceof GuildMember) || !this.hasPermission(interaction)) {
       await interaction.reply({
         content: 'I cannot time you out.',
@@ -63,9 +85,7 @@ abstract class Timeout {
       return
     }
 
-    const time = this.sudokuDuration()
-    await interaction.member.timeout(time * 1000, "Sudoku'd")
-    await interaction.reply(`${interaction.user}, you're timed out for ${time} seconds.`)
+    await interaction.reply(await this.sudoku(interaction.member, message))
   }
 
   @SimpleCommand('timeout')
