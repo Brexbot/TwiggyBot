@@ -63,6 +63,7 @@ class RPS {
     this.acceptorNew = null
     this.plays = {}
     this.timeout = null
+    this.inProgress = false
   }
 
   private expect_play(user: User) {
@@ -282,9 +283,10 @@ class RPS {
         content: `${challenger} failed to find someone to duel.`,
         components: [row],
       })
-      this.inProgress = false
+      this.clear_game()
     }, this.timeoutDuration)
 
+    // Listen the the accept button being clicked
     const collector = message.createMessageComponentCollector()
     collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
       await collectionInteraction.deferUpdate()
@@ -294,6 +296,7 @@ class RPS {
         return
       }
 
+      // Game ended just before the button being clicked
       if (!this.inProgress) {
         await collectionInteraction.followUp({
           content: `Someone beat you to the challenge!`,
@@ -302,12 +305,9 @@ class RPS {
         return
       }
 
-      this.inProgress = false
+      // User accepted the game,
+      // send both players a message with the choice buttons
       this.acceptorNew = acceptor
-      if (this.timeout) {
-        clearTimeout(this.timeout)
-      }
-
       const button = this.acceptButton('In progress...', true)
       const row = new MessageActionRow().addComponents(button)
       await collectionInteraction.editReply({
@@ -320,7 +320,6 @@ class RPS {
         this.choiceButton('Paper', '✋'),
         this.choiceButton('Scissors', '✌'),
       ])
-
       const msg = {
         content: 'Choose your weapon',
         components: [optionsRow],
@@ -329,7 +328,6 @@ class RPS {
 
       const challengerMessage = await interaction.followUp(msg)
       const acceptorMessage = await collectionInteraction.followUp(msg)
-
       if (!(challengerMessage instanceof Message) || !(acceptorMessage instanceof Message)) {
         console.error('Challenger or Acceptor message is invalid instance')
         this.clear_game()
@@ -404,6 +402,9 @@ class RPS {
       components: [],
     })
     await interaction.editReply({ content: message, components: [] })
+
+    // The timeout only gets cleared at the end otherwise if a player
+    // dismisses the choose rps message the game will never end
     this.clear_game()
   }
 }
