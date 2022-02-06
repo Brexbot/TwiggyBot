@@ -311,7 +311,7 @@ class RPS {
       const button = this.acceptButton('In progress...', true)
       const row = new MessageActionRow().addComponents(button)
       await collectionInteraction.editReply({
-        content: `The rock paper scissors game between {challenger} and ${acceptor} has started.\nChoose your weapon!`,
+        content: `The rock paper scissors game between ${challenger} and ${acceptor} has started.\nChoose your weapon!`,
         components: [row],
       })
 
