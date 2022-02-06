@@ -46,6 +46,7 @@ class RPS {
   private timeoutDuration = 5 * 60 * 1000
   private challengerNew: GuildMember | null = null
   private acceptorNew: GuildMember | null = null
+  private interaction: string | null = null
   private failMessage = ''
 
   private wins_table: Record<RPSChoice, RPSChoice> = {
@@ -62,6 +63,7 @@ class RPS {
     this.challengerNew = null
     this.acceptor = null
     this.acceptorNew = null
+    this.interaction = null
     this.plays = {}
     this.timeout = null
     this.inProgress = false
@@ -263,6 +265,7 @@ class RPS {
     }
 
     this.challengerNew = challenger
+    this.interaction = interaction.id
     const button = this.acceptButton('Accept')
     const row = new MessageActionRow().addComponents(button)
     const message = await interaction.reply({
@@ -367,7 +370,9 @@ class RPS {
   }
 
   async detectChoice(choiceInteraction: ButtonInteraction, interaction: CommandInteraction) {
-    if (!choiceInteraction.isButton) {
+    // Don't allow choice from something that's not a button or a game that timed out.
+    // Trying to reply to the latter crashes the bot
+    if (!choiceInteraction.isButton || this.interaction !== interaction.id) {
       return
     }
 
