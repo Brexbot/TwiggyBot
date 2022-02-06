@@ -46,6 +46,7 @@ class RPS {
   private timeoutDuration = 5 * 60 * 1000
   private challengerNew: GuildMember | null = null
   private acceptorNew: GuildMember | null = null
+  private failMessage = ''
 
   private wins_table: Record<RPSChoice, RPSChoice> = {
     rock: 'scissors',
@@ -64,6 +65,7 @@ class RPS {
     this.plays = {}
     this.timeout = null
     this.inProgress = false
+    this.failMessage = ''
   }
 
   private expect_play(user: User) {
@@ -276,12 +278,13 @@ class RPS {
     }
 
     this.inProgress = true
+    this.failMessage = `${challenger} failed to find someone to duel.`
     this.timeout = setTimeout(async () => {
       const button = this.acceptButton("It's over.", true)
       const row = new MessageActionRow().addComponents(button)
-      await interaction.followUp({
-        content: `${challenger} failed to find someone to duel.`,
-        components: [row],
+      await interaction.editReply({
+        content: this.failMessage,
+        components: [],
       })
       this.clear_game()
     }, this.timeoutDuration)
@@ -308,6 +311,9 @@ class RPS {
       // User accepted the game,
       // send both players a message with the choice buttons
       this.acceptorNew = acceptor
+      // If the timeout ends after here it's because someone hasn't picked an option
+      this.failMessage = "One or more of the players hasn't chosen an option fast enough."
+
       const button = this.acceptButton('In progress...', true)
       const row = new MessageActionRow().addComponents(button)
       await collectionInteraction.editReply({
