@@ -1,4 +1,15 @@
-import { CommandInteraction, TextBasedChannel, TextChannel, User } from 'discord.js'
+import {
+  ButtonInteraction,
+  CommandInteraction,
+  EmojiIdentifierResolvable,
+  GuildMember,
+  Message,
+  MessageActionRow,
+  MessageButton,
+  TextBasedChannel,
+  TextChannel,
+  User,
+} from 'discord.js'
 import {
   type ArgsOf,
   Discord,
@@ -10,12 +21,15 @@ import {
   Slash,
   SlashOption,
 } from 'discordx'
+import { getCallerFromCommand } from '../utils/CommandUtils'
 
 enum SlashOptions {
   Challenge = 'challenge',
   Accept = 'accept',
   End = 'end',
 }
+
+type RPSChoice = 'rock' | 'paper' | 'scissors'
 
 @Discord()
 class RPS {
@@ -24,11 +38,16 @@ class RPS {
   private timeout_duration = 1000 * 60 * 5
   private challenger: User | null = null
   private acceptor: User | null = null
-  private plays: { [user_id: string]: string } = {}
+  private plays: { [user_id: string]: RPSChoice } = {}
   private timeout: ReturnType<typeof setTimeout> | null = null
   private channel: TextChannel | TextBasedChannel | null = null
 
-  private wins_table: { [play: string]: string } = {
+  private inProgress = false
+  private timeoutDuration = 5 * 60 * 1000
+  private challengerNew: GuildMember | null = null
+  private acceptorNew: GuildMember | null = null
+
+  private wins_table: Record<RPSChoice, RPSChoice> = {
     rock: 'scissors',
     paper: 'rock',
     scissors: 'paper',
@@ -39,7 +58,9 @@ class RPS {
       clearTimeout(this.timeout)
     }
     this.challenger = null
+    this.challengerNew = null
     this.acceptor = null
+    this.acceptorNew = null
     this.plays = {}
     this.timeout = null
   }
@@ -146,7 +167,7 @@ class RPS {
       this.expect_play(player)
     }
 
-    this.plays[player.id] = message.content
+    this.plays[player.id] = message.content as RPSChoice
 
     if (!this.plays[this.challenger.id] || !this.plays[this.acceptor.id]) {
       return
@@ -220,5 +241,169 @@ class RPS {
     }
     this.channel = interaction.channel
     interaction.reply(this.do_rps(text, interaction.user, interaction.channel))
+  }
+
+  @Slash('rps-new', { description: 'Play a game of rock paper scissors' })
+  async rpsSlash(interaction: CommandInteraction) {
+    const challenger = getCallerFromCommand(interaction)
+    if (!challenger) {
+      await interaction.reply({ content: 'An unxpected error occurred', ephemeral: true })
+      return
+    }
+
+    if (this.inProgress) {
+      await interaction.reply({
+        content: 'A duel is already in progress',
+        ephemeral: true,
+      })
+      return
+    }
+
+    this.challengerNew = challenger
+    const button = this.acceptButton('Accept')
+    const row = new MessageActionRow().addComponents(button)
+    const message = await interaction.reply({
+      content: `${challenger} is looking for a rock paper scissors game, press the button to accept.`,
+      fetchReply: true,
+      components: [row],
+    })
+
+    if (!(message instanceof Message)) {
+      console.error('Invalid Message instance')
+      this.clear_game()
+      return
+    }
+
+    this.inProgress = true
+    this.timeout = setTimeout(async () => {
+      const button = this.acceptButton("It's over.", true)
+      const row = new MessageActionRow().addComponents(button)
+      await interaction.followUp({
+        content: `${challenger} failed to find someone to duel.`,
+        components: [row],
+      })
+      this.inProgress = false
+    }, this.timeoutDuration)
+
+    const collector = message.createMessageComponentCollector()
+    collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
+      await collectionInteraction.deferUpdate()
+
+      const acceptor = getCallerFromCommand(collectionInteraction)
+      if (!acceptor || acceptor.id === challenger.id) {
+        return
+      }
+
+      if (!this.inProgress) {
+        await collectionInteraction.followUp({
+          content: `Someone beat you to the challenge!`,
+          ephemeral: true,
+        })
+        return
+      }
+
+      this.inProgress = false
+      this.acceptorNew = acceptor
+      if (this.timeout) {
+        clearTimeout(this.timeout)
+      }
+
+      const button = this.acceptButton('In progress...', true)
+      const row = new MessageActionRow().addComponents(button)
+      await collectionInteraction.editReply({
+        content: `The rock paper scissors game between {challenger} and ${acceptor} has started.\nChoose your weapon!`,
+        components: [row],
+      })
+
+      const optionsRow = new MessageActionRow().addComponents([
+        this.choiceButton('Rock', '👊'),
+        this.choiceButton('Paper', '✋'),
+        this.choiceButton('Scissors', '✌'),
+      ])
+
+      const msg = {
+        content: 'Choose your weapon',
+        components: [optionsRow],
+        ephemeral: true,
+      }
+
+      const challengerMessage = await interaction.followUp(msg)
+      const acceptorMessage = await collectionInteraction.followUp(msg)
+
+      if (!(challengerMessage instanceof Message) || !(acceptorMessage instanceof Message)) {
+        console.error('Challenger or Acceptor message is invalid instance')
+        this.clear_game()
+        return
+      }
+
+      const challengerCollector = challengerMessage.createMessageComponentCollector()
+      const acceptorCollector = acceptorMessage.createMessageComponentCollector()
+
+      challengerCollector.on('collect', (i: ButtonInteraction) => this.detectChoice(i, interaction))
+      acceptorCollector.on('collect', (i: ButtonInteraction) => this.detectChoice(i, interaction))
+    })
+  }
+
+  acceptButton(label: string, disabled = false): MessageButton {
+    return new MessageButton()
+      .setCustomId('accept-btn')
+      .setLabel(label)
+      .setEmoji('💪')
+      .setStyle('PRIMARY')
+      .setDisabled(disabled)
+  }
+
+  choiceButton(label: string, emoji: EmojiIdentifierResolvable): MessageButton {
+    return new MessageButton()
+      .setCustomId(label.toLowerCase())
+      .setLabel(label)
+      .setEmoji(emoji)
+      .setStyle('PRIMARY')
+      .setDisabled(false)
+  }
+
+  async detectChoice(choiceInteraction: ButtonInteraction, interaction: CommandInteraction) {
+    if (!choiceInteraction.isButton) {
+      return
+    }
+
+    await choiceInteraction.deferUpdate()
+    this.plays[choiceInteraction.user.id] = choiceInteraction.customId as RPSChoice
+
+    if (
+      !this.challengerNew ||
+      !this.acceptorNew ||
+      !this.plays[this.challengerNew.id] ||
+      !this.plays[this.acceptorNew.id]
+    ) {
+      await choiceInteraction.editReply({
+        content: `You picked ${choiceInteraction.customId}, waiting for your opponent to reply...`,
+        components: [],
+      })
+      return
+    }
+
+    const challengersChoice = this.plays[this.challengerNew.id]
+    const acceptorsChoice = this.plays[this.acceptorNew.id]
+
+    // Both players have played - decide winner
+    let winner: GuildMember | null = null
+    if (this.wins_table[challengersChoice] === acceptorsChoice) {
+      winner = this.challengerNew
+    }
+    if (this.wins_table[acceptorsChoice] === challengersChoice) {
+      winner = this.acceptorNew
+    }
+
+    const message = winner
+      ? `${this.challengerNew} shows ${challengersChoice}. ${this.acceptorNew} shows ${acceptorsChoice}.\n${winner} wins!`
+      : `${this.challengerNew} and ${this.acceptorNew} both show ${challengersChoice}.\nIt's a tie!`
+
+    await choiceInteraction.editReply({
+      content: `You picked ${choiceInteraction.customId}, the match has ended!`,
+      components: [],
+    })
+    await interaction.editReply({ content: message, components: [] })
+    this.clear_game()
   }
 }
