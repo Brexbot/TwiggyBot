@@ -6,28 +6,9 @@ import {
   Message,
   MessageActionRow,
   MessageButton,
-  TextBasedChannel,
-  TextChannel,
-  User,
 } from 'discord.js'
-import {
-  type ArgsOf,
-  Discord,
-  On,
-  SlashChoice,
-  SimpleCommand,
-  SimpleCommandMessage,
-  SimpleCommandOption,
-  Slash,
-  SlashOption,
-} from 'discordx'
+import { Discord, Slash } from 'discordx'
 import { getCallerFromCommand } from '../utils/CommandUtils'
-
-enum SlashOptions {
-  Challenge = 'challenge',
-  Accept = 'accept',
-  End = 'end',
-}
 
 type RPSChoice = 'rock' | 'paper' | 'scissors'
 
@@ -35,17 +16,12 @@ type RPSChoice = 'rock' | 'paper' | 'scissors'
 class RPS {
   private general_channel = '103678524375699456'
 
-  private timeout_duration = 1000 * 60 * 5
-  private challenger: User | null = null
-  private acceptor: User | null = null
-  private plays: { [user_id: string]: RPSChoice } = {}
-  private timeout: ReturnType<typeof setTimeout> | null = null
-  private channel: TextChannel | TextBasedChannel | null = null
-
   private inProgress = false
+  private timeout: ReturnType<typeof setTimeout> | null = null
   private timeoutDuration = 5 * 60 * 1000
-  private challengerNew: GuildMember | null = null
-  private acceptorNew: GuildMember | null = null
+  private challenger: GuildMember | null = null
+  private acceptor: GuildMember | null = null
+  private plays: { [user_id: string]: RPSChoice } = {}
   private interaction: string | null = null
   private failMessage = ''
 
@@ -60,9 +36,7 @@ class RPS {
       clearTimeout(this.timeout)
     }
     this.challenger = null
-    this.challengerNew = null
     this.acceptor = null
-    this.acceptorNew = null
     this.interaction = null
     this.plays = {}
     this.timeout = null
@@ -70,189 +44,11 @@ class RPS {
     this.failMessage = ''
   }
 
-  private expect_play(user: User) {
-    user.send('Please respond with rock, paper, or scissors')
-  }
-
-  private do_rps(text: string, user: User, channel: TextChannel | TextBasedChannel): string {
-    text = text.toLowerCase()
-
-    if (text === 'challenge') {
-      // If successful, sets this.challenger and this.timeout
-      if (this.acceptor) {
-        return 'Rps in progress. Please wait.'
-      }
-      if (this.challenger) {
-        return this.challenger.username + ' is already challenging someone. Use /rps accept to accept their challenge.'
-      }
-
-      this.timeout = setTimeout(() => {
-        if (!this.challenger) {
-          console.log('Impossible: rps: this.challenger not set')
-          return 'You broke me!'
-        }
-        channel.send(this.challenger.username + ' failed to find someone for their challenge.')
-        this.clear_game()
-      }, this.timeout_duration)
-      this.challenger = user
-      return (
-        this.challenger.username +
-        ' is looking for someone to play in rock, paper, scissors. Use /rps accept to accept their challenge.'
-      )
-    }
-
-    if (text === 'accept') {
-      // If successful, sets this.acceptor and resets this.timeout
-      if (this.acceptor) {
-        return 'Rps in progress. Please wait.'
-      }
-      if (!this.challenger) {
-        return 'No one is currently initiating a rps encounter. Use /rps challenge to issue forth a challenge.'
-      }
-      if (this.challenger.id === user.id) {
-        this.clear_game()
-        return "I see we're fighting ourselves again..."
-      }
-
-      this.acceptor = user
-      this.expect_play(this.challenger)
-      this.expect_play(this.acceptor)
-      if (!this.timeout) {
-        console.log('Impossible: rps: this.timout not set to challenger timeout')
-        return 'You broke me!'
-      }
-      clearTimeout(this.timeout)
-      this.timeout = setTimeout(() => {
-        channel.send('Time out!  No one wins!')
-        this.challenger = null
-        this.acceptor = null
-        this.plays = {}
-      }, this.timeout_duration)
-      return this.acceptor.username + ' accepts the duel. Please check your DMs.'
-    }
-
-    if (text === 'end') {
-      if (!this.challenger || this.challenger.id !== user.id) {
-        return "You aren't challenging anyone!"
-      }
-      this.clear_game()
-      return user.username + ' has ended their challenge because they are a big, fat :chicken:'
-    }
-
-    return 'Usage challenge/accept/end'
-  }
-
-  @On('messageCreate')
-  rps_dm([message]: ArgsOf<'messageCreate'>) {
-    // Only accept messages that are DMs if a game of rps is ongoing
-    if (message.channel.type !== 'DM') {
-      return
-    }
-    if (!this.challenger || !this.acceptor) {
-      return
-    }
-
-    let player = null
-    if (this.challenger.id === message.author.id) {
-      player = this.challenger
-    }
-    if (this.acceptor.id === message.author.id) {
-      player = this.acceptor
-    }
-    if (!player) {
-      return
-    }
-
-    // Cannot change play
-    if (this.plays[player.id]) {
-      return
-    }
-    const playerChoice = message.content.toLowerCase()
-    if (playerChoice !== 'rock' && playerChoice !== 'paper' && playerChoice !== 'scissors') {
-      this.expect_play(player)
-    }
-
-    this.plays[player.id] = message.content as RPSChoice
-
-    if (!this.plays[this.challenger.id] || !this.plays[this.acceptor.id]) {
-      return
-    }
-
-    // Both players have played - decide winner
-    let winner = null
-    if (this.wins_table[this.plays[this.challenger.id]] === this.plays[this.acceptor.id]) {
-      winner = this.challenger
-    }
-    if (this.wins_table[this.plays[this.acceptor.id]] === this.plays[this.challenger.id]) {
-      winner = this.acceptor
-    }
-
-    if (!this.channel) {
-      console.log('Impossible: rps: this.channel not set')
-      return
-    }
-    if (!winner) {
-      this.channel.send(
-        this.challenger.username +
-          ' and ' +
-          this.acceptor.username +
-          ' both show ' +
-          this.plays[this.challenger.id] +
-          ". It's a tie!"
-      )
-    } else {
-      this.channel.send(
-        this.challenger.username +
-          ' shows ' +
-          this.plays[this.challenger.id] +
-          '. ' +
-          this.acceptor.username +
-          ' shows ' +
-          this.plays[this.acceptor.id] +
-          '.\n' +
-          winner.username +
-          ' wins!'
-      )
-    }
-
-    this.clear_game()
-  }
-
-  @SimpleCommand('rps')
-  rps(
-    @SimpleCommandOption('text', { type: 'STRING' })
-    text: string,
-    command: SimpleCommandMessage
-  ) {
-    if (command.message.channel.id !== this.general_channel) {
-      return
-    }
-    this.channel = command.message.channel
-    this.channel.send(this.do_rps(text, command.message.author, command.message.channel))
-  }
-
-  @Slash('rps', { description: 'challenge, accept, or end a rock paper scissors game' })
-  async slash(
-    @SlashChoice(SlashOptions)
-    @SlashOption('text')
-    text: string,
-    interaction: CommandInteraction
-  ) {
-    if (!interaction.channel) {
-      return
-    }
-    if (interaction.channel.id !== this.general_channel) {
-      return
-    }
-    this.channel = interaction.channel
-    interaction.reply(this.do_rps(text, interaction.user, interaction.channel))
-  }
-
-  @Slash('rps-new', { description: 'Play a game of rock paper scissors' })
+  @Slash('rps', { description: 'Play a game of rock paper scissors' })
   async rpsSlash(interaction: CommandInteraction) {
     const challenger = getCallerFromCommand(interaction)
     if (!challenger) {
-      await interaction.reply({ content: 'An unxpected error occurred', ephemeral: true })
+      await interaction.reply({ content: 'An unexpected error occurred', ephemeral: true })
       return
     }
 
@@ -264,7 +60,7 @@ class RPS {
       return
     }
 
-    this.challengerNew = challenger
+    this.challenger = challenger
     this.interaction = interaction.id
     const button = this.acceptButton('Accept')
     const row = new MessageActionRow().addComponents(button)
@@ -313,7 +109,7 @@ class RPS {
 
       // User accepted the game,
       // send both players a message with the choice buttons
-      this.acceptorNew = acceptor
+      this.acceptor = acceptor
       // If the timeout ends after here it's because someone hasn't picked an option
       this.failMessage = "One or more of the players hasn't chosen an option fast enough."
 
@@ -379,12 +175,7 @@ class RPS {
     await choiceInteraction.deferUpdate()
     this.plays[choiceInteraction.user.id] = choiceInteraction.customId as RPSChoice
 
-    if (
-      !this.challengerNew ||
-      !this.acceptorNew ||
-      !this.plays[this.challengerNew.id] ||
-      !this.plays[this.acceptorNew.id]
-    ) {
+    if (!this.challenger || !this.acceptor || !this.plays[this.challenger.id] || !this.plays[this.acceptor.id]) {
       await choiceInteraction.editReply({
         content: `You picked ${choiceInteraction.customId}, waiting for your opponent to reply...`,
         components: [],
@@ -392,21 +183,21 @@ class RPS {
       return
     }
 
-    const challengersChoice = this.plays[this.challengerNew.id]
-    const acceptorsChoice = this.plays[this.acceptorNew.id]
+    const challengersChoice = this.plays[this.challenger.id]
+    const acceptorsChoice = this.plays[this.acceptor.id]
 
     // Both players have played - decide winner
     let winner: GuildMember | null = null
     if (this.wins_table[challengersChoice] === acceptorsChoice) {
-      winner = this.challengerNew
+      winner = this.challenger
     }
     if (this.wins_table[acceptorsChoice] === challengersChoice) {
-      winner = this.acceptorNew
+      winner = this.acceptor
     }
 
     const message = winner
-      ? `${this.challengerNew} shows ${challengersChoice}. ${this.acceptorNew} shows ${acceptorsChoice}.\n${winner} wins!`
-      : `${this.challengerNew} and ${this.acceptorNew} both show ${challengersChoice}.\nIt's a tie!`
+      ? `${this.challenger} shows ${challengersChoice}. ${this.acceptor} shows ${acceptorsChoice}.\n${winner} wins!`
+      : `${this.challenger} and ${this.acceptor} both show ${challengersChoice}.\nIt's a tie!`
 
     await choiceInteraction.editReply({
       content: `You picked ${choiceInteraction.customId}, the match has ended!`,
