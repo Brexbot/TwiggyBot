@@ -14,17 +14,17 @@ type RPSChoice = 'rock' | 'paper' | 'scissors'
 
 @Discord()
 class RPS {
-  private general_channel = '103678524375699456'
-
+  private generalChannel = '103678524375699456'
   private inProgress = false
   private timeout: ReturnType<typeof setTimeout> | null = null
   private timeoutDuration = 5 * 60 * 1000
-  private challenger: GuildMember | null = null
-  private acceptor: GuildMember | null = null
-  private plays: { [user_id: string]: RPSChoice } = {}
-  private interaction: string | null = null
   private failMessage = ''
 
+  private challenger: GuildMember | null = null
+  private acceptor: GuildMember | null = null
+  private interaction: string | null = null
+
+  private plays: { [user_id: string]: RPSChoice } = {}
   private wins_table: Record<RPSChoice, RPSChoice> = {
     rock: 'scissors',
     paper: 'rock',
@@ -46,6 +46,11 @@ class RPS {
 
   @Slash('rps', { description: 'Play a game of rock paper scissors' })
   async rpsSlash(interaction: CommandInteraction) {
+    if (interaction.channelId !== this.generalChannel) {
+      await interaction.reply({ content: 'You cannot use that command here', ephemeral: true })
+      return
+    }
+
     const challenger = getCallerFromCommand(interaction)
     if (!challenger) {
       await interaction.reply({ content: 'An unexpected error occurred', ephemeral: true })
