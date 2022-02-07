@@ -67,7 +67,7 @@ class RPS {
 
     this.challenger = challenger
     this.interaction = interaction.id
-    const button = this.acceptButton('Accept')
+    const button = this.acceptButton('Accept', '💪')
     const row = new MessageActionRow().addComponents(button)
     const message = await interaction.reply({
       content: `${challenger} is looking for a rock paper scissors game, press the button to accept.`,
@@ -84,8 +84,6 @@ class RPS {
     this.inProgress = true
     this.failMessage = `${challenger} failed to find someone to duel.`
     this.timeout = setTimeout(async () => {
-      const button = this.acceptButton("It's over.", true)
-      const row = new MessageActionRow().addComponents(button)
       await interaction.editReply({
         content: this.failMessage,
         components: [],
@@ -118,7 +116,7 @@ class RPS {
       // If the timeout ends after here it's because someone hasn't picked an option
       this.failMessage = "One or more of the players hasn't chosen an option fast enough."
 
-      const button = this.acceptButton('In progress...', true)
+      const button = this.acceptButton('In progress...', '⏳', true)
       const row = new MessageActionRow().addComponents(button)
       await collectionInteraction.editReply({
         content: `The rock paper scissors game between ${challenger} and ${acceptor} has started.\nChoose your weapon!`,
@@ -152,11 +150,11 @@ class RPS {
     })
   }
 
-  acceptButton(label: string, disabled = false): MessageButton {
+  acceptButton(label: string, emoji: EmojiIdentifierResolvable, disabled = false): MessageButton {
     return new MessageButton()
       .setCustomId('accept-btn')
       .setLabel(label)
-      .setEmoji('💪')
+      .setEmoji(emoji)
       .setStyle('PRIMARY')
       .setDisabled(disabled)
   }
