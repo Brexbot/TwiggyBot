@@ -4,7 +4,7 @@ import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
 import { GuildOptions, Prisma } from '../../../prisma/generated/prisma-client-js'
 import { PermissionSuperUserOnly, superUserIds, superUserRoles } from '../../guards/RoleChecks'
-import { getGuildAndCallerFromCommand, getGuildFromCommand } from '../../utils/CommandUtils'
+import { getCallerFromCommand, getGuildAndCallerFromCommand, getGuildFromCommand } from '../../utils/CommandUtils'
 import { Duel } from '../duel'
 import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils'
 
@@ -96,21 +96,51 @@ export class ColorRoles {
   }
 
   @SimpleCommand('lazy')
-  async simpleLazyColor(command: SimpleCommandMessage) {
-    this.changeUserColor('LAZY', false, command)
-      .then(async (reply) => {
-        await command.message.channel.send(reply)
-      })
-      .catch(console.error)
+  async simpleLazyColor(
+    @SimpleCommandOption('fav_color', {
+      description: 'The hex value of your favorite color',
+    })
+    color: string | undefined,
+    command: SimpleCommandMessage
+  ) {
+    if (color) {
+      this.setFavorite(color, command.message.member)
+        .then(async (reply) => {
+          await command.message.channel.send(reply)
+        })
+        .catch(console.error)
+    } else {
+      this.changeUserColor('LAZY', false, command)
+        .then(async (reply) => {
+          await command.message.channel.send(reply)
+        })
+        .catch(console.error)
+    }
   }
 
   @Slash('lazy', { description: 'Change to your favorite display color' })
-  async slashLazyColor(interaction: CommandInteraction) {
-    this.changeUserColor('LAZY', false, interaction)
-      .then(async (reply) => {
-        await interaction.reply(reply)
-      })
-      .catch(console.error)
+  async slashLazyColor(
+    @SlashOption('fav_color', {
+      description: 'The hex value of your favorite color',
+      required: false,
+    })
+    color: string | undefined,
+    interaction: CommandInteraction
+  ) {
+    if (color) {
+      const member = getCallerFromCommand(interaction)
+      this.setFavorite(color, member)
+        .then(async (reply) => {
+          await interaction.reply(reply)
+        })
+        .catch(console.error)
+    } else {
+      this.changeUserColor('LAZY', false, interaction)
+        .then(async (reply) => {
+          await interaction.reply(reply)
+        })
+        .catch(console.error)
+    }
   }
 
   @SimpleCommand('gamble')
@@ -143,7 +173,7 @@ export class ColorRoles {
     }
 
     // User Role Check
-    if (!member.roles.cache.some((_, id) => ColorRoles.getAllowedRoles(guild.id).includes(id))) {
+    if (!member.roles.cache.some((_, id) => this.getAllowedRoles(guild.id).includes(id))) {
       return 'Yay! You get to keep your white color!'
     }
 
@@ -211,7 +241,7 @@ export class ColorRoles {
           },
         })
         randomed = true
-        color = ColorRoles.getRandomColor()
+        color = this.getRandomColor()
       } else {
         return 'Huzzah. You get to keep your color.'
       }
@@ -223,7 +253,7 @@ export class ColorRoles {
         },
       })
       randomed = true
-      color = ColorRoles.getRandomColor()
+      color = this.getRandomColor()
     }
 
     // Update role and favorite color
@@ -236,16 +266,7 @@ export class ColorRoles {
     await ColorRoles.setColor(hexColor, member, guild)
       .then(async (_) => {
         if (isFavorite) {
-          await this.client.user
-            .update({
-              where: {
-                id: member.id,
-              },
-              data: {
-                favColor: hexColor,
-              },
-            })
-            .catch(console.error)
+          this.setFavorite(hexColor, member)
         }
       })
       .catch(console.error)
@@ -264,7 +285,7 @@ export class ColorRoles {
 
     // Needed to allow priority if there are multiple roles with colors; e.g. Nitro or Subscriber
     const baseRole = guild.roles.cache.find((role) => role.id === ColorRoles.allowedMemberRoles.get(guild.id)?.at(0))
-    let rolePosition = (baseRole?.position ?? -1) + 1 // Higher priority == more important
+    const rolePosition = (baseRole?.position ?? -1) + 1 // Higher priority == more important
 
     // Get any existing color role before we add/remove
     const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
@@ -304,7 +325,27 @@ export class ColorRoles {
     return member
   }
 
-  private static getRandomColor(): string {
+  private async setFavorite(color: string, member: GuildMember | null): Promise<string> {
+    if (!ColorRoles.hexExp.test(color) || !member) {
+      return `Please enter a valid 6 digit hex color`
+    }
+
+    const hexColor: HexColorString = color[0] !== '#' ? `#${color}` : (color as HexColorString)
+    return this.client.user
+      .update({
+        where: {
+          id: member.id,
+        },
+        data: {
+          favColor: hexColor,
+        },
+      })
+      .then((_) => {
+        return `${hexColor} has been registered as your favorite color`
+      })
+  }
+
+  private getRandomColor(): string {
     // This could technically return 0x000000, which is an invalid role color in Discord (doesn't crash)
     // we prevent the user from setting this but I'm gonna leave it here as a god roll/easter egg
     return Math.floor(Math.random() * 0xffffff)
@@ -313,7 +354,7 @@ export class ColorRoles {
       .toUpperCase()
   }
 
-  private static getAllowedRoles(guildId: string): string[] {
+  private getAllowedRoles(guildId: string): string[] {
     return superUserRoles.map((su) => su.id).concat(ColorRoles.allowedMemberRoles.get(guildId) ?? [])
   }
 }
