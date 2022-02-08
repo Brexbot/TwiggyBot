@@ -208,9 +208,12 @@ export class Duel {
       } else if (lossStreak > 0) {
         // User is currently on a loss streak
         currentStreak += `**${lossStreak} ${this.plural(lossStreak, 'loss')}**`
-      } else {
+      } else if (draws > 0) {
         // User's last duel was a draw which reset both streaks
         currentStreak = 'Your last duel was a draw'
+      } else {
+        // User has never dueled
+        currentStreak = 'You have never dueled before'
       }
       const bestStreak = `Best streak: **${winStreakMax} ${this.plural(winStreakMax, 'win')}**`
       const worstStreak = `Worst streak: **${lossStreakMax} ${this.plural(lossStreakMax, 'loss')}**`
