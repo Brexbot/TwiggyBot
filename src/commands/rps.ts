@@ -51,12 +51,6 @@ class RPS {
       return
     }
 
-    const challenger = getCallerFromCommand(interaction)
-    if (!challenger) {
-      await interaction.reply({ content: 'An unexpected error occurred', ephemeral: true })
-      return
-    }
-
     if (this.inProgress) {
       await interaction.reply({
         content: 'A duel is already in progress',
@@ -65,7 +59,14 @@ class RPS {
       return
     }
 
+    const challenger = getCallerFromCommand(interaction)
+    if (!challenger) {
+      await interaction.reply({ content: 'An unexpected error occurred', ephemeral: true })
+      return
+    }
+
     this.challenger = challenger
+    this.inProgress = true
     this.interaction = interaction.id
     const button = this.acceptButton('Accept', '💪')
     const row = new MessageActionRow().addComponents(button)
@@ -81,7 +82,6 @@ class RPS {
       return
     }
 
-    this.inProgress = true
     this.failMessage = `${challenger} failed to find someone to duel.`
     this.timeout = setTimeout(async () => {
       await interaction.editReply({
@@ -97,7 +97,7 @@ class RPS {
       await collectionInteraction.deferUpdate()
 
       const acceptor = getCallerFromCommand(collectionInteraction)
-      if (!acceptor || acceptor.id === challenger.id) {
+      if (this.acceptor || !acceptor || acceptor.id === challenger.id) {
         return
       }
 
@@ -114,7 +114,7 @@ class RPS {
       // send both players a message with the choice buttons
       this.acceptor = acceptor
       // If the timeout ends after here it's because someone hasn't picked an option
-      this.failMessage = "One or more of the players hasn't chosen an option fast enough."
+      this.failMessage = "One or more players hasn't chosen an option fast enough."
 
       const button = this.acceptButton('In progress...', '⏳', true)
       const row = new MessageActionRow().addComponents(button)
