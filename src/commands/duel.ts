@@ -242,7 +242,8 @@ export class Duel {
         stats = shuffleArray(stats).slice(0, 2)
       }
       const statHavers = await Promise.all(stats.map(async (duel) => {
-        const user = await interaction.client.users.fetch(duel.userId)
+        const member = await interaction.guild?.members.fetch(duel.userId)
+        return member?.nickname ?? member?.user?.username ?? ''
         return user.username
       }))
 
