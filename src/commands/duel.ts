@@ -16,6 +16,7 @@ import { Duels } from '../../prisma/generated/prisma-client-js'
 import { ColorRoles } from './roleCommands/changecolor'
 import { getCallerFromCommand, getGuildAndCallerFromCommand } from '../utils/CommandUtils'
 import { getTimeLeftInReadableFormat } from '../utils/CooldownUtils'
+import { shuffleArray } from '../utils/Helpers'
 
 @Discord()
 @injectable()
@@ -177,14 +178,6 @@ export class Duel {
     })
   }
 
-  plural(streak: number, outcome: 'win' | 'loss'): string {
-    if (outcome === 'win') {
-      return streak === 1 ? 'win' : 'wins'
-    } else {
-      return streak === 1 ? 'loss' : 'losses'
-    }
-  }
-
   @Slash('duelstats', { description: 'Display your duel statistics' })
   private async duelStats(interaction: CommandInteraction) {
     await interaction.deferReply()
@@ -232,6 +225,52 @@ export class Duel {
       await interaction.followUp(`${user}, you have never duelled before.`)
     }
   }
+
+  @Slash('duelstreaks', { description: 'Show the overall duel statistics' })
+  private async streaks(interaction: CommandInteraction) {
+    const streakStats = ['winStreakMax', 'lossStreakMax', 'draws', 'losses', 'wins'] as const
+    const statFormatter = async (statName: (typeof streakStats[number]), emptyText: string): Promise<string> => {
+      let stats = await this.client.$queryRawUnsafe<Duels[]>(`SELECT * FROM Duels WHERE ${statName}=(SELECT MAX(${statName}) FROM Duels) AND ${statName} > 0`)
+      if(stats.length == 0) {
+        return emptyText
+      }
+      let extraMessage = ''
+      if(stats.length > 2) {
+        // If more than 2 users share the same stat, shuffle the array and only print the first two.
+        // The rest will be listed as n other users
+        extraMessage = `, and ${stats.length - 2} other user${stats.length - 2 > 1 ? 's' : ''}`
+        stats = shuffleArray(stats).slice(0, 2)
+      }
+      const statHavers = await Promise.all(stats.map(async (duel) => {
+        const member = await interaction.guild?.members.fetch(duel.userId)
+        return member?.nickname ?? member?.user?.username ?? ''
+      }))
+
+      return `${stats[0][statName]} by ${statHavers.join(', ')}${extraMessage}`
+    }
+
+    const statsEmbed = new MessageEmbed()
+      .setColor('#9932CC')
+      .setTitle('Duel streaks and stats')
+      .addFields(
+        { name: 'Highest win streak', value: await statFormatter('winStreakMax', 'Somehow, nobody has won a duel yet.') },
+        { name: 'Highest loss streak', value: await statFormatter('lossStreakMax', 'Somehow, nobody has lost a duel yet.') },
+        { name: 'Highest # of draws', value: await statFormatter('draws', 'Nobody has had a draw yet, good for them.') },
+        { name: 'Highest # of wins', value: await statFormatter('wins', 'Somehow, nobody has won a duel yet.') },
+        { name: 'Highest # of losses', value: await statFormatter('losses', 'Somehow, nobody has lost a duel yet.') },
+      )
+
+    await interaction.reply({ embeds: [statsEmbed] })
+  }
+
+  plural(streak: number, outcome: 'win' | 'loss'): string {
+    if (outcome === 'win') {
+      return streak === 1 ? 'win' : 'wins'
+    } else {
+      return streak === 1 ? 'loss' : 'losses'
+    }
+  }
+
 
   private async updateUserScore(stats: Duels, outcome: 'win' | 'loss' | 'draw') {
     switch (outcome) {
