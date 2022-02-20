@@ -244,7 +244,6 @@ export class Duel {
       const statHavers = await Promise.all(stats.map(async (duel) => {
         const member = await interaction.guild?.members.fetch(duel.userId)
         return member?.nickname ?? member?.user?.username ?? ''
-        return user.username
       }))
 
       return `${stats[0][statName]} by ${statHavers.join(', ')}${extraMessage}`
