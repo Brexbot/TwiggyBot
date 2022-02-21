@@ -40,6 +40,16 @@ class Weather {
 
   private static aboutMessage = `Weather data provided by [OpenWeather (TM)](https://openweathermap.org)
   Data made available under the [Creative Commons Attribution-ShareAlike 4.0 International licence (CC BY-SA 4.0)](<https://creativecommons.org/licenses/by-sa/4.0/>)`
+
+  private static helpMessage = 
+    `Acceptable input formatting:
+    \`City name\`
+    \`City name, State code\`
+    \`City name, State code, Country code\`
+    \`Zip/Postal code, Country code\`
+    \n**Also acceptable**:
+    \`about\` - Information on the API & data used
+    \`help\` - This command`
   
   private static missingApiKey = `This function is currently unavailable.\n**Reason**: Weather API key is missing.`
   
@@ -216,11 +226,13 @@ class Weather {
       `**Wind:** ${this.localiseMSec(data.wind.speed)} @ ${data.wind.deg}°/${this.cardinalDirection(data.wind.deg)}`,
       this.sunsetInfo(data.sys.sunrise, data.sys.sunset, data.coord.lat, data.timezone)
     ]
-  
+
+    const tmpCountry = data.sys.country ? `, ${data.sys.country}` : ''
+
     return {
       msg: new MessageEmbed()
       .setAuthor({
-        name: `${data.name}, ${data.sys.country} — ${this.timestampTo12Hour(data.timezone)}`,
+        name: `${data.name}${tmpCountry} — ${this.timestampTo12Hour(data.timezone)}`,
         iconURL: `http://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`
       })
       .setColor(this.colorFromTemp(data.main.temp))
@@ -279,7 +291,14 @@ class Weather {
         ephemeral: false
       }
     }
-  
+
+    if (searchLocation.toLowerCase() === 'help') {
+      return {
+        msg: this.newBasicEmbed(Weather.helpMessage, '#47aeef'),
+        ephemeral: false
+      }
+    }
+
     if (!Weather.apiKey) {
       return {
         msg: this.newBasicEmbed(Weather.missingApiKey, '#e3377b'),
