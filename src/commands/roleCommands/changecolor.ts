@@ -98,7 +98,7 @@ export class ColorRoles {
   @SimpleCommand('lazy')
   async simpleLazyColor(
     @SimpleCommandOption('fav_color', {
-      type: "STRING",
+      type: 'STRING',
       description: 'The hex value of your favorite color',
     })
     color: string | undefined,
@@ -122,7 +122,7 @@ export class ColorRoles {
   @Slash('lazy', { description: 'Change to your favorite display color' })
   async slashLazyColor(
     @SlashOption('fav_color', {
-      type: "STRING",
+      type: 'STRING',
       description: 'The hex value of your favorite color',
       required: false,
     })

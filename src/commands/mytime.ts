@@ -4,7 +4,6 @@ import { localiseInput } from 'localisetimemodule'
 
 @Discord()
 class MyTime {
-
   @SimpleCommand('mytime', { description: 'Localised times within the provided text' })
   async simple(
     @SimpleCommandOption('text', {
@@ -24,7 +23,7 @@ class MyTime {
     raw: boolean,
     command: SimpleCommandMessage
   ) {
-    await command.message.reply({content: localiseInput(text, mode, raw), allowedMentions: { repliedUser: false } } )
+    await command.message.reply({ content: localiseInput(text, mode, raw), allowedMentions: { repliedUser: false } })
   }
 
   @Slash('mytime', { description: 'Localised times within the provided text' })
@@ -49,6 +48,6 @@ class MyTime {
     interaction: CommandInteraction
   ) {
     const localisedTimes = localiseInput(text, mode, raw)
-    interaction.reply({ content: localisedTimes, ephemeral: localisedTimes === "🤷" })
+    interaction.reply({ content: localisedTimes, ephemeral: localisedTimes === '🤷' })
   }
 }

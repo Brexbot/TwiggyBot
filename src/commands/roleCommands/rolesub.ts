@@ -5,7 +5,7 @@ import {
   SimpleCommandMessage,
   SimpleCommandOption,
   Slash,
-  SlashOption
+  SlashOption,
 } from 'discordx'
 import { CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
 import { SuperUsers } from '../../guards/RoleChecks'

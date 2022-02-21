@@ -1,4 +1,4 @@
-import {Discord, Permission, SimpleCommand, SimpleCommandMessage, SimpleCommandOption} from 'discordx'
+import { Discord, Permission, SimpleCommand, SimpleCommandMessage, SimpleCommandOption } from 'discordx'
 import { GuildOptions, Prisma } from '../../../prisma/generated/prisma-client-js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
