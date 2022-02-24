@@ -3,7 +3,7 @@
 // then selects a random description from the appropriate list.
 // "ATK" gets replaced with the attacker name,
 // "DEF" gets replaced with the defender name
-export const attack_texts: Record<string, string[]> = {
+export const attackTexts: Record<string, string[]> = {
   STR: [
     'ATK swings a wild haymaker at DEF,',
     'ATK throws a punch at DEF,',
@@ -69,7 +69,7 @@ export const attack_texts: Record<string, string[]> = {
 // according to the stat the defender defended with
 // "ATK" gets replaced with the attacker name,
 // "DEF" gets replaced with the defender name
-export const defence_success_texts: Record<string, string[]> = {
+export const defenceSuccessTexts: Record<string, string[]> = {
   STR: [
     'but DEF pushes them over.',
     'but DEF simply flexes.',
@@ -138,7 +138,7 @@ export const defence_success_texts: Record<string, string[]> = {
 // "ATK" gets replaced with the attacker name,
 // "DEF" gets replaced with the defender name
 // "DMG" gets replaced with the damage value.
-export const defence_failure_texts: Record<string, string[]> = {
+export const defenceFailureTexts: Record<string, string[]> = {
   STR: [
     "and DEF's strength fails, taking DMG damage.",
     "and DEF can't resist the DMG damage.",
@@ -199,7 +199,7 @@ export const defence_failure_texts: Record<string, string[]> = {
 // Finally, it selects a random concluding message.
 // VICTOR is replaced with the winner's name
 // LOSER is replaced with the loser's name
-export const victory_texts = [
+export const victoryTexts = [
   'LOSER falls and VICTOR wins!',
   'LOSER is smashed like a bowl of eggs. VICTOR wins!',
   'LOSER taps out. VICTOR wins!',

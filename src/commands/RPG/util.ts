@@ -12,7 +12,7 @@ export function cyrb53(str: string, seed = 0): number {
   return 4294967296 * (2097151 & h2) + (h1 >>> 0)
 }
 
-export function mulberry32(a: number): Function {
+export function mulberry32(a: number): () => number {
   // a is a seed, returns a simple seeded RNG function from then.
   return function () {
     let t = (a += 0x6d2b79f5)
@@ -22,18 +22,18 @@ export function mulberry32(a: number): Function {
   }
 }
 
-export function get_random_element(a: Array<any>) {
+export function getRandomElement(a: Array<any>) {
   // returns a random element from a using Math.random()
   return a[Math.floor(Math.random() * a.length)]
 }
 
-export function get_seeded_random_element(a: Array<any>, rng: Function) {
+export function getSeededRandomElement(a: Array<any>, rng: () => number) {
   // returns a random element from a,
   // calling rng argument to get random number.
   return a[Math.floor(rng() * a.length)]
 }
 
-export function roll_seeded_dy_x_times_pick_z(sides: number, total: number, pick: number, rng: Function): number {
+export function rollSeeded_dy_x_TimesPick_z(sides: number, total: number, pick: number, rng: () => number): number {
   // Roll {total} d{sides} dice, and sum the top {pick} results
   // if provided, the {rng} argument is used for random numbers,
   const rolls = []
@@ -44,7 +44,7 @@ export function roll_seeded_dy_x_times_pick_z(sides: number, total: number, pick
   return rolls.slice(0, pick).reduce((a, b) => a + b, 0)
 }
 
-export function roll_dy_x_times_pick_z(sides: number, total: number, pick: number): number {
+export function roll_dy_x_TimesPick_z(sides: number, total: number, pick: number): number {
   // Roll {total} d{sides} dice, and sum the top {pick} results
   // random generation is done by unseeded Math.random()
   const rolls = []
