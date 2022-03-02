@@ -2,7 +2,7 @@ import { Character } from './Character'
 import { getRandomElement as getRandomElement, roll_dy_x_TimesPick_z } from './util'
 import { attackTexts, defenceFailureTexts, defenceSuccessTexts, victoryTexts } from './Dialogue'
 
-import { CommandInteraction } from 'discord.js'
+import { CommandInteraction, MessageActionRow, MessageButton, Message, ButtonInteraction } from 'discord.js'
 import { Discord, Slash } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
 
@@ -31,6 +31,10 @@ export class RPG {
   static OUT_WIDTH = 35
 
   static cooldown = 10 * 60 * 1000
+  private challengeInProgress = false
+
+  private timeoutDuration = 5 * 60 * 1000 // Time before the duel is declared dead in milliseconds
+  private timeout: ReturnType<typeof setTimeout> | null = null
 
   // Combat works with a weak rock-paper-scissors advantage
   // This list defines that,
@@ -162,8 +166,7 @@ export class RPG {
 
     const callingUsername = callerMember?.user.username
 
-    let characterName: string
-    if (callingUsername === undefined) {
+    if (!callingUsername) {
       interaction.reply('Username undefined')
     } else {
       const character = new Character(callingUsername)
@@ -171,5 +174,130 @@ export class RPG {
     }
   }
 
-  // @Slash('rpg')
+  @Slash('rpg_challenge')
+  private async rpg_challenge(interaction: CommandInteraction) {
+    await interaction.deferReply()
+
+    // Create Character for challenger. Later use DB, for now re-generate each time.
+    const challengerMember = getCallerFromCommand(interaction)
+    const challengerUsername = challengerMember?.user.username
+    let challenger: Character | undefined
+    if (!challengerUsername) {
+      await interaction.followUp({
+        content: 'Challenger username undefined',
+        ephemeral: true,
+      })
+      challenger = undefined
+    } else {
+      challenger = new Character(challengerUsername)
+    }
+
+    // Check if a duel is currently already going on.
+    if (this.challengeInProgress) {
+      await interaction.followUp({
+        content: 'An RPG challenge is already in progress.',
+        ephemeral: true,
+      })
+      return
+    }
+
+    this.challengeInProgress = true
+
+    // Disable the duel after a timeout
+    this.timeout = setTimeout(async () => {
+      // Disable the button
+      const button = this.createButton(true)
+      const row = new MessageActionRow().addComponents(button)
+      await interaction.editReply({
+        content: `No one was brave enough to do battle with ${challengerMember?.user}.`,
+        components: [row],
+      })
+      this.challengeInProgress = false
+    }, this.timeoutDuration)
+
+    const row = new MessageActionRow().addComponents(this.createButton(false))
+    const message = await interaction.followUp({
+      content: `${challengerMember?.user} is throwing down the gauntlet in challenge.`,
+      fetchReply: true,
+      components: [row],
+    })
+
+    if (!(message instanceof Message)) {
+      throw Error('InvalidMessage instance')
+    }
+
+    const collector = message.createMessageComponentCollector()
+    collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
+      await collectionInteraction.deferUpdate()
+
+      // Prevent the challenger accepting their own duels and ensure that the acceptor is valid.
+      // For now do without the database
+      const acceptorMember = getCallerFromCommand(collectionInteraction)
+
+      // Create Character for challenger. Later use DB, for now re-generate each time.
+      const challengerUsername = acceptorMember?.user.username
+      let acceptor: Character | undefined
+      if (!challengerUsername) {
+        await interaction.followUp({
+          content: 'Challenger username undefined',
+          ephemeral: true,
+        })
+        acceptor = undefined
+      } else {
+        acceptor = new Character(challengerUsername)
+      }
+
+      // Prevent challenger from accepting their own duels, and ensure both are valid.
+      if (!acceptor || !challenger || acceptor.name === challenger.name) {
+        return
+      }
+
+      // TODO: Check for timeout if lost recently
+      if (!this.challengeInProgress) {
+        // This should be impossible. We should not get this far if something is in progress.
+        // Copying /duel, for safety...
+
+        // Check if there is no current duel
+        await collectionInteraction.followUp({
+          content: 'Someone grabbed the gauntlet before you could! (or the challenger wandered off)',
+          ephemeral: true,
+        })
+        const button = this.createButton(true)
+        const row = new MessageActionRow().addComponents(button)
+        await collectionInteraction.editReply({
+          components: [row],
+        })
+        return
+      } else {
+        // Disable duel
+        this.challengeInProgress = false
+        if (this.timeout) {
+          clearTimeout(this.timeout)
+        }
+
+        // Disable the button
+        const button = this.createButton(true)
+        const row = new MessageActionRow().addComponents(button)
+        await collectionInteraction.editReply({
+          components: [row],
+        })
+
+        // Now do the actual duel.
+        await collectionInteraction.editReply({
+          content: `${challenger?.name} issued a challenge and ${acceptor?.name} accepted`,
+        })
+      }
+    })
+  }
+
+  private createButton(disabled: boolean): MessageButton {
+    // TODO: Move this to shared code
+    let button = new MessageButton().setEmoji('⚔️').setStyle('PRIMARY').setCustomId('rpg-btn')
+    if (disabled) {
+      button = button.setLabel("It's over").setDisabled(true)
+    } else {
+      button = button.setLabel('Accept duel')
+    }
+    return button
+  }
 }
