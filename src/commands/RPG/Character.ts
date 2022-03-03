@@ -1,5 +1,7 @@
 import { adjectives, nouns, CharacterClass, classes, CharacterSpecie, species } from './Data'
-import { getSeededRandomElement, rollSeeded_dy_x_TimesPick_z, cyrb53, mulberry32 } from './util'
+import { getSeededRandomElement, rollSeeded_dy_x_TimesPick_z, mulberry32 } from './util'
+
+import { User } from 'discord.js'
 
 const preferredLetter: Record<string, string> = {
   STR: 'S',
@@ -18,6 +20,7 @@ export class Character {
   moveChoices: string[]
 
   hp = 0
+  maxHp = 0
 
   name = ''
   characterClass: CharacterClass
@@ -28,11 +31,11 @@ export class Character {
 
   rng: () => number
 
-  public constructor(data: string) {
-    this.name = data
+  public constructor(public user: User) {
+    this.name = this.user.username
 
-    // Get the seed by hashing the input string
-    this.seed = cyrb53(this.name)
+    // Use the user id as the seed
+    this.seed = +this.user.id
     // then seed the RNG
     this.rng = mulberry32(this.seed)
 
@@ -74,6 +77,7 @@ export class Character {
 
     // generate HP as N d6 choose HIT_DICE
     this.hp = rollSeeded_dy_x_TimesPick_z(6, Character.HIT_DICE + twos + 2, Character.HIT_DICE, this.rng)
+    this.maxHp = this.hp
 
     const ustr = this.name.toUpperCase()
 

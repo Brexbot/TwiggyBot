@@ -2,15 +2,16 @@ import { Character } from './Character'
 import { getRandomElement as getRandomElement, roll_dy_x_TimesPick_z } from './util'
 import { attackTexts, defenceFailureTexts, defenceSuccessTexts, victoryTexts } from './Dialogue'
 
-import { CommandInteraction, MessageActionRow, MessageButton, Message, ButtonInteraction } from 'discord.js'
+import {
+  CommandInteraction,
+  MessageActionRow,
+  MessageButton,
+  Message,
+  ButtonInteraction,
+  MessageAttachment,
+} from 'discord.js'
 import { Discord, Slash } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
-
-// There can only be 6 different stats.
-// Therefore, using an enum prevents typos begin treated as
-// mystery 7th stats.
-// export type StatType = "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHR";
-// export const StatType = ["STR", "DEX", "CON", "INT", "WIS", "CHR"] as const;
 
 type AttackResult = {
   text: string
@@ -18,9 +19,10 @@ type AttackResult = {
 }
 
 type FightResult = {
+  intro: string
   log: string
-  winnerName?: string
-  loserName?: string
+  winner?: Character
+  loser?: Character
   summary: string
 }
 
@@ -29,6 +31,10 @@ export class RPG {
   // CONSTANTS
   static MAX_ROUNDS = 10
   static OUT_WIDTH = 35
+
+  static SUMMARY_BUTTON_ID = 'get-log-button'
+
+  private lastFightResult?: FightResult
 
   static cooldown = 10 * 60 * 1000
   private challengeInProgress = false
@@ -78,43 +84,38 @@ export class RPG {
       damage = 0
     }
 
-    text = text.replace(/DEF/g, defender['name']).replace(/ATK/g, attacker['name']).replace(/DMG/g, damage.toString())
-
     return { damage: damage, text: text }
   }
 
-  private duelNames(name_1: string, name_2: string): FightResult {
+  private runRPGFight(character_1: Character, character_2: Character): FightResult {
     // Full driver function that runs the battle.
-    // Supply with two strings, returns the result and log text.
-
-    // Generate the stat blocks from the names
-    const character_1 = new Character(name_1)
-    const character_2 = new Character(name_2)
+    // Supply with two Characters, returns the result and log text.
 
     // Prepare the headers for the printout
     const header_1 = character_1.toString().split('\n')
     const header_2 = character_2.toString().split('\n')
 
     // Format it for vertical output.
-    let log = ''
+    let intro = '```'
 
     for (let i = 1; i < header_1.length - 1; i++) {
-      log += header_1[i].padEnd(RPG.OUT_WIDTH, ' ') + '\n'
+      intro += header_1[i].padEnd(RPG.OUT_WIDTH, ' ') + '\n'
     }
 
-    log +=
+    intro +=
       '\n' + '+-------+'.padStart(Math.floor(RPG.OUT_WIDTH / 2), ' ').padEnd(Math.ceil(RPG.OUT_WIDTH / 2), ' ') + '\n'
-    log += '|  vs.  |'.padStart(Math.floor(RPG.OUT_WIDTH / 2), ' ').padEnd(Math.ceil(RPG.OUT_WIDTH / 2), ' ') + '\n'
-    log += '+-------+'.padStart(Math.floor(RPG.OUT_WIDTH / 2), ' ').padEnd(Math.ceil(RPG.OUT_WIDTH / 2), ' ') + '\n\n'
+    intro += '|  vs.  |'.padStart(Math.floor(RPG.OUT_WIDTH / 2), ' ').padEnd(Math.ceil(RPG.OUT_WIDTH / 2), ' ') + '\n'
+    intro += '+-------+'.padStart(Math.floor(RPG.OUT_WIDTH / 2), ' ').padEnd(Math.ceil(RPG.OUT_WIDTH / 2), ' ') + '\n\n'
 
     for (let i = 1; i < header_2.length - 1; i++) {
-      log += header_2[i].padEnd(RPG.OUT_WIDTH, ' ') + '\n'
+      intro += header_2[i].padEnd(RPG.OUT_WIDTH, ' ') + '\n'
     }
-    log += '\n'
+    intro += '```\n'
 
+    let log = ''
     // Loop through until one stat block is out of HP, or 20 rounds are done.
     let rounds = 0
-    while (character_1['hp'] > 0 && character_2['hp'] > 0 && rounds < RPG.MAX_ROUNDS) {
+    while (character_1.hp > 0 && character_2.hp > 0 && rounds < RPG.MAX_ROUNDS) {
       const initative_1 = roll_dy_x_TimesPick_z(20, 1, 1) + Math.floor(character_1.stats['DEX'] / 2) - 5
       const initative_2 = roll_dy_x_TimesPick_z(20, 1, 1) + Math.floor(character_2.stats['DEX'] / 2) - 5
 
@@ -125,37 +126,49 @@ export class RPG {
         const attacker = order[i]
         const defender = order[(i + 1) % 2]
         const res = this.get_move(attacker, defender)
-        defender['hp'] -= res['damage']
-        log += res['text'] + '\n'
 
-        if (defender['hp'] <= 0) {
+        defender.hp = Math.max(0, defender.hp - res.damage)
+
+        res.text =
+          '▪ ' +
+          res.text
+          // .replace(/DEF/g, `${defender.user}[${defender.hp}/${defender.maxHp}]`)
+          // .replace(/ATK/g, `${attacker.user}[${attacker.hp}/${attacker.maxHp}]`)
+          // .replace(/DEF/g, `${defender.user}[${Math.floor((100 * defender.hp) / defender.maxHp)}%]`)
+          // .replace(/ATK/g, `${attacker.user}[${Math.floor((100 * attacker.hp) / attacker.maxHp)}%]`)
+          .replace(/DEF/g, `${defender.user}[${defender.hp}]`)
+          .replace(/ATK/g, `${attacker.user}[${attacker.hp}]`)
+          .replace(/DMG/g, res.damage.toString())
+
+        log += res.text + '\n'
+
+        if (defender.hp <= 0) {
           break
         }
       }
       rounds += 1
     }
 
-    let victor, loser
+    let victor, loser: Character
     // Append the summary text to the log
-    if (character_1['hp'] <= 0) {
+    if (character_1.hp <= 0) {
       victor = character_2
       loser = character_1
-    } else if (character_2['hp'] <= 0) {
+    } else if (character_2.hp <= 0) {
       victor = character_1
       loser = character_2
     } else {
       const summary = `After ${RPG.MAX_ROUNDS} rounds they decide to call it a draw.`
-      log += summary
-      return { log: log, summary: summary }
+      return { intro: intro, log: log, summary: summary }
     }
 
-    log += '=================\n'
-    const summary = getRandomElement(victoryTexts)
-      .replace(/VICTOR/g, victor['name'])
-      .replace(/LOSER/g, loser['name'])
+    log += '\n\n'
+    const summary: string = getRandomElement(victoryTexts)
+      .replace(/VICTOR/g, `${victor.user}`)
+      .replace(/LOSER/g, `${loser.user}`)
     log += summary
 
-    const result = { log: log, winner: victor['name'], loser: loser['name'], summary: summary }
+    const result = { intro: intro, log: log, winner: victor, loser: loser, summary: summary }
 
     return result
   }
@@ -164,12 +177,12 @@ export class RPG {
   async rpgCharacter(interaction: CommandInteraction) {
     const callerMember = getCallerFromCommand(interaction)
 
-    const callingUsername = callerMember?.user.username
+    const callingUser = callerMember?.user
 
-    if (!callingUsername) {
+    if (!callingUser) {
       interaction.reply('Username undefined')
     } else {
-      const character = new Character(callingUsername)
+      const character = new Character(callingUser)
       interaction.reply(character.toString())
     }
   }
@@ -179,17 +192,16 @@ export class RPG {
     await interaction.deferReply()
 
     // Create Character for challenger. Later use DB, for now re-generate each time.
-    const challengerMember = getCallerFromCommand(interaction)
-    const challengerUsername = challengerMember?.user.username
+    const challengerUser = getCallerFromCommand(interaction)?.user
     let challenger: Character | undefined
-    if (!challengerUsername) {
+    if (!challengerUser) {
       await interaction.followUp({
-        content: 'Challenger username undefined',
+        content: 'Challenger user undefined',
         ephemeral: true,
       })
       challenger = undefined
     } else {
-      challenger = new Character(challengerUsername)
+      challenger = new Character(challengerUser)
     }
 
     // Check if a duel is currently already going on.
@@ -209,7 +221,7 @@ export class RPG {
       const button = this.createButton(true)
       const row = new MessageActionRow().addComponents(button)
       await interaction.editReply({
-        content: `No one was brave enough to do battle with ${challengerMember?.user}.`,
+        content: `No one was brave enough to do battle with ${challengerUser}.`,
         components: [row],
       })
       this.challengeInProgress = false
@@ -217,7 +229,7 @@ export class RPG {
 
     const row = new MessageActionRow().addComponents(this.createButton(false))
     const message = await interaction.followUp({
-      content: `${challengerMember?.user} is throwing down the gauntlet in challenge.`,
+      content: `${challengerUser} is throwing down the gauntlet in challenge.`,
       fetchReply: true,
       components: [row],
     })
@@ -230,25 +242,71 @@ export class RPG {
     collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
       await collectionInteraction.deferUpdate()
 
+      // Intercept if this is someone requesting a log of the fight
+      if (collectionInteraction.customId === RPG.SUMMARY_BUTTON_ID) {
+        // Currently this gets the most recent fight.
+        // Could cache by collectionInteraction.message.id and store a record of them
+        if (this.lastFightResult) {
+          // We must check the output isn't longer than discord allows,
+          // otherwise send as two messages, or embed as a file in last resort.
+          if (this.lastFightResult.intro.length + this.lastFightResult.log.length <= 2000) {
+            await collectionInteraction.followUp({
+              content: this.lastFightResult.intro + this.lastFightResult.log,
+              ephemeral: true,
+            })
+          } else if (this.lastFightResult.intro.length <= 2000 && this.lastFightResult.log.length <= 2000) {
+            await collectionInteraction.followUp({
+              content: this.lastFightResult.intro,
+              ephemeral: true,
+            })
+            await collectionInteraction.followUp({
+              content: this.lastFightResult.log,
+              ephemeral: true,
+            })
+          } else {
+            // Prepare the file output by replacing the user strings with screen names
+            let output = this.lastFightResult.intro.replaceAll('```', '')
+            output += this.lastFightResult.log
+
+            // Check for a draw
+            if (this.lastFightResult.winner && this.lastFightResult.loser) {
+              output = output
+                .replaceAll(String(this.lastFightResult.winner.user), this.lastFightResult.winner.name)
+                .replaceAll(String(this.lastFightResult.loser.user), this.lastFightResult.loser.name)
+            }
+
+            await collectionInteraction.followUp({
+              content: 'Phew! That was a long fight! The bards had to write it to a file.',
+              ephemeral: true,
+              files: [new MessageAttachment(Buffer.from(output), `results.txt`)],
+            })
+          }
+        } else {
+          await collectionInteraction.followUp({
+            content: 'Looks like the record of the fight is lost to time. Or maybe it never happened...',
+            ephemeral: true,
+          })
+        }
+        return
+      }
+
       // Prevent the challenger accepting their own duels and ensure that the acceptor is valid.
       // For now do without the database
-      const acceptorMember = getCallerFromCommand(collectionInteraction)
-
       // Create Character for challenger. Later use DB, for now re-generate each time.
-      const challengerUsername = acceptorMember?.user.username
-      let acceptor: Character | undefined
-      if (!challengerUsername) {
+      const accepterUser = getCallerFromCommand(collectionInteraction)?.user
+      let accepter: Character | undefined
+      if (!accepterUser) {
         await interaction.followUp({
           content: 'Challenger username undefined',
           ephemeral: true,
         })
-        acceptor = undefined
+        accepter = undefined
       } else {
-        acceptor = new Character(challengerUsername)
+        accepter = new Character(accepterUser)
       }
 
       // Prevent challenger from accepting their own duels, and ensure both are valid.
-      if (!acceptor || !challenger || acceptor.name === challenger.name) {
+      if (!accepter || !challenger || accepter.user == challenger.user) {
         return
       }
 
@@ -283,8 +341,23 @@ export class RPG {
         })
 
         // Now do the actual duel.
+        this.lastFightResult = this.runRPGFight(challenger, accepter)
+
+        // Prepare the buttons.
+        const logButton = new MessageButton()
+          .setEmoji('📜')
+          .setLabel('See fight!')
+          .setStyle('SECONDARY')
+          .setCustomId(RPG.SUMMARY_BUTTON_ID)
         await collectionInteraction.editReply({
-          content: `${challenger?.name} issued a challenge and ${acceptor?.name} accepted`,
+          components: [new MessageActionRow().addComponents(logButton)],
+        })
+
+        // Finally, send the reply
+        await collectionInteraction.editReply({
+          content: `${this.lastFightResult.summary}`,
+          // files: [new MessageAttachment(Buffer.from(result.log), `results.txt`)],
+          // components: [],
         })
       }
     })
@@ -296,7 +369,7 @@ export class RPG {
     if (disabled) {
       button = button.setLabel("It's over").setDisabled(true)
     } else {
-      button = button.setLabel('Accept duel')
+      button = button.setLabel('Accept challenge')
     }
     return button
   }

@@ -1,8 +1,8 @@
 // This contains the attack strings.
 // The attacker chooses a stat to attack with,
 // then selects a random description from the appropriate list.
-// "ATK" gets replaced with the attacker name,
-// "DEF" gets replaced with the defender name
+// 'ATK' gets replaced with the attacker name,
+// 'DEF' gets replaced with the defender name
 export const attackTexts: Record<string, string[]> = {
   STR: [
     'ATK swings a wild haymaker at DEF,',
@@ -67,8 +67,8 @@ export const attackTexts: Record<string, string[]> = {
 
 // If the defence is successful, this set of strings is chosen from
 // according to the stat the defender defended with
-// "ATK" gets replaced with the attacker name,
-// "DEF" gets replaced with the defender name
+// 'ATK' gets replaced with the attacker name,
+// 'DEF' gets replaced with the defender name
 export const defenceSuccessTexts: Record<string, string[]> = {
   STR: [
     'but DEF pushes them over.',
@@ -135,9 +135,9 @@ export const defenceSuccessTexts: Record<string, string[]> = {
 }
 
 // If the defence fails, then text is selected from this set.
-// "ATK" gets replaced with the attacker name,
-// "DEF" gets replaced with the defender name
-// "DMG" gets replaced with the damage value.
+// 'ATK' gets replaced with the attacker name,
+// 'DEF' gets replaced with the defender name
+// 'DMG' gets replaced with the damage value.
 export const defenceFailureTexts: Record<string, string[]> = {
   STR: [
     "and DEF's strength fails, taking DMG damage.",
