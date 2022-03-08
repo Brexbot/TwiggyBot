@@ -12,6 +12,10 @@ import {
 } from 'discord.js'
 import { Discord, Slash } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
+import { injectable } from 'tsyringe'
+import { ORM } from '../../persistence/ORM'
+import { RPGCharacter } from '../../../prisma/generated/prisma-client-js'
+import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils'
 
 type AttackResult = {
   text: string
@@ -24,9 +28,12 @@ type FightResult = {
   winner?: Character
   loser?: Character
   summary: string
+  challenger: Character
+  accepter: Character
 }
 
 @Discord()
+@injectable()
 export class RPG {
   // CONSTANTS
   static MAX_ROUNDS = 10
@@ -53,6 +60,8 @@ export class RPG {
     WIS: ['CHR', 'STR'],
     CHR: ['STR', 'DEX'],
   }
+
+  public constructor(private client: ORM) {}
 
   // The stat generating code counts these letters and
   // improves the corresponding stat.
@@ -87,13 +96,13 @@ export class RPG {
     return { damage: damage, text: text }
   }
 
-  private runRPGFight(character_1: Character, character_2: Character): FightResult {
+  private runRPGFight(challenger: Character, accepter: Character): FightResult {
     // Full driver function that runs the battle.
     // Supply with two Characters, returns the result and log text.
 
     // Prepare the headers for the printout
-    const header_1 = character_1.toString().split('\n')
-    const header_2 = character_2.toString().split('\n')
+    const header_1 = challenger.toString().split('\n')
+    const header_2 = accepter.toString().split('\n')
 
     // Format it for vertical output.
     let intro = '```'
@@ -115,12 +124,12 @@ export class RPG {
     let log = ''
     // Loop through until one stat block is out of HP, or 20 rounds are done.
     let rounds = 0
-    while (character_1.hp > 0 && character_2.hp > 0 && rounds < RPG.MAX_ROUNDS) {
-      const initative_1 = roll_dy_x_TimesPick_z(20, 1, 1) + Math.floor(character_1.stats['DEX'] / 2) - 5
-      const initative_2 = roll_dy_x_TimesPick_z(20, 1, 1) + Math.floor(character_2.stats['DEX'] / 2) - 5
+    while (challenger.hp > 0 && accepter.hp > 0 && rounds < RPG.MAX_ROUNDS) {
+      const initative_1 = roll_dy_x_TimesPick_z(20, 1, 1) + Math.floor(challenger.stats['DEX'] / 2) - 5
+      const initative_2 = roll_dy_x_TimesPick_z(20, 1, 1) + Math.floor(accepter.stats['DEX'] / 2) - 5
 
       // name 2 has a slight advantage, eh, who cares?
-      const order = initative_1 > initative_2 ? [character_1, character_2] : [character_2, character_1]
+      const order = initative_1 > initative_2 ? [challenger, accepter] : [accepter, challenger]
 
       for (let i = 0; i < 2; i++) {
         const attacker = order[i]
@@ -132,13 +141,9 @@ export class RPG {
         res.text =
           '▪ ' +
           res.text
-          // .replace(/DEF/g, `${defender.user}[${defender.hp}/${defender.maxHp}]`)
-          // .replace(/ATK/g, `${attacker.user}[${attacker.hp}/${attacker.maxHp}]`)
-          // .replace(/DEF/g, `${defender.user}[${Math.floor((100 * defender.hp) / defender.maxHp)}%]`)
-          // .replace(/ATK/g, `${attacker.user}[${Math.floor((100 * attacker.hp) / attacker.maxHp)}%]`)
-          .replace(/DEF/g, `${defender.user}[${defender.hp}]`)
-          .replace(/ATK/g, `${attacker.user}[${attacker.hp}]`)
-          .replace(/DMG/g, res.damage.toString())
+            .replace(/DEF/g, `${defender.user}[${defender.hp}]`)
+            .replace(/ATK/g, `${attacker.user}[${attacker.hp}]`)
+            .replace(/DMG/g, res.damage.toString())
 
         log += res.text + '\n'
 
@@ -151,15 +156,15 @@ export class RPG {
 
     let victor, loser: Character
     // Append the summary text to the log
-    if (character_1.hp <= 0) {
-      victor = character_2
-      loser = character_1
-    } else if (character_2.hp <= 0) {
-      victor = character_1
-      loser = character_2
+    if (challenger.hp <= 0) {
+      victor = accepter
+      loser = challenger
+    } else if (accepter.hp <= 0) {
+      victor = challenger
+      loser = accepter
     } else {
       const summary = `After ${RPG.MAX_ROUNDS} rounds they decide to call it a draw.`
-      return { intro: intro, log: log, summary: summary }
+      return { intro: intro, log: log, summary: summary, challenger: challenger, accepter: accepter }
     }
 
     log += '\n\n'
@@ -168,7 +173,15 @@ export class RPG {
       .replace(/LOSER/g, `${loser.user}`)
     log += summary
 
-    const result = { intro: intro, log: log, winner: victor, loser: loser, summary: summary }
+    const result = {
+      intro: intro,
+      log: log,
+      winner: victor,
+      loser: loser,
+      summary: summary,
+      challenger: challenger,
+      accepter: accepter,
+    }
 
     return result
   }
@@ -183,7 +196,8 @@ export class RPG {
       interaction.reply('Username undefined')
     } else {
       const character = new Character(callingUser)
-      interaction.reply(character.toString())
+      interaction.reply({ embeds: [character.toEmbed()] })
+      console.log((await this.getUserCharacter(callingUser.id)).wins)
     }
   }
 
@@ -193,14 +207,17 @@ export class RPG {
 
     // Create Character for challenger. Later use DB, for now re-generate each time.
     const challengerUser = getCallerFromCommand(interaction)?.user
-    let challenger: Character | undefined
+    let challenger: Character
+    let challengerDBRecord: RPGCharacter
     if (!challengerUser) {
+      // If this hasn't worked. Bail out now.
       await interaction.followUp({
         content: 'Challenger user undefined',
         ephemeral: true,
       })
-      challenger = undefined
+      return
     } else {
+      challengerDBRecord = await this.getUserCharacter(challengerUser.id)
       challenger = new Character(challengerUser)
     }
 
@@ -213,6 +230,17 @@ export class RPG {
       return
     }
 
+    // Check to see if the challenger has recently lost.
+    if (challengerDBRecord.lastLoss.getTime() + RPG.cooldown > Date.now()) {
+      await interaction.followUp({
+        content: `${challenger.user}, you have recently lost a fight. Please wait ${getTimeLeftInReadableFormat(
+          challengerDBRecord.lastLoss,
+          RPG.cooldown
+        )} before trying again.`,
+        ephemeral: true,
+      })
+      return
+    }
     this.challengeInProgress = true
 
     // Disable the duel after a timeout
@@ -249,9 +277,10 @@ export class RPG {
         if (this.lastFightResult) {
           // We must check the output isn't longer than discord allows,
           // otherwise send as two messages, or embed as a file in last resort.
-          if (this.lastFightResult.intro.length + this.lastFightResult.log.length <= 2000) {
+          const full = `${this.lastFightResult.intro}\n${this.lastFightResult.log}`
+          if (full.length <= 2000) {
             await collectionInteraction.followUp({
-              content: this.lastFightResult.intro + this.lastFightResult.log,
+              content: full,
               ephemeral: true,
             })
           } else if (this.lastFightResult.intro.length <= 2000 && this.lastFightResult.log.length <= 2000) {
@@ -294,24 +323,39 @@ export class RPG {
       // For now do without the database
       // Create Character for challenger. Later use DB, for now re-generate each time.
       const accepterUser = getCallerFromCommand(collectionInteraction)?.user
-      let accepter: Character | undefined
+      let accepter: Character
+      let accepterDBRecord: RPGCharacter
       if (!accepterUser) {
         await interaction.followUp({
-          content: 'Challenger username undefined',
+          content: 'Accepter username undefined',
           ephemeral: true,
         })
-        accepter = undefined
+        return
       } else {
         accepter = new Character(accepterUser)
+        accepterDBRecord = await this.getUserCharacter(accepterUser.id)
+        console.log(
+          `Accepter: ${accepterDBRecord.id}, Wins: ${accepterDBRecord.wins}, Losses: ${accepterDBRecord.losses}`
+        )
       }
 
       // Prevent challenger from accepting their own duels, and ensure both are valid.
-      if (!accepter || !challenger || accepter.user == challenger.user) {
+      if (!accepter || !challenger || accepter.user == challenger.user || !accepterDBRecord || !challengerDBRecord) {
         return
       }
 
       // TODO: Check for timeout if lost recently
-      if (!this.challengeInProgress) {
+      // Check to see if the accepter has recently lost.
+      if (accepterDBRecord.lastLoss.getTime() + RPG.cooldown > Date.now()) {
+        await interaction.followUp({
+          content: `${accepter.user}, you have recently lost a fight. Please wait ${getTimeLeftInReadableFormat(
+            accepterDBRecord.lastLoss,
+            RPG.cooldown
+          )} before trying again.`,
+          ephemeral: true,
+        })
+        return
+      } else if (!this.challengeInProgress) {
         // This should be impossible. We should not get this far if something is in progress.
         // Copying /duel, for safety...
 
@@ -343,6 +387,21 @@ export class RPG {
         // Now do the actual duel.
         this.lastFightResult = this.runRPGFight(challenger, accepter)
 
+        if (this.lastFightResult.winner && this.lastFightResult.loser) {
+          // Wasn't a draw, find the winner and update
+          if (this.lastFightResult.winner === challenger) {
+            await this.updateUserRPGScore(challengerDBRecord, 'win')
+            await this.updateUserRPGScore(accepterDBRecord, 'loss')
+          } else {
+            await this.updateUserRPGScore(accepterDBRecord, 'win')
+            await this.updateUserRPGScore(challengerDBRecord, 'loss')
+          }
+        } else {
+          // Must be a draw
+          this.updateUserRPGScore(challengerDBRecord, 'draw')
+          this.updateUserRPGScore(accepterDBRecord, 'draw')
+        }
+
         // Prepare the buttons.
         const logButton = new MessageButton()
           .setEmoji('📜')
@@ -361,6 +420,56 @@ export class RPG {
         })
       }
     })
+  }
+
+  private async getUserCharacter(userId: string) {
+    return await this.client.rPGCharacter.upsert({
+      where: {
+        id: userId,
+      },
+      create: {
+        id: userId,
+      },
+      update: {},
+    })
+  }
+
+  private async updateUserRPGScore(stats: RPGCharacter, outcome: 'win' | 'loss' | 'draw') {
+    switch (outcome) {
+      case 'draw': {
+        await this.client.rPGCharacter.update({
+          where: {
+            id: stats.id,
+          },
+          data: {
+            draws: { increment: 1 },
+          },
+        })
+        break
+      }
+      case 'win': {
+        await this.client.rPGCharacter.update({
+          where: {
+            id: stats.id,
+          },
+          data: {
+            wins: { increment: 1 },
+          },
+        })
+        break
+      }
+      case 'loss': {
+        await this.client.rPGCharacter.update({
+          where: {
+            id: stats.id,
+          },
+          data: {
+            losses: { increment: 1 },
+          },
+        })
+        break
+      }
+    }
   }
 
   private createButton(disabled: boolean): MessageButton {
