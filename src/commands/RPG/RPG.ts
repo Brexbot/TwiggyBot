@@ -1,5 +1,5 @@
 import { Character } from './Character'
-import { getRandomElement as getRandomElement, roll_dy_x_TimesPick_z } from './util'
+import { getRandomElement as getRandomElement, roll_dy_x_TimesPick_z, getEloRankChange } from './util'
 import { attackTexts, defenceFailureTexts, defenceSuccessTexts, victoryTexts } from './Dialogue'
 
 import {
@@ -9,6 +9,8 @@ import {
   Message,
   ButtonInteraction,
   MessageAttachment,
+  MessageEmbed,
+  GuildMember,
 } from 'discord.js'
 import { Discord, Slash } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
@@ -32,12 +34,30 @@ type FightResult = {
   accepter: Character
 }
 
+type EloBand = {
+  upperBound: number
+  icon: string
+  name: string
+}
+
 @Discord()
 @injectable()
 export class RPG {
   // CONSTANTS
   static MAX_ROUNDS = 10
   static OUT_WIDTH = 35
+  static ELO_K = 48 // Maximum possible Elo rank change in one game. Higher makes ladder position less stable
+
+  // Array of bands, ordered by upper bound
+  static ELO_BANDS: EloBand[] = [
+    { upperBound: 700, icon: '🪵', name: 'Wood' },
+    { upperBound: 800, icon: '🥉', name: 'Bronze' },
+    { upperBound: 900, icon: '🥈', name: 'Silver' },
+    { upperBound: 1100, icon: '🥇', name: 'Gold' },
+    { upperBound: 1200, icon: '💎', name: 'Diamond' },
+    { upperBound: 1300, icon: '🎀', name: 'Master' },
+    { upperBound: 999999, icon: '🏆', name: 'Grand Master' },
+  ]
 
   static SUMMARY_BUTTON_ID = 'get-log-button'
 
@@ -121,21 +141,23 @@ export class RPG {
     }
     intro += '```\n'
 
+    // Loop through until one stat block is out of HP, or 10 rounds are done.
     let log = ''
-    // Loop through until one stat block is out of HP, or 20 rounds are done.
     let rounds = 0
     while (challenger.hp > 0 && accepter.hp > 0 && rounds < RPG.MAX_ROUNDS) {
       const initative_1 = roll_dy_x_TimesPick_z(20, 1, 1) + Math.floor(challenger.stats['DEX'] / 2) - 5
       const initative_2 = roll_dy_x_TimesPick_z(20, 1, 1) + Math.floor(accepter.stats['DEX'] / 2) - 5
 
-      // name 2 has a slight advantage, eh, who cares?
+      // name 2 has a slight advantageby winning draws, eh, who cares?
       const order = initative_1 > initative_2 ? [challenger, accepter] : [accepter, challenger]
 
+      // get the move and perform them in order of initiative
       for (let i = 0; i < 2; i++) {
         const attacker = order[i]
         const defender = order[(i + 1) % 2]
         const res = this.get_move(attacker, defender)
 
+        // negative hitpoints look strange, so clamp to zero for aesthetics
         defender.hp = Math.max(0, defender.hp - res.damage)
 
         res.text =
@@ -147,6 +169,7 @@ export class RPG {
 
         log += res.text + '\n'
 
+        // Stop immediately if someone is reduced to 0 HP, even if there are attacks still to resolve in this round.
         if (defender.hp <= 0) {
           break
         }
@@ -163,6 +186,7 @@ export class RPG {
       victor = challenger
       loser = accepter
     } else {
+      // Must be a draw. Leave victor and loser undefined.
       const summary = `After ${RPG.MAX_ROUNDS} rounds they decide to call it a draw.`
       return { intro: intro, log: log, summary: summary, challenger: challenger, accepter: accepter }
     }
@@ -186,18 +210,41 @@ export class RPG {
     return result
   }
 
-  @Slash('rpg_character', { description: 'Print your character sheet' })
+  @Slash('rpg_character', { description: 'Print your RPG character sheet' })
   async rpgCharacter(interaction: CommandInteraction) {
     const callerMember = getCallerFromCommand(interaction)
-
     const callingUser = callerMember?.user
 
-    if (!callingUser) {
-      interaction.reply('Username undefined')
-    } else {
+    if (callingUser) {
+      const userDBRecord = await this.getUserFromDB(callerMember.user.id)
+      const eloBandIcon = this.getBandForEloRank(userDBRecord.eloRank)
       const character = new Character(callingUser)
-      interaction.reply({ embeds: [character.toEmbed()] })
-      console.log((await this.getUserCharacter(callingUser.id)).wins)
+      interaction.reply({ embeds: [character.toEmbed(eloBandIcon.icon)] })
+    } else {
+      interaction.reply('Username undefined')
+    }
+  }
+
+  @Slash('rpg_stats', { description: 'Display your RPG fight statistics' })
+  private async rpgStats(interaction: CommandInteraction) {
+    await interaction.deferReply()
+
+    const callerMember = interaction.member
+    if (callerMember && callerMember instanceof GuildMember) {
+      const callerDBRecord = await this.getUserFromDB(callerMember.user.id)
+      const eloBand = this.getBandForEloRank(callerDBRecord.eloRank)
+      const statsEmbed = new MessageEmbed()
+        .setColor('#009933') // Could dig out the user's colour?
+        .setAuthor({
+          iconURL: callerMember.user.avatarURL() ?? '',
+          name: `${callerMember.nickname ?? callerMember.user.username}'s prowess in the arena: ${
+            callerDBRecord.wins
+          }W ${callerDBRecord.losses}L ${callerDBRecord.draws}D`,
+        })
+        .setDescription(`**Ladder Points:** ${callerDBRecord.eloRank} - ${eloBand.icon} *${eloBand.name} League*`)
+      await interaction.followUp({ embeds: [statsEmbed] })
+    } else {
+      await interaction.followUp(`Hmm, ${interaction.user}... It seems you are yet to test your steel.`)
     }
   }
 
@@ -205,7 +252,16 @@ export class RPG {
   private async rpg_challenge(interaction: CommandInteraction) {
     await interaction.deferReply()
 
-    // Create Character for challenger. Later use DB, for now re-generate each time.
+    // Check if a duel is currently already going on.
+    if (this.challengeInProgress) {
+      await interaction.followUp({
+        content: 'An RPG challenge is already in progress.',
+        ephemeral: true,
+      })
+      return
+    }
+
+    // Create Character for challenger. Later store character in DB, for now re-generate each time.
     const challengerUser = getCallerFromCommand(interaction)?.user
     let challenger: Character
     let challengerDBRecord: RPGCharacter
@@ -217,23 +273,16 @@ export class RPG {
       })
       return
     } else {
-      challengerDBRecord = await this.getUserCharacter(challengerUser.id)
+      challengerDBRecord = await this.getUserFromDB(challengerUser.id)
       challenger = new Character(challengerUser)
-    }
-
-    // Check if a duel is currently already going on.
-    if (this.challengeInProgress) {
-      await interaction.followUp({
-        content: 'An RPG challenge is already in progress.',
-        ephemeral: true,
-      })
-      return
     }
 
     // Check to see if the challenger has recently lost.
     if (challengerDBRecord.lastLoss.getTime() + RPG.cooldown > Date.now()) {
       await interaction.followUp({
-        content: `${challenger.user}, you have recently lost a fight. Please wait ${getTimeLeftInReadableFormat(
+        content: `${
+          challenger.user
+        }, you are still recovering from the last fight. Please wait ${getTimeLeftInReadableFormat(
           challengerDBRecord.lastLoss,
           RPG.cooldown
         )} before trying again.`,
@@ -241,42 +290,68 @@ export class RPG {
       })
       return
     }
+
+    // Checks passed, flag that we have a fight on our hands!
     this.challengeInProgress = true
+
+    // Get information about the challenger's Elo band for printing
+    const challengerEloBand = this.getBandForEloRank(challengerDBRecord.eloRank)
 
     // Disable the duel after a timeout
     this.timeout = setTimeout(async () => {
       // Disable the button
-      const button = this.createButton(true)
+      const button = new MessageButton()
+        .setEmoji('⚔️')
+        .setStyle('PRIMARY')
+        .setCustomId('rpg-btn')
+        .setLabel('Accept challenge')
+        .setDisabled(true)
       const row = new MessageActionRow().addComponents(button)
       await interaction.editReply({
-        content: `No one was brave enough to do battle with ${challengerUser}.`,
+        content: `No one was brave enough to do battle with ${challengerUser} ${challengerEloBand.icon}.`,
         components: [row],
       })
       this.challengeInProgress = false
     }, this.timeoutDuration)
 
-    const row = new MessageActionRow().addComponents(this.createButton(false))
+    // Send the challenge message
+    const button = new MessageButton()
+      .setEmoji('⚔️')
+      .setStyle('PRIMARY')
+      .setCustomId('rpg-btn')
+      .setLabel('Accept challenge')
+    const row = new MessageActionRow().addComponents(button)
     const message = await interaction.followUp({
-      content: `${challengerUser} is throwing down the gauntlet in challenge.`,
+      content: `${challengerUser} ${challengerEloBand.icon} is throwing down the gauntlet in challenge.`,
       fetchReply: true,
       components: [row],
     })
 
     if (!(message instanceof Message)) {
-      throw Error('InvalidMessage instance')
+      // Something has gone very wrong.
+      await interaction.followUp({
+        content: "`message` isn't a `Message`. Foul play is afoot...",
+      })
+      return
     }
 
+    // Handle the button press
     const collector = message.createMessageComponentCollector()
     collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
       await collectionInteraction.deferUpdate()
 
+      // Two possible cases exist:
+      //   Someone is accepting a challenge
+      //   or Someone want's to see the fight log
+
       // Intercept if this is someone requesting a log of the fight
       if (collectionInteraction.customId === RPG.SUMMARY_BUTTON_ID) {
-        // Currently this gets the most recent fight.
-        // Could cache by collectionInteraction.message.id and store a record of them
+        // Currently this gets the most recent fight, even if the button is from an older fight output message.
+
+        // Completing a fight populates the lastFightResult property
         if (this.lastFightResult) {
           // We must check the output isn't longer than discord allows,
-          // otherwise send as two messages, or embed as a file in last resort.
+          // otherwise send as two messages, or embed as a file as a last resort.
           const full = `${this.lastFightResult.intro}\n${this.lastFightResult.log}`
           if (full.length <= 2000) {
             await collectionInteraction.followUp({
@@ -297,12 +372,9 @@ export class RPG {
             let output = this.lastFightResult.intro.replaceAll('```', '')
             output += this.lastFightResult.log
 
-            // Check for a draw
-            if (this.lastFightResult.winner && this.lastFightResult.loser) {
-              output = output
-                .replaceAll(String(this.lastFightResult.winner.user), this.lastFightResult.winner.name)
-                .replaceAll(String(this.lastFightResult.loser.user), this.lastFightResult.loser.name)
-            }
+            output = output
+              .replaceAll(String(this.lastFightResult.challenger.user), this.lastFightResult.challenger.name)
+              .replaceAll(String(this.lastFightResult.accepter.user), this.lastFightResult.accepter.name)
 
             await collectionInteraction.followUp({
               content: 'Phew! That was a long fight! The bards had to write it to a file.',
@@ -311,6 +383,7 @@ export class RPG {
             })
           }
         } else {
+          // ther wasn't a previous fight. Error out gracefully.
           await collectionInteraction.followUp({
             content: 'Looks like the record of the fight is lost to time. Or maybe it never happened...',
             ephemeral: true,
@@ -320,7 +393,6 @@ export class RPG {
       }
 
       // Prevent the challenger accepting their own duels and ensure that the acceptor is valid.
-      // For now do without the database
       // Create Character for challenger. Later use DB, for now re-generate each time.
       const accepterUser = getCallerFromCommand(collectionInteraction)?.user
       let accepter: Character
@@ -333,10 +405,7 @@ export class RPG {
         return
       } else {
         accepter = new Character(accepterUser)
-        accepterDBRecord = await this.getUserCharacter(accepterUser.id)
-        console.log(
-          `Accepter: ${accepterDBRecord.id}, Wins: ${accepterDBRecord.wins}, Losses: ${accepterDBRecord.losses}`
-        )
+        accepterDBRecord = await this.getUserFromDB(accepterUser.id)
       }
 
       // Prevent challenger from accepting their own duels, and ensure both are valid.
@@ -344,7 +413,6 @@ export class RPG {
         return
       }
 
-      // TODO: Check for timeout if lost recently
       // Check to see if the accepter has recently lost.
       if (accepterDBRecord.lastLoss.getTime() + RPG.cooldown > Date.now()) {
         await interaction.followUp({
@@ -364,7 +432,12 @@ export class RPG {
           content: 'Someone grabbed the gauntlet before you could! (or the challenger wandered off)',
           ephemeral: true,
         })
-        const button = this.createButton(true)
+        const button = new MessageButton()
+          .setEmoji('⚔️')
+          .setStyle('PRIMARY')
+          .setCustomId('rpg-btn')
+          .setLabel('Accept challenge')
+          .setDisabled(true)
         const row = new MessageActionRow().addComponents(button)
         await collectionInteraction.editReply({
           components: [row],
@@ -378,7 +451,12 @@ export class RPG {
         }
 
         // Disable the button
-        const button = this.createButton(true)
+        const button = new MessageButton()
+          .setEmoji('⚔️')
+          .setStyle('PRIMARY')
+          .setCustomId('rpg-btn')
+          .setLabel('Accept challenge')
+          .setDisabled(true)
         const row = new MessageActionRow().addComponents(button)
         await collectionInteraction.editReply({
           components: [row],
@@ -387,20 +465,38 @@ export class RPG {
         // Now do the actual duel.
         this.lastFightResult = this.runRPGFight(challenger, accepter)
 
+        const challengerOldEloRank = challengerDBRecord.eloRank
+        const accepterOldEloRank = accepterDBRecord.eloRank
+
+        let challengerNewEloRank: number
+        let accepterNewEloRank: number
+
         if (this.lastFightResult.winner && this.lastFightResult.loser) {
           // Wasn't a draw, find the winner and update
-          if (this.lastFightResult.winner === challenger) {
-            await this.updateUserRPGScore(challengerDBRecord, 'win')
-            await this.updateUserRPGScore(accepterDBRecord, 'loss')
-          } else {
-            await this.updateUserRPGScore(accepterDBRecord, 'win')
-            await this.updateUserRPGScore(challengerDBRecord, 'loss')
-          }
+          challengerNewEloRank = await this.updateUserRPGScore(
+            challengerDBRecord,
+            accepterOldEloRank,
+            this.lastFightResult.winner === challenger ? 'win' : 'loss'
+          )
+          accepterNewEloRank = await this.updateUserRPGScore(
+            accepterDBRecord,
+            challengerOldEloRank,
+            this.lastFightResult.winner === challenger ? 'loss' : 'win'
+          )
         } else {
           // Must be a draw
-          this.updateUserRPGScore(challengerDBRecord, 'draw')
-          this.updateUserRPGScore(accepterDBRecord, 'draw')
+          challengerNewEloRank = await this.updateUserRPGScore(challengerDBRecord, accepterOldEloRank, 'draw')
+          accepterNewEloRank = await this.updateUserRPGScore(accepterDBRecord, challengerOldEloRank, 'draw')
         }
+
+        const challengerEloChange = challengerNewEloRank - challengerOldEloRank
+        const accepterEloChange = accepterNewEloRank - accepterOldEloRank
+
+        const challengerEloVerb = challengerEloChange < 0 ? `lost` : `gained`
+        const accepterEloVerb = accepterEloChange < 0 ? `lost` : `gained`
+
+        const challengerEloBand = this.getBandForEloRank(challengerNewEloRank)
+        const accepterEloBand = this.getBandForEloRank(accepterNewEloRank)
 
         // Prepare the buttons.
         const logButton = new MessageButton()
@@ -414,15 +510,20 @@ export class RPG {
 
         // Finally, send the reply
         await collectionInteraction.editReply({
-          content: `${this.lastFightResult.summary}`,
-          // files: [new MessageAttachment(Buffer.from(result.log), `results.txt`)],
-          // components: [],
+          content:
+            `${this.lastFightResult.summary}` +
+            `\n${challenger.user}${challengerEloBand.icon} ${challengerEloVerb} ${Math.abs(
+              challengerEloChange
+            )}LP [${challengerNewEloRank}]. ` +
+            `${accepter.user}${accepterEloBand.icon} ${accepterEloVerb} ${Math.abs(
+              accepterEloChange
+            )}LP [${accepterNewEloRank}]`,
         })
       }
     })
   }
 
-  private async getUserCharacter(userId: string) {
+  private async getUserFromDB(userId: string) {
     return await this.client.rPGCharacter.upsert({
       where: {
         id: userId,
@@ -434,7 +535,8 @@ export class RPG {
     })
   }
 
-  private async updateUserRPGScore(stats: RPGCharacter, outcome: 'win' | 'loss' | 'draw') {
+  private async updateUserRPGScore(stats: RPGCharacter, opositionEloRank: number, outcome: 'win' | 'loss' | 'draw') {
+    const newEloRank = getEloRankChange(stats.eloRank, opositionEloRank, RPG.ELO_K, outcome)
     switch (outcome) {
       case 'draw': {
         await this.client.rPGCharacter.update({
@@ -443,6 +545,7 @@ export class RPG {
           },
           data: {
             draws: { increment: 1 },
+            eloRank: newEloRank,
           },
         })
         break
@@ -454,6 +557,7 @@ export class RPG {
           },
           data: {
             wins: { increment: 1 },
+            eloRank: newEloRank,
           },
         })
         break
@@ -465,21 +569,24 @@ export class RPG {
           },
           data: {
             losses: { increment: 1 },
+            eloRank: newEloRank,
+            lastLoss: new Date(),
           },
         })
         break
       }
     }
+    return newEloRank
   }
 
-  private createButton(disabled: boolean): MessageButton {
-    // TODO: Move this to shared code
-    let button = new MessageButton().setEmoji('⚔️').setStyle('PRIMARY').setCustomId('rpg-btn')
-    if (disabled) {
-      button = button.setLabel("It's over").setDisabled(true)
-    } else {
-      button = button.setLabel('Accept challenge')
+  private getBandForEloRank(rank: number): EloBand {
+    for (let i = 0; i < RPG.ELO_BANDS.length; i++) {
+      if (RPG.ELO_BANDS[i].upperBound > rank) {
+        return RPG.ELO_BANDS[i]
+      }
     }
-    return button
+    // We shouldn't get this far, but if someone does top out the ranking system
+    // beyond the 999999 limit, they're almost certainly up to some tomfoolery.
+    return { upperBound: -1, icon: '😎', name: 'Very Cool Hacker' }
   }
 }

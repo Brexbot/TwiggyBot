@@ -62,6 +62,7 @@ export const attackTexts: Record<string, string[]> = {
     'ATK drops a truth bomb on DEF,',
     'ATK taunts DEF,',
     'ATK reads DEF their rights,',
+    'ATK uses "good" as an adverb,',
   ],
 }
 
@@ -184,6 +185,7 @@ export const defenceFailureTexts: Record<string, string[]> = {
     'DEF turns the other cheek. It gets hit for DMG damage.',
     'DEF is caught off guard, suffering DMG damage.',
     "and DEF didn't try hard enough. DMG damage.",
+    "and DEF can't come to accept it. DMG damage.",
   ],
   CHR: [
     "and DEF's laughter is not the best medicine. DMG damage.",
@@ -193,6 +195,7 @@ export const defenceFailureTexts: Record<string, string[]> = {
     'and DEF is left speechless. DMG damage.',
     'and DEF has no reply. DMG damage.',
     'and DEF is tongue-tied. DMG damage.',
+    'and the DMG damage makes DEF cry.',
   ],
 }
 

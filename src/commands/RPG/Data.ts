@@ -33,6 +33,8 @@ export const adjectives = [
   'indulgent',
   'pragmatic',
   'postmodern',
+  'educated',
+  'ignorant',
 ]
 
 export const nouns = [
@@ -40,6 +42,7 @@ export const nouns = [
   'neutral',
   'good',
   'stupid',
+  'clever',
   'zen',
   'angry',
   'coffee',
@@ -52,6 +55,7 @@ export const nouns = [
   'wahoo',
   'horny',
   'righteous',
+  'sin',
 ]
 
 export type CharacterClass = {

@@ -1,7 +1,7 @@
 import { adjectives, nouns, CharacterClass, classes, CharacterSpecie, species } from './Data'
 import { getSeededRandomElement, rollSeeded_dy_x_TimesPick_z, mulberry32 } from './util'
 
-import { User } from 'discord.js'
+import { MessageEmbed, User } from 'discord.js'
 
 const preferredLetter: Record<string, string> = {
   STR: 'S',
@@ -112,5 +112,29 @@ export class Character {
       .padStart(2, ' ')} \n`
     ostr += '```'
     return ostr
+  }
+
+  public toEmbed(eloBandIcon?: string): MessageEmbed {
+    const suffix = eloBandIcon ? ` ${eloBandIcon}` : ''
+    const out = new MessageEmbed()
+      .setTitle(this.name + suffix)
+      .setDescription(
+        `${this.characterSpecie.name} ${this.characterClass.name}` +
+          `\n` +
+          `\n**Alignment:** ${this.alignment}` +
+          `\n**HP:** ${this.maxHp}` +
+          `\n\`\`\`\n` +
+          ' STR | DEX | CON | INT | WIS | CHR \n' +
+          `  ${this.stats['STR'].toString().padStart(2, ' ')} |  ${this.stats['DEX']
+            .toString()
+            .padStart(2, ' ')} |  ${this.stats['CON'].toString().padStart(2, ' ')} |  ${this.stats['INT']
+            .toString()
+            .padStart(2, ' ')} |  ${this.stats['WIS'].toString().padStart(2, ' ')} |  ${this.stats['CHR']
+            .toString()
+            .padStart(2, ' ')} \n` +
+          `\n\`\`\``
+      )
+      .setColor('#009933') // Seems a nice enough colour. Could match use colour if we wanted.
+    return out
   }
 }

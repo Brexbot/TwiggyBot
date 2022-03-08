@@ -40,3 +40,28 @@ export function roll_dy_x_TimesPick_z(sides: number, total: number, pick: number
   rolls.sort().reverse()
   return rolls.slice(0, pick).reduce((a, b) => a + b, 0)
 }
+
+export function getEloRankChange(rankA: number, rankB: number, K: number, result: 'win' | 'loss' | 'draw'): number {
+  // Returns player A's new Elo rank for given result.
+  const BASE = 10
+  const EXPONENT = 1.0 / 400.0
+  const expectedA = 1.0 / (1.0 + BASE ** (EXPONENT * (rankB - rankA)))
+
+  let score: number
+  switch (result) {
+    case 'win': {
+      score = 1.0
+      break
+    }
+    case 'loss': {
+      score = 0.0
+      break
+    }
+    case 'draw': {
+      score = 0.5
+      break
+    }
+  }
+
+  return Math.round(rankA + K * (score - expectedA))
+}
