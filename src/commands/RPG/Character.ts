@@ -1,5 +1,5 @@
 import { adjectives, nouns, CharacterClass, classes, CharacterSpecie, species } from './Data'
-import { getSeededRandomElement, rollSeeded_dy_x_TimesPick_z, mulberry32 } from './util'
+import { getSeededRandomElement, rollSeeded_dy_x_TimesPick_z, mulberry32, cyrb53 } from './util'
 
 import { MessageEmbed, User } from 'discord.js'
 
@@ -31,11 +31,16 @@ export class Character {
 
   rng: () => number
 
-  public constructor(public user: User) {
-    this.name = this.user.username
-
-    // Use the user id as the seed
-    this.seed = +this.user.id
+  public constructor(public user: User, private seedPhrase?: string) {
+    // Maybe the screen name is better until folks can build their own character
+    if (this.seedPhrase) {
+      this.seed = cyrb53(this.seedPhrase)
+      this.name = this.seedPhrase
+    } else {
+      // But we can use the user id as a fallback seed
+      this.seed = +this.user.id
+      this.name = user.username
+    }
     // then seed the RNG
     this.rng = mulberry32(this.seed)
 
@@ -120,7 +125,6 @@ export class Character {
       .setTitle(this.name + suffix)
       .setDescription(
         `${this.characterSpecie.name} ${this.characterClass.name}` +
-          `\n` +
           `\n**Alignment:** ${this.alignment}` +
           `\n**HP:** ${this.maxHp}` +
           `\n\`\`\`\n` +

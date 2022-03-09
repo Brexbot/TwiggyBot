@@ -218,7 +218,7 @@ export class RPG {
     if (callingUser) {
       const userDBRecord = await this.getUserFromDB(callerMember.user.id)
       const eloBandIcon = this.getBandForEloRank(userDBRecord.eloRank)
-      const character = new Character(callingUser)
+      const character = new Character(callingUser, callerMember.nickname ?? undefined)
       interaction.reply({ embeds: [character.toEmbed(eloBandIcon.icon)] })
     } else {
       interaction.reply('Username undefined')
@@ -262,7 +262,7 @@ export class RPG {
     }
 
     // Create Character for challenger. Later store character in DB, for now re-generate each time.
-    const challengerUser = getCallerFromCommand(interaction)?.user
+    const challengerUser = getCallerFromCommand(interaction)
     let challenger: Character
     let challengerDBRecord: RPGCharacter
     if (!challengerUser) {
@@ -273,8 +273,8 @@ export class RPG {
       })
       return
     } else {
-      challengerDBRecord = await this.getUserFromDB(challengerUser.id)
-      challenger = new Character(challengerUser)
+      challengerDBRecord = await this.getUserFromDB(challengerUser.user.id)
+      challenger = new Character(challengerUser.user, challengerUser.nickname ?? undefined)
     }
 
     // Check to see if the challenger has recently lost.
@@ -394,18 +394,18 @@ export class RPG {
 
       // Prevent the challenger accepting their own duels and ensure that the acceptor is valid.
       // Create Character for challenger. Later use DB, for now re-generate each time.
-      const accepterUser = getCallerFromCommand(collectionInteraction)?.user
+      const accepterUser = getCallerFromCommand(collectionInteraction)
       let accepter: Character
       let accepterDBRecord: RPGCharacter
       if (!accepterUser) {
-        await interaction.followUp({
+        await collectionInteraction.followUp({
           content: 'Accepter username undefined',
           ephemeral: true,
         })
         return
       } else {
-        accepter = new Character(accepterUser)
-        accepterDBRecord = await this.getUserFromDB(accepterUser.id)
+        accepter = new Character(accepterUser.user, accepterUser.nickname ?? undefined)
+        accepterDBRecord = await this.getUserFromDB(accepterUser.user.id)
       }
 
       // Prevent challenger from accepting their own duels, and ensure both are valid.
@@ -415,7 +415,7 @@ export class RPG {
 
       // Check to see if the accepter has recently lost.
       if (accepterDBRecord.lastLoss.getTime() + RPG.cooldown > Date.now()) {
-        await interaction.followUp({
+        await collectionInteraction.followUp({
           content: `${accepter.user}, you have recently lost a fight. Please wait ${getTimeLeftInReadableFormat(
             accepterDBRecord.lastLoss,
             RPG.cooldown
