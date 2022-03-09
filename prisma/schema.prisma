@@ -44,3 +44,12 @@ model BestMixu {
   tiles String @default("")
   score Int    @default(0)
 }
+
+model RPGCharacter {
+  id            String    @id @unique
+  wins          Int       @default(0)
+  losses        Int       @default(0)
+  draws         Int       @default(0)
+  lastLoss      DateTime  @default(dbgenerated("0"))
+  eloRank       Int       @default(1000)  // 1000 is center of "skill" distribution
+}
