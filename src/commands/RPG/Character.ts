@@ -48,7 +48,7 @@ export class Character {
     // this.character_class = classes[0];
     // this.character_specie = species[0];
 
-    if (this.name == 'Brex#0001') {
+    if (this.user.id == '89926310410850304') {
       this.characterSpecie = {
         name: 'Bananasaurus',
         statBonuses: ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHR'],
