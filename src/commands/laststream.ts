@@ -94,7 +94,8 @@ class LastStream {
       // Currently streaming
       return -1
     }
-    const { data: videos } = await this.client.videos.getVideosByUser(rex.id)
+
+    const { data: videos } = await this.client.videos.getVideosByUser(rex.id, { type: "archive" })
     if (videos.length == 0) {
       return null
     }
