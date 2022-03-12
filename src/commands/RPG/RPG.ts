@@ -12,7 +12,7 @@ import {
   MessageEmbed,
   GuildMember,
 } from 'discord.js'
-import { Discord, Slash } from 'discordx'
+import { Discord, Slash, SlashGroup } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence/ORM'
@@ -41,6 +41,8 @@ type EloBand = {
 }
 
 @Discord()
+@SlashGroup({ name: 'rpg', description: 'Channel your inner hero and do battle with others.' })
+@SlashGroup('rpg')
 @injectable()
 export class RPG {
   // CONSTANTS
@@ -210,8 +212,8 @@ export class RPG {
     return result
   }
 
-  @Slash('rpg_character', { description: 'Print your RPG character sheet' })
-  async rpgCharacter(interaction: CommandInteraction) {
+  @Slash('character', { description: 'Show off your character sheet' })
+  async character(interaction: CommandInteraction) {
     const callerMember = getCallerFromCommand(interaction)
     const callingUser = callerMember?.user
 
@@ -225,8 +227,8 @@ export class RPG {
     }
   }
 
-  @Slash('rpg_stats', { description: 'Display your RPG fight statistics' })
-  private async rpgStats(interaction: CommandInteraction) {
+  @Slash('stats', { description: 'Display your fight statistics' })
+  async stats(interaction: CommandInteraction) {
     await interaction.deferReply()
 
     const callerMember = interaction.member
@@ -248,8 +250,8 @@ export class RPG {
     }
   }
 
-  @Slash('rpg_challenge')
-  private async rpg_challenge(interaction: CommandInteraction) {
+  @Slash('challenge', { description: 'Challenge other chatters and prove your strength.' })
+  async challenge(interaction: CommandInteraction) {
     // await interaction.deferReply()
 
     // Check if a duel is currently already going on.
