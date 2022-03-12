@@ -250,11 +250,11 @@ export class RPG {
 
   @Slash('rpg_challenge')
   private async rpg_challenge(interaction: CommandInteraction) {
-    await interaction.deferReply()
+    // await interaction.deferReply()
 
     // Check if a duel is currently already going on.
     if (this.challengeInProgress) {
-      await interaction.followUp({
+      await interaction.reply({
         content: 'An RPG challenge is already in progress.',
         ephemeral: true,
       })
@@ -267,7 +267,7 @@ export class RPG {
     let challengerDBRecord: RPGCharacter
     if (!challengerUser) {
       // If this hasn't worked. Bail out now.
-      await interaction.followUp({
+      await interaction.reply({
         content: 'Challenger user undefined',
         ephemeral: true,
       })
@@ -279,7 +279,7 @@ export class RPG {
 
     // Check to see if the challenger has recently lost.
     if (challengerDBRecord.lastLoss.getTime() + RPG.cooldown > Date.now()) {
-      await interaction.followUp({
+      await interaction.reply({
         content: `${
           challenger.user
         }, you are still recovering from the last fight. Please wait ${getTimeLeftInReadableFormat(
@@ -321,7 +321,7 @@ export class RPG {
       .setCustomId('rpg-btn')
       .setLabel('Accept challenge')
     const row = new MessageActionRow().addComponents(button)
-    const message = await interaction.followUp({
+    const message = await interaction.reply({
       content: `${challengerUser} ${challengerEloBand.icon} is throwing down the gauntlet in challenge.`,
       fetchReply: true,
       components: [row],
