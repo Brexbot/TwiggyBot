@@ -38,15 +38,11 @@ export class Character {
       this.name = this.seedPhrase
     } else {
       // But we can use the user id as a fallback seed
-      this.seed = +this.user.id
+      this.seed = parseInt(this.user.id)
       this.name = user.username
     }
     // then seed the RNG
     this.rng = mulberry32(this.seed)
-
-    // placeholder classes and species because TS throws a shitfit worried that they might be undefined
-    // this.character_class = classes[0];
-    // this.character_specie = species[0];
 
     if (this.user.id == '89926310410850304') {
       this.characterSpecie = {
