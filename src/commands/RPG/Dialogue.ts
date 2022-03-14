@@ -202,18 +202,36 @@ export const defenceFailureTexts: Record<string, string[]> = {
 // Finally, it selects a random concluding message.
 // VICTOR is replaced with the winner's name
 // LOSER is replaced with the loser's name
-export const victoryTexts = [
-  'LOSER falls and VICTOR wins!',
-  'LOSER is smashed like a bowl of eggs. VICTOR wins!',
-  'LOSER taps out. VICTOR wins!',
-  'Sucks to suck LOSER, VICTOR wins!',
-  "LOSER can't go on, VICTOR wins!",
-  'VICTOR stands victorious, LOSER is left to lick their wounds.',
-  'VICTOR wins! GG go next.',
-  'VICTOR wins! GG no re.',
-  'LOSER faints. VICTOR jumps for joy!',
-  "LOSER can't take it any more, VICTOR wins!",
-  'LOSER is outplayed, VICTOR is the winner!',
-  'Winner winner chicken dinner for VICTOR. LOSER starves.',
-  'VICTOR wins! LOSER thinks the game is rigged!',
-]
+export const victoryTexts: Record<string, string[]> = {
+  STANDARD: [
+    'LOSER falls and VICTOR wins!',
+    'LOSER is smashed like a bowl of eggs. VICTOR wins!',
+    'LOSER taps out. VICTOR wins!',
+    'Sucks to suck LOSER, VICTOR wins!',
+    "LOSER can't go on, VICTOR wins!",
+    'VICTOR stands victorious, LOSER is left to lick their wounds.',
+    'VICTOR wins! GG go next.',
+    'VICTOR wins! GG no re.',
+    'LOSER faints. VICTOR jumps for joy!',
+    "LOSER can't take it any more, VICTOR wins!",
+    'LOSER is outplayed, VICTOR is the winner!',
+    'Winner winner chicken dinner for VICTOR. LOSER starves.',
+    'VICTOR wins! LOSER thinks the game is rigged!',
+  ],
+
+  PERFECT: [
+    'VICTOR scores a perfect victory! LOSER is shamed!',
+    'VICTOR is untouchable! LOSER never got a hit in.',
+    "VICTOR must be hacking because LOSER couldn't land a hit.",
+    'FRAUD ALERT! VICTOR scores a perfect victory over LOSER.',
+    'VICTOR wins without breaking a sweat. Was LOSER even trying?',
+  ],
+
+  CLOSE: [
+    'VICTOR stands bloodied but victorious. LOSER gave as good as they got!',
+    'VICTOR scrapes by, narrowly defeating LOSER.',
+    'VICTOR wins over LOSER by a hair.',
+    'VICTOR and LOSER are evenly matched, but VICTOR comes out ahead.',
+    'A close one, but VICTOR wins.',
+  ],
+}

@@ -65,7 +65,7 @@ export class RPG {
 
   private lastFightResult?: FightResult
 
-  static cooldown = 10 * 60 * 1000
+  static cooldown = 0 * 60 * 1000
   private challengeInProgress = false
 
   private timeoutDuration = 5 * 60 * 1000 // Time before the duel is declared dead in milliseconds
@@ -194,7 +194,15 @@ export class RPG {
     }
 
     log += '\n\n'
-    const summary: string = getRandomElement(victoryTexts)
+    let textList: string[]
+    if (victor.hp == victor.maxHp) {
+      textList = victoryTexts['PERFECT']
+    } else if (victor.hp < 5) {
+      textList = victoryTexts['CLOSE']
+    } else {
+      textList = victoryTexts['STANDARD']
+    }
+    const summary: string = getRandomElement(textList)
       .replace(/VICTOR/g, `${victor.user}`)
       .replace(/LOSER/g, `${loser.user}`)
     log += summary
