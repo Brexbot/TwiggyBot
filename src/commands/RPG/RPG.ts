@@ -250,7 +250,7 @@ export class RPG {
     }
   }
 
-  @Slash('challenge', { description: 'Challenge other chatters and prove your strength.' })
+  @Slash('duel', { description: 'Challenge other chatters and prove your strength.' })
   async challenge(interaction: CommandInteraction) {
     // await interaction.deferReply()
 
