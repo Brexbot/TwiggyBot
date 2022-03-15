@@ -243,17 +243,23 @@ export class RPG {
   @Slash('character', { description: 'Show off your character sheet' })
   async character(
     @SlashOption('silent', { type: 'BOOLEAN' })
+    @SlashOption('name', { type: 'STRING', required: false })
     silent: boolean,
+    name: string,
     interaction: CommandInteraction
   ) {
     const callerMember = getCallerFromCommand(interaction)
     const callingUser = callerMember?.user
-
     if (callingUser) {
-      const userDBRecord = await this.getUserFromDB(callerMember.user.id)
-      const eloBandIcon = this.getBandForEloRank(userDBRecord.eloRank)
-      const character = new Character(callingUser, callerMember.nickname ?? undefined)
-      interaction.reply({ embeds: [character.toEmbed(eloBandIcon.icon)], ephemeral: silent })
+      if (name) {
+        const character = new Character(callingUser, name)
+        interaction.reply({ embeds: [character.toEmbed('')], ephemeral: silent })
+      } else {
+        const userDBRecord = await this.getUserFromDB(callerMember.user.id)
+        const eloBandIcon = this.getBandForEloRank(userDBRecord.eloRank)
+        const character = new Character(callingUser, callerMember.nickname ?? undefined)
+        interaction.reply({ embeds: [character.toEmbed(eloBandIcon.icon)], ephemeral: silent })
+      }
     } else {
       interaction.reply({ content: 'Username undefined', ephemeral: silent })
     }
