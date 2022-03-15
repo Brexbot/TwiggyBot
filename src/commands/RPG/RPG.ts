@@ -361,7 +361,7 @@ export class RPG {
     // Check if a duel is currently already going on.
     if (this.challengeInProgress) {
       await interaction.reply({
-        content: 'An RPG challenge is already in progress.',
+        content: 'An RPG duel is already in progress.',
         ephemeral: true,
       })
       return
