@@ -391,7 +391,7 @@ export class RPG {
         .setDisabled(true)
       const row = new MessageActionRow().addComponents(button)
       await interaction.editReply({
-        content: `No one was brave enough to do battle with ${challengerUser} ${challengerEloBand.icon}.`,
+        content: `No one was brave enough to do battle with ${challengerUser}${challengerEloBand.icon}.`,
         components: [row],
       })
       this.challengeInProgress = false
@@ -405,7 +405,7 @@ export class RPG {
       .setLabel('Accept challenge')
     const row = new MessageActionRow().addComponents(button)
     const message = await interaction.reply({
-      content: `${challengerUser} ${challengerEloBand.icon} is throwing down the gauntlet in challenge.`,
+      content: `${challengerUser}${challengerEloBand.icon} is throwing down the gauntlet in challenge.`,
       fetchReply: true,
       components: [row],
     })
