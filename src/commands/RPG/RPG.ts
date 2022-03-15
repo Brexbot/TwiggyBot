@@ -242,8 +242,8 @@ export class RPG {
 
   @Slash('character', { description: 'Show off your character sheet' })
   async character(
-    @SlashOption('ephemeral', { type: 'BOOLEAN' })
-    ephemeral: boolean,
+    @SlashOption('silent', { type: 'BOOLEAN' })
+    silent: boolean,
     interaction: CommandInteraction
   ) {
     const callerMember = getCallerFromCommand(interaction)
@@ -253,9 +253,9 @@ export class RPG {
       const userDBRecord = await this.getUserFromDB(callerMember.user.id)
       const eloBandIcon = this.getBandForEloRank(userDBRecord.eloRank)
       const character = new Character(callingUser, callerMember.nickname ?? undefined)
-      interaction.reply({ embeds: [character.toEmbed(eloBandIcon.icon)], ephemeral: ephemeral })
+      interaction.reply({ embeds: [character.toEmbed(eloBandIcon.icon)], ephemeral: silent })
     } else {
-      interaction.reply({ content: 'Username undefined', ephemeral: ephemeral })
+      interaction.reply({ content: 'Username undefined', ephemeral: silent })
     }
   }
 
