@@ -52,4 +52,6 @@ model RPGCharacter {
   draws         Int       @default(0)
   lastLoss      DateTime  @default(dbgenerated("0"))
   eloRank       Int       @default(1000)  // 1000 is center of "skill" distribution
+  peakElo       Int       @default(1000)
+  floorElo      Int       @default(1000)
 }

@@ -1,6 +1,6 @@
 import { Character } from './Character'
 import { getRandomElement as getRandomElement, roll_dy_x_TimesPick_z, getEloRankChange } from './util'
-import { attackTexts, defenceFailureTexts, defenceSuccessTexts, victoryTexts } from './Dialogue'
+import { attackTexts, defenceFailureTexts, defenceSuccessTexts, victoryTexts, ladderTexts } from './Dialogue'
 
 import {
   CommandInteraction,
@@ -38,6 +38,13 @@ type EloBand = {
   upperBound: number
   icon: string
   name: string
+}
+
+type LadderState = {
+  top?: RPGCharacter[]
+  bottom?: RPGCharacter[]
+  wins: RPGCharacter[]
+  losses: RPGCharacter[]
 }
 
 @Discord()
@@ -251,11 +258,77 @@ export class RPG {
             callerDBRecord.wins
           }W ${callerDBRecord.losses}L ${callerDBRecord.draws}D`,
         })
-        .setDescription(`**Ladder Points:** ${callerDBRecord.eloRank} - ${eloBand.icon} *${eloBand.name} League*`)
+        .setDescription(
+          `**Current Points:** ${callerDBRecord.eloRank} - ${eloBand.icon} *${eloBand.name} League*\n
+          **Peak Rank:** ${callerDBRecord.peakElo}${this.getBandForEloRank(callerDBRecord.peakElo).icon}\n
+          **Lowest Rank:** ${callerDBRecord.floorElo}${this.getBandForEloRank(callerDBRecord.floorElo).icon}`
+        )
       await interaction.followUp({ embeds: [statsEmbed] })
     } else {
       await interaction.followUp(`Hmm, ${interaction.user}... It seems you are yet to test your steel.`)
     }
+  }
+
+  @Slash('ladder', { description: 'Who is the strongest chatter around?' })
+  async ladder(interaction: CommandInteraction) {
+    const getLadderStats = async (): Promise<LadderState> => {
+      const top = await this.client.$queryRawUnsafe<RPGCharacter[]>(
+        `SELECT * FROM RPGCharacter WHERE eloRank=(SELECT MAX(eloRank) FROM RPGCharacter)`
+      )
+      const bottom = await this.client.$queryRawUnsafe<RPGCharacter[]>(
+        `SELECT * FROM RPGCharacter WHERE eloRank=(SELECT MIN(eloRank) FROM RPGCharacter)`
+      )
+      const wins = await this.client.$queryRawUnsafe<RPGCharacter[]>(
+        `SELECT * FROM RPGCharacter WHERE wins=(SELECT MAX(wins) FROM RPGCharacter)`
+      )
+      const losses = await this.client.$queryRawUnsafe<RPGCharacter[]>(
+        `SELECT * FROM RPGCharacter WHERE losses=(SELECT MAX(losses) FROM RPGCharacter)`
+      )
+      if (top.length == 0 || bottom.length == 0) {
+        return { wins: wins, losses: losses }
+      } else {
+        return { top: top, bottom: bottom, wins: wins, losses: losses }
+      }
+    }
+
+    const processPotentiallyPluralResults = (
+      characters: RPGCharacter[],
+      position: 'TOP' | 'BOTTOM' | 'WINS' | 'LOSS'
+    ): string => {
+      let leader: RPGCharacter
+      if (characters.length > 1) {
+        leader = getRandomElement(characters)
+      } else {
+        leader = characters[0]
+      }
+
+      const score = { TOP: leader.eloRank, BOTTOM: leader.eloRank, WINS: leader.wins, LOSS: leader.losses }[position]
+      const suffix = { TOP: 'LP', BOTTOM: 'LP', WINS: 'wins', LOSS: 'losses' }[position]
+
+      if (characters.length > 1) {
+        return `<@${leader.id}> and ${characters.length - 1} others ${
+          ladderTexts[position + '_PLURAL']
+        } with ${score} ${suffix}.`
+      } else {
+        return `<@${leader.id}> ${getRandomElement(ladderTexts[position])} with ${score} ${suffix}.`
+      }
+    }
+
+    const results = await getLadderStats()
+    const ladderEmbed = new MessageEmbed().setColor('#009933').setTitle('The State of the Ladder')
+
+    if (results.top) {
+      ladderEmbed.addField('Top', processPotentiallyPluralResults(results.top, 'TOP'))
+    } else {
+      interaction.reply('The arena is clean. No violence has happened yet.')
+      return
+    }
+    if (results.bottom) {
+      ladderEmbed.addField('Tail', processPotentiallyPluralResults(results.bottom, 'BOTTOM'))
+    }
+    ladderEmbed.addField('Wins', processPotentiallyPluralResults(results.wins, 'WINS'))
+    ladderEmbed.addField('Losses', processPotentiallyPluralResults(results.losses, 'LOSS'))
+    interaction.reply({ embeds: [ladderEmbed] })
   }
 
   @Slash('duel', { description: 'Challenge other chatters and prove your strength.' })
@@ -568,6 +641,8 @@ export class RPG {
           data: {
             wins: { increment: 1 },
             eloRank: newEloRank,
+            peakElo: Math.max(stats.eloRank, newEloRank),
+            floorElo: Math.min(stats.eloRank, newEloRank),
           },
         })
         break
@@ -580,6 +655,8 @@ export class RPG {
           data: {
             losses: { increment: 1 },
             eloRank: newEloRank,
+            peakElo: Math.max(stats.eloRank, newEloRank),
+            floorElo: Math.min(stats.eloRank, newEloRank),
             lastLoss: new Date(),
           },
         })

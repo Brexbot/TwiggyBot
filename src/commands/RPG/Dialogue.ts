@@ -235,3 +235,84 @@ export const victoryTexts: Record<string, string[]> = {
     'A close one, but VICTOR wins.',
   ],
 }
+
+export const ladderTexts: Record<string, string[]> = {
+  TOP: [
+    'is the champion',
+    'is the big cheese',
+    'is top banana',
+    'is supreme ruler',
+    'is the coolest chatter',
+    'is the gout gamer',
+    'is based and RPG pilled',
+    'probably cheated',
+    'is the raid boss',
+    'is on top',
+  ],
+
+  TOP_PLURAL: [
+    'are the champions',
+    'are the big cheeses',
+    'are top bananas',
+    'are supreme rulers',
+    'are the coolest chatters',
+    'are gout gamers',
+    'are based and RPG pilled',
+    'probably cheated',
+    'are the raid bosses',
+    'are on top',
+  ],
+
+  BOTTOM: [
+    "is everyone's best friend",
+    'had their lunch money taken',
+    'has the best personality',
+    'is making the room brighter',
+    "can't seem to catch a break",
+    'is a sweet summer child',
+    'gave peace a chance',
+  ],
+
+  BOTTOM_PLURAL: [
+    "are everyone's best friends",
+    'had their lunch money taken',
+    'are making the room brighter',
+    "can't seem to catch a break",
+    'are sweet summer children',
+    'gave peace a chance',
+  ],
+
+  WINS: [
+    'has the most bedpost notches',
+    'has the biggest tally',
+    'sits on a throne of skulls',
+    'has been winning a lot',
+  ],
+
+  WINS_PLURAL: [
+    'have the most bedpost notches',
+    'have the biggest tallies',
+    'sit on a throne of skulls',
+    'have been winning a lot',
+  ],
+
+  LOSS: [
+    'has the worst luck',
+    "can't catch a break",
+    'needs to work on their technique',
+    'has found inner peace',
+    'will turn it around soon',
+    'is a victim of variance',
+    'has taken the most Ls',
+  ],
+
+  LOSS_PLURAL: [
+    'have the worst luck',
+    "can't catch a break",
+    'need to work on their technique',
+    'have found inner peace',
+    'will turn it around soon',
+    'are victims of variance',
+    'have taken the most Ls',
+  ],
+}
