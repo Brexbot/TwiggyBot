@@ -21,14 +21,23 @@ class Pardon {
       return
     }
 
-    await this.client.user
+    await this.client.user.update({
+      where: {
+        id: mentionedMember.id,
+      },
+      data: {
+        lastLoss: new Date(0),
+        lastRandom: new Date(0),
+      },
+    })
+
+    await this.client.rPGCharacter
       .update({
         where: {
           id: mentionedMember.id,
         },
         data: {
           lastLoss: new Date(0),
-          lastRandom: new Date(0),
         },
       })
       .then((_) =>
