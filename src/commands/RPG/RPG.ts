@@ -12,7 +12,7 @@ import {
   MessageEmbed,
   GuildMember,
 } from 'discord.js'
-import { Discord, Slash, SlashGroup } from 'discordx'
+import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence/ORM'
@@ -241,7 +241,11 @@ export class RPG {
   }
 
   @Slash('character', { description: 'Show off your character sheet' })
-  async character(interaction: CommandInteraction) {
+  async character(
+    @SlashOption('ephemeral', { type: 'BOOLEAN' })
+    ephemeral: boolean,
+    interaction: CommandInteraction
+  ) {
     const callerMember = getCallerFromCommand(interaction)
     const callingUser = callerMember?.user
 
@@ -249,9 +253,9 @@ export class RPG {
       const userDBRecord = await this.getUserFromDB(callerMember.user.id)
       const eloBandIcon = this.getBandForEloRank(userDBRecord.eloRank)
       const character = new Character(callingUser, callerMember.nickname ?? undefined)
-      interaction.reply({ embeds: [character.toEmbed(eloBandIcon.icon)] })
+      interaction.reply({ embeds: [character.toEmbed(eloBandIcon.icon)], ephemeral: ephemeral })
     } else {
-      interaction.reply('Username undefined')
+      interaction.reply({ content: 'Username undefined', ephemeral: ephemeral })
     }
   }
 
