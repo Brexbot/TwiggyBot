@@ -32,6 +32,8 @@ type FightResult = {
   summary: string
   challenger: Character
   accepter: Character
+  messageId: string
+  creationTime: number
 }
 
 type EloBand = {
@@ -70,7 +72,8 @@ export class RPG {
 
   static SUMMARY_BUTTON_ID = 'get-log-button'
 
-  private lastFightResult?: FightResult
+  private lastFightResult: FightResult[] = []
+  private RESULT_CACHE_TIME = 1 * 60 * 1000
 
   static cooldown = 0 * 60 * 1000
   private challengeInProgress = false
@@ -125,7 +128,7 @@ export class RPG {
     return { damage: damage, text: text }
   }
 
-  private runRPGFight(challenger: Character, accepter: Character): FightResult {
+  private runRPGFight(challenger: Character, accepter: Character, messageId: string): FightResult {
     // Full driver function that runs the battle.
     // Supply with two Characters, returns the result and log text.
 
@@ -197,7 +200,15 @@ export class RPG {
     } else {
       // Must be a draw. Leave victor and loser undefined.
       const summary = `After ${RPG.MAX_ROUNDS} rounds they decide to call it a draw.`
-      return { intro: intro, log: log, summary: summary, challenger: challenger, accepter: accepter }
+      return {
+        intro: intro,
+        log: log,
+        summary: summary,
+        challenger: challenger,
+        accepter: accepter,
+        messageId: messageId,
+        creationTime: Date.now(),
+      }
     }
 
     log += '\n\n'
@@ -222,6 +233,8 @@ export class RPG {
       summary: summary,
       challenger: challenger,
       accepter: accepter,
+      messageId: messageId,
+      creationTime: Date.now(),
     }
 
     return result
@@ -422,6 +435,7 @@ export class RPG {
     const collector = message.createMessageComponentCollector()
     collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
       await collectionInteraction.deferUpdate()
+      const messageId = collectionInteraction.message.id
 
       // Two possible cases exist:
       //   Someone is accepting a challenge
@@ -429,35 +443,36 @@ export class RPG {
 
       // Intercept if this is someone requesting a log of the fight
       if (collectionInteraction.customId === RPG.SUMMARY_BUTTON_ID) {
-        // Currently this gets the most recent fight, even if the button is from an older fight output message.
+        // Try to get the fight corresponding to this button message.
+        const fightFromId = this.getFightResultForId(messageId)
 
         // Completing a fight populates the lastFightResult property
-        if (this.lastFightResult) {
+        if (fightFromId) {
           // We must check the output isn't longer than discord allows,
           // otherwise send as two messages, or embed as a file as a last resort.
-          const full = `${this.lastFightResult.intro}\n${this.lastFightResult.log}`
+          const full = `${fightFromId.intro}\n${fightFromId.log}`
           if (full.length <= 2000) {
             await collectionInteraction.followUp({
               content: full,
               ephemeral: true,
             })
-          } else if (this.lastFightResult.intro.length <= 2000 && this.lastFightResult.log.length <= 2000) {
+          } else if (fightFromId.intro.length <= 2000 && fightFromId.log.length <= 2000) {
             await collectionInteraction.followUp({
-              content: this.lastFightResult.intro,
+              content: fightFromId.intro,
               ephemeral: true,
             })
             await collectionInteraction.followUp({
-              content: this.lastFightResult.log,
+              content: fightFromId.log,
               ephemeral: true,
             })
           } else {
             // Prepare the file output by replacing the user strings with screen names
-            let output = this.lastFightResult.intro.replaceAll('```', '')
-            output += this.lastFightResult.log
+            let output = fightFromId.intro.replaceAll('```', '')
+            output += fightFromId.log
 
             output = output
-              .replaceAll(String(this.lastFightResult.challenger.user), this.lastFightResult.challenger.name)
-              .replaceAll(String(this.lastFightResult.accepter.user), this.lastFightResult.accepter.name)
+              .replaceAll(String(fightFromId.challenger.user), fightFromId.challenger.name)
+              .replaceAll(String(fightFromId.accepter.user), fightFromId.accepter.name)
 
             await collectionInteraction.followUp({
               content: 'Phew! That was a long fight! The bards had to write it to a file.',
@@ -546,7 +561,8 @@ export class RPG {
         })
 
         // Now do the actual duel.
-        this.lastFightResult = this.runRPGFight(challenger, accepter)
+        const fightResult = this.runRPGFight(challenger, accepter, messageId)
+        this.lastFightResult.push(fightResult)
 
         const challengerOldEloRank = challengerDBRecord.eloRank
         const accepterOldEloRank = accepterDBRecord.eloRank
@@ -554,17 +570,17 @@ export class RPG {
         let challengerNewEloRank: number
         let accepterNewEloRank: number
 
-        if (this.lastFightResult.winner && this.lastFightResult.loser) {
+        if (fightResult.winner && fightResult.loser) {
           // Wasn't a draw, find the winner and update
           challengerNewEloRank = await this.updateUserRPGScore(
             challengerDBRecord,
             accepterOldEloRank,
-            this.lastFightResult.winner === challenger ? 'win' : 'loss'
+            fightResult.winner === challenger ? 'win' : 'loss'
           )
           accepterNewEloRank = await this.updateUserRPGScore(
             accepterDBRecord,
             challengerOldEloRank,
-            this.lastFightResult.winner === challenger ? 'loss' : 'win'
+            fightResult.winner === challenger ? 'loss' : 'win'
           )
         } else {
           // Must be a draw
@@ -594,7 +610,7 @@ export class RPG {
         // Finally, send the reply
         await collectionInteraction.editReply({
           content:
-            `${this.lastFightResult.summary}` +
+            `${fightResult.summary}` +
             `\n${challenger.user}${challengerEloBand.icon} ${challengerEloVerb} ${Math.abs(
               challengerEloChange
             )}LP [${challengerNewEloRank}]. ` +
@@ -675,5 +691,24 @@ export class RPG {
     // We shouldn't get this far, but if someone does top out the ranking system
     // beyond the 999999 limit, they're almost certainly up to some tomfoolery.
     return { upperBound: -1, icon: '😎', name: 'Very Cool Hacker' }
+  }
+
+  private getFightResultForId(messageId: string): FightResult | null {
+    const time = Date.now()
+
+    // First remove expired fights from the cache
+    this.lastFightResult = this.lastFightResult.filter((result) => time - result.creationTime < this.RESULT_CACHE_TIME)
+
+    if (this.lastFightResult.length == 0) {
+      return null
+    } else {
+      for (let i = 0; i < this.lastFightResult.length; i++) {
+        if (this.lastFightResult[i].messageId == messageId) {
+          return this.lastFightResult[i]
+        }
+      }
+    }
+    // We failed to find the messageId in the cache
+    return null
   }
 }
