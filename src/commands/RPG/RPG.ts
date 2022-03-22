@@ -11,6 +11,7 @@ import {
   MessageAttachment,
   MessageButton,
   MessageEmbed,
+  Options,
 } from 'discord.js'
 import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
@@ -281,8 +282,12 @@ export class RPG {
   }
 
   @Slash('stats', { description: 'Display your fight statistics' })
-  async stats(interaction: CommandInteraction) {
-    await interaction.deferReply()
+  async stats(
+    @SlashOption('silent', { type: 'BOOLEAN', required: false })
+    silent = true,
+    interaction: CommandInteraction
+  ) {
+    // await interaction.deferReply()
 
     const callerMember = interaction.member
     if (callerMember && callerMember instanceof GuildMember) {
@@ -301,14 +306,18 @@ export class RPG {
           **Peak Rank:** ${callerDBRecord.peakElo}${this.getBandForEloRank(callerDBRecord.peakElo).icon}\n
           **Lowest Rank:** ${callerDBRecord.floorElo}${this.getBandForEloRank(callerDBRecord.floorElo).icon}`
         )
-      await interaction.followUp({ embeds: [statsEmbed] })
+      await interaction.reply({ embeds: [statsEmbed], ephemeral: silent })
     } else {
-      await interaction.followUp(`Hmm, ${interaction.user}... It seems you are yet to test your steel.`)
+      await interaction.reply(`Hmm, ${interaction.user}... It seems you are yet to test your steel.`)
     }
   }
 
   @Slash('ladder', { description: 'Who is the strongest chatter around?' })
-  async ladder(interaction: CommandInteraction) {
+  async ladder(
+    @SlashOption('silent', { type: 'BOOLEAN', required: false })
+    silent = true,
+    interaction: CommandInteraction
+  ) {
     const getLadderStats = async (): Promise<LadderState> => {
       const top = await this.client.$queryRawUnsafe<RPGCharacter[]>(
         `SELECT * FROM RPGCharacter WHERE eloRank=(SELECT MAX(eloRank) FROM RPGCharacter)`
@@ -366,7 +375,7 @@ export class RPG {
     }
     ladderEmbed.addField('Wins', processPotentiallyPluralResults(results.wins, 'WINS'))
     ladderEmbed.addField('Losses', processPotentiallyPluralResults(results.losses, 'LOSS'))
-    interaction.reply({ embeds: [ladderEmbed] })
+    interaction.reply({ embeds: [ladderEmbed], ephemeral: silent })
   }
 
   @Slash('duel', { description: 'Challenge other chatters and prove your strength.' })
