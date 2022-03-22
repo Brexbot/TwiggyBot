@@ -1,23 +1,23 @@
 import { Character } from './Character'
-import { getRandomElement as getRandomElement, roll_dy_x_TimesPick_z, getEloRankChange } from './util'
+import { getEloRankChange, getRandomElement as getRandomElement, roll_dy_x_TimesPick_z } from './util'
 import { attackTexts, defenceFailureTexts, defenceSuccessTexts, victoryTexts } from './Dialogue'
 
 import {
-  CommandInteraction,
-  MessageActionRow,
-  MessageButton,
-  Message,
   ButtonInteraction,
-  MessageAttachment,
-  MessageEmbed,
+  CommandInteraction,
   GuildMember,
+  Message,
+  MessageActionRow,
+  MessageAttachment,
+  MessageButton,
+  MessageEmbed,
 } from 'discord.js'
 import { Discord, Slash, SlashGroup } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
 import { injectable } from 'tsyringe'
-import { ORM } from '../../persistence/ORM'
+import { ORM } from '../../persistence'
 import { RPGCharacter } from '../../../prisma/generated/prisma-client-js'
-import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils'
+import { getGlobalDuelCDRemaining, getTimeLeftInReadableFormat } from '../../utils/CooldownUtils'
 
 type AttackResult = {
   text: string
@@ -293,6 +293,30 @@ export class RPG {
       return
     }
 
+    // Are we on global CD?
+    // todo MultiGuild: This shouldn't be hardcoded (#Mixu's id
+    const guildId = interaction.guildId
+    if (guildId && interaction.channelId !== '340275382093611011') {
+      const guildOptions = await this.client.guildOptions.upsert({
+        where: {
+          guildId: guildId,
+        },
+        update: {},
+        create: {
+          guildId: guildId,
+        },
+      })
+      const globalCD = getGlobalDuelCDRemaining(guildOptions)
+      if (globalCD) {
+        await interaction.reply({
+          content: `Duels are on cooldown here. Please wait ${globalCD} before trying again.`,
+          ephemeral: true,
+          allowedMentions: { repliedUser: false },
+        })
+        return
+      }
+    }
+
     // Checks passed, flag that we have a fight on our hands!
     this.challengeInProgress = true
 
@@ -521,6 +545,17 @@ export class RPG {
               accepterEloChange
             )}LP [${accepterNewEloRank}]`,
         })
+
+        // Finally, set the CD
+        // todo MultiGuild: This shouldn't be hardcoded
+        if (interaction.channelId !== '340275382093611011') {
+          if (guildId) {
+            await this.client.guildOptions.update({
+              where: { guildId: guildId },
+              data: { lastDuel: new Date() },
+            })
+          }
+        }
       }
     })
   }

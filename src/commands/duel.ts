@@ -15,7 +15,7 @@ import { ORM } from '../persistence/ORM'
 import { Duels } from '../../prisma/generated/prisma-client-js'
 import { ColorRoles } from './roleCommands/changecolor'
 import { getCallerFromCommand, getGuildAndCallerFromCommand } from '../utils/CommandUtils'
-import { getTimeLeftInReadableFormat } from '../utils/CooldownUtils'
+import { getTimeLeftInReadableFormat, getGlobalDuelCDRemaining } from '../utils/CooldownUtils'
 import { shuffleArray } from '../utils/Helpers'
 
 @Discord()
@@ -32,36 +32,65 @@ export class Duel {
 
   @Slash('duel', { description: 'Challenge the chat to a duel' })
   private async duel(interaction: CommandInteraction) {
-    await interaction.deferReply()
-
     // Get the challenger from the DB. Create them if they don't exist yet.
     const challengerMember = getCallerFromCommand(interaction)
     const challenger = await this.getUserWithDuelStats(interaction.user.id)
     if (!challenger) {
-      await interaction.followUp('An unexpected error occurred.')
+      await interaction.reply({
+        content: 'An unexpected error occurred.',
+        ephemeral: true,
+        allowedMentions: { repliedUser: false },
+      })
       return
     }
 
     // Check if a duel is currently already going on.
     if (this.inProgress) {
-      await interaction.followUp({
+      await interaction.reply({
         content: 'A duel is already in progress.',
         ephemeral: true,
+        allowedMentions: { repliedUser: false },
       })
       return
     }
 
     // check if the challenger has recently lost
     if (challenger.lastLoss.getTime() + Duel.cooldown > Date.now()) {
-      await interaction.followUp({
+      await interaction.reply({
         content: `${challengerMember?.user}, you have recently lost a duel. Please wait ${getTimeLeftInReadableFormat(
           challenger.lastLoss,
           Duel.cooldown
         )} before trying again.`,
         ephemeral: true,
+        allowedMentions: { repliedUser: false },
       })
       return
     }
+
+    // Are we on global CD?
+    // todo MultiGuild: This shouldn't be hardcoded (#Mixu's id
+    const guildId = interaction.guildId
+    if (guildId && interaction.channelId !== '340275382093611011') {
+      const guildOptions = await this.client.guildOptions.upsert({
+        where: {
+          guildId: guildId,
+        },
+        update: {},
+        create: {
+          guildId: guildId,
+        },
+      })
+      const globalCD = getGlobalDuelCDRemaining(guildOptions)
+      if (globalCD) {
+        await interaction.reply({
+          content: `Duels are on cooldown here. Please wait ${globalCD} before trying again.`,
+          ephemeral: true,
+          allowedMentions: { repliedUser: false },
+        })
+        return
+      }
+    }
+
     this.inProgress = true
 
     // Disable the duel after a timeout
@@ -77,7 +106,7 @@ export class Duel {
     }, this.timeoutDuration)
 
     const row = new MessageActionRow().addComponents(this.createButton(false))
-    const message = await interaction.followUp({
+    const message = await interaction.reply({
       content: `${challengerMember?.user} is looking for a duel, press the button to accept.`,
       fetchReply: true,
       components: [row],
@@ -106,6 +135,7 @@ export class Duel {
             Duel.cooldown
           )} before trying again.`,
           ephemeral: true,
+          allowedMentions: { repliedUser: false },
         })
       } else if (!this.inProgress) {
         // This case is not really supposed to happen because you should not be able to accept a duel after it has expired
@@ -174,6 +204,17 @@ export class Duel {
         await collectionInteraction.editReply({
           content: `${acceptorMember?.user} has rolled a ${accepterScore} and ${challengerMember?.user} has rolled a ${challengerScore}. ${winnerText}`,
         })
+
+        // Finally, set the CD
+        // todo MultiGuild: This shouldn't be hardcoded
+        if (interaction.channelId !== '340275382093611011') {
+          if (guildId) {
+            await this.client.guildOptions.update({
+              where: { guildId: guildId },
+              data: { lastDuel: new Date() },
+            })
+          }
+        }
       }
     })
   }
@@ -229,22 +270,26 @@ export class Duel {
   @Slash('duelstreaks', { description: 'Show the overall duel statistics' })
   private async streaks(interaction: CommandInteraction) {
     const streakStats = ['winStreakMax', 'lossStreakMax', 'draws', 'losses', 'wins'] as const
-    const statFormatter = async (statName: (typeof streakStats[number]), emptyText: string): Promise<string> => {
-      let stats = await this.client.$queryRawUnsafe<Duels[]>(`SELECT * FROM Duels WHERE ${statName}=(SELECT MAX(${statName}) FROM Duels) AND ${statName} > 0`)
-      if(stats.length == 0) {
+    const statFormatter = async (statName: typeof streakStats[number], emptyText: string): Promise<string> => {
+      let stats = await this.client.$queryRawUnsafe<Duels[]>(
+        `SELECT * FROM Duels WHERE ${statName}=(SELECT MAX(${statName}) FROM Duels) AND ${statName} > 0`
+      )
+      if (stats.length == 0) {
         return emptyText
       }
       let extraMessage = ''
-      if(stats.length > 2) {
+      if (stats.length > 2) {
         // If more than 2 users share the same stat, shuffle the array and only print the first two.
         // The rest will be listed as n other users
         extraMessage = `, and ${stats.length - 2} other user${stats.length - 2 > 1 ? 's' : ''}`
         stats = shuffleArray(stats).slice(0, 2)
       }
-      const statHavers = await Promise.all(stats.map(async (duel) => {
-        const member = await interaction.guild?.members.fetch(duel.userId)
-        return member?.nickname ?? member?.user?.username ?? ''
-      }))
+      const statHavers = await Promise.all(
+        stats.map(async (duel) => {
+          const member = await interaction.guild?.members.fetch(duel.userId)
+          return member?.nickname ?? member?.user?.username ?? ''
+        })
+      )
 
       return `${stats[0][statName]} by ${statHavers.join(', ')}${extraMessage}`
     }
@@ -253,11 +298,20 @@ export class Duel {
       .setColor('#9932CC')
       .setTitle('Duel streaks and stats')
       .addFields(
-        { name: 'Highest win streak', value: await statFormatter('winStreakMax', 'Somehow, nobody has won a duel yet.') },
-        { name: 'Highest loss streak', value: await statFormatter('lossStreakMax', 'Somehow, nobody has lost a duel yet.') },
-        { name: 'Highest # of draws', value: await statFormatter('draws', 'Nobody has had a draw yet, good for them.') },
+        {
+          name: 'Highest win streak',
+          value: await statFormatter('winStreakMax', 'Somehow, nobody has won a duel yet.'),
+        },
+        {
+          name: 'Highest loss streak',
+          value: await statFormatter('lossStreakMax', 'Somehow, nobody has lost a duel yet.'),
+        },
+        {
+          name: 'Highest # of draws',
+          value: await statFormatter('draws', 'Nobody has had a draw yet, good for them.'),
+        },
         { name: 'Highest # of wins', value: await statFormatter('wins', 'Somehow, nobody has won a duel yet.') },
-        { name: 'Highest # of losses', value: await statFormatter('losses', 'Somehow, nobody has lost a duel yet.') },
+        { name: 'Highest # of losses', value: await statFormatter('losses', 'Somehow, nobody has lost a duel yet.') }
       )
 
     await interaction.reply({ embeds: [statsEmbed] })
@@ -270,7 +324,6 @@ export class Duel {
       return streak === 1 ? 'loss' : 'losses'
     }
   }
-
 
   private async updateUserScore(stats: Duels, outcome: 'win' | 'loss' | 'draw') {
     switch (outcome) {

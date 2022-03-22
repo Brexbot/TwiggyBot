@@ -1,3 +1,5 @@
+import { GuildOptions } from '../../prisma/generated/prisma-client-js'
+
 export function getTimeLeftInReadableFormat(lockout: Date, coolDownInMillis: number): string {
   const timeLeftInMillis = lockout.getTime() + coolDownInMillis - Date.now()
 
@@ -24,5 +26,13 @@ export function getTimeLeftInReadableFormat(lockout: Date, coolDownInMillis: num
     } else {
       return `${secondsLeft} seconds`
     }
+  }
+}
+
+export function getGlobalDuelCDRemaining(guildOptions: GuildOptions): string | undefined {
+  if (guildOptions.lastDuel.getTime() + guildOptions.globalDuelCD > Date.now()) {
+    return getTimeLeftInReadableFormat(guildOptions.lastDuel, guildOptions.globalDuelCD)
+  } else {
+    return undefined
   }
 }
