@@ -73,9 +73,9 @@ export class RPG {
   static SUMMARY_BUTTON_ID = 'get-log-button'
 
   private lastFightResult: FightResult[] = []
-  private RESULT_CACHE_TIME = 1 * 60 * 1000
+  private RESULT_CACHE_TIME = 10 * 60 * 1000
 
-  static cooldown = 0 * 60 * 1000
+  static cooldown = 10 * 60 * 1000
   private challengeInProgress = false
 
   private timeoutDuration = 5 * 60 * 1000 // Time before the duel is declared dead in milliseconds
