@@ -242,7 +242,7 @@ export class RPG {
 
   @Slash('character', { description: 'Show off your character sheet' })
   async character(
-    @SlashOption('silent', { type: 'BOOLEAN' })
+    @SlashOption('silent', { type: 'BOOLEAN', required: false })
     @SlashOption('name', { type: 'STRING', required: false })
     silent: boolean,
     name: string,
