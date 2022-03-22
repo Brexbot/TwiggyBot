@@ -72,12 +72,8 @@ export class Character {
     this.alignment = `${adjective} ${noun}`
     this.alignment = this.alignment[0].toUpperCase() + this.alignment.substring(1) // Capitalise
 
-    // Count the number of "2" in the input string, minimum of 1.
-    // Twos are cursed, so ya get better stats
-    const twos = this.name.split('2').length - 1
-
     // generate HP as N d6 choose HIT_DICE
-    this.hp = rollSeeded_dy_x_TimesPick_z(6, Character.HIT_DICE + twos + 2, Character.HIT_DICE, this.rng)
+    this.hp = rollSeeded_dy_x_TimesPick_z(6, Character.HIT_DICE + 2, Character.HIT_DICE, this.rng)
     this.maxHp = this.hp
 
     const ustr = this.name.toUpperCase()
@@ -87,7 +83,7 @@ export class Character {
       // Having that letter turn up in your name has got to be good right?
       // Final score is sum of best 3 of d6 rolled.
       const char = value
-      const total_rolls = 1 + Math.max(ustr.split(char).length + twos, 2)
+      const total_rolls = 1 + Math.max(ustr.split(char).length, 2)
       this.stats[key] = rollSeeded_dy_x_TimesPick_z(6, total_rolls, 3, this.rng)
     }
 
