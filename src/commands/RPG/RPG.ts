@@ -109,8 +109,8 @@ export class RPG {
     const defenceRR = +this.advantages[defenceStat].includes(attackStat)
 
     // Calculate stat modifier as Floor(STAT/2) - 5, as in DnD.
-    const attackRoll = roll_dy_x_TimesPick_z(20, 1 + attackRR, 1) + Math.floor(attacker.stats[attackStat] / 2) - 5
-    const defenceRoll = roll_dy_x_TimesPick_z(20, 1 + defenceRR, 1) + Math.floor(defender.stats[defenceStat] / 2) - 5
+    const attackRoll = roll_dy_x_TimesPick_z(20, 1 + attackRR, 1) + attacker.get_modifier(attackStat)
+    const defenceRoll = roll_dy_x_TimesPick_z(20, 1 + defenceRR, 1) + defender.get_modifier(defenceStat)
 
     // Attacker text is always got by taking a random element from the relevant dict entry
     let text = getRandomElement(attackTexts[attackStat])
@@ -119,7 +119,16 @@ export class RPG {
     let damage = 0
     if (attackRoll >= defenceRoll) {
       text += ' ' + getRandomElement(defenceFailureTexts[defenceStat])
-      damage = roll_dy_x_TimesPick_z(10, 1, 1)
+
+      // If the attack is physical type, add strength modifier to damage, otherwise add INT
+      // Clamp it to zero to prevent bad stat being too fatal
+      let damageMod: number
+      if (attackStat in ['STR', 'DEX', 'CON']) {
+        damageMod = Math.max(0, attacker.get_modifier('STR'))
+      } else {
+        damageMod = Math.max(0, attacker.get_modifier('INT'))
+      }
+      damage = roll_dy_x_TimesPick_z(10, 1, 1) + damageMod
     } else {
       text += ' ' + getRandomElement(defenceSuccessTexts[defenceStat])
       damage = 0
@@ -157,8 +166,10 @@ export class RPG {
     let log = ''
     let rounds = 0
     while (challenger.hp > 0 && accepter.hp > 0 && rounds < RPG.MAX_ROUNDS) {
-      const initative_1 = roll_dy_x_TimesPick_z(20, 1, 1) + Math.floor(challenger.stats['DEX'] / 2) - 5
-      const initative_2 = roll_dy_x_TimesPick_z(20, 1, 1) + Math.floor(accepter.stats['DEX'] / 2) - 5
+      const initative_1 =
+        roll_dy_x_TimesPick_z(20, 1, 1) + challenger.get_modifier('DEX') - accepter.get_modifier('CHR')
+      const initative_2 =
+        roll_dy_x_TimesPick_z(20, 1, 1) + accepter.get_modifier('DEX') - challenger.get_modifier('CHR')
 
       // name 2 has a slight advantageby winning draws, eh, who cares?
       const order = initative_1 > initative_2 ? [challenger, accepter] : [accepter, challenger]
@@ -244,7 +255,7 @@ export class RPG {
   async character(
     @SlashOption('silent', { type: 'BOOLEAN', required: false })
     @SlashOption('name', { type: 'STRING', required: false })
-    silent: boolean,
+    silent = true,
     name: string,
     interaction: CommandInteraction
   ) {
@@ -252,7 +263,7 @@ export class RPG {
     const callingUser = callerMember?.user
     if (callingUser) {
       if (name) {
-        const character = new Character(callingUser, name)
+        const character = new Character(callingUser, name, name)
         interaction.reply({ embeds: [character.toEmbed('')], ephemeral: silent })
       } else {
         const userDBRecord = await this.getUserFromDB(callerMember.user.id)
