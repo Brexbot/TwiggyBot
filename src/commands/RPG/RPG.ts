@@ -467,7 +467,7 @@ export class RPG {
       .setLabel('Accept challenge')
     const row = new MessageActionRow().addComponents(button)
     const message = await interaction.reply({
-      content: `**${challengerUser.nickname}**${challengerEloBand.icon} is throwing down the gauntlet in challenge.`,
+      content: `**${challenger.nickname}**${challengerEloBand.icon} is throwing down the gauntlet in challenge.`,
       fetchReply: true,
       components: [row],
     })
@@ -673,10 +673,10 @@ export class RPG {
         await collectionInteraction.editReply({
           content:
             `${fightResult.summary}` +
-            `\n**${challengerUser.nickname}**${challengerEloBand.icon} ${challengerEloVerb} ${Math.abs(
+            `\n**${challenger.nickname}**${challengerEloBand.icon} ${challengerEloVerb} ${Math.abs(
               challengerEloChange
             )}LP [${challengerNewEloRank}]. ` +
-            `**${accepterUser.nickname}**${accepterEloBand.icon} ${accepterEloVerb} ${Math.abs(
+            `**${accepter.nickname}**${accepterEloBand.icon} ${accepterEloVerb} ${Math.abs(
               accepterEloChange
             )}LP [${accepterNewEloRank}]`,
         })
