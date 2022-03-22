@@ -36,3 +36,11 @@ export function getGlobalDuelCDRemaining(guildOptions: GuildOptions): string | u
     return undefined
   }
 }
+
+export function getGlobalRPGCDRemaining(guildOptions: GuildOptions): string | undefined {
+  if (guildOptions.lastRPG.getTime() + guildOptions.globalDuelCD > Date.now()) {
+    return getTimeLeftInReadableFormat(guildOptions.lastRPG, guildOptions.globalDuelCD)
+  } else {
+    return undefined
+  }
+}

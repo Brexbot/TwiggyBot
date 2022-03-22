@@ -17,7 +17,7 @@ import { getCallerFromCommand } from '../../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
 import { RPGCharacter } from '../../../prisma/generated/prisma-client-js'
-import { getGlobalDuelCDRemaining, getTimeLeftInReadableFormat } from '../../utils/CooldownUtils'
+import { getGlobalRPGCDRemaining, getTimeLeftInReadableFormat } from '../../utils/CooldownUtils'
 
 type AttackResult = {
   text: string
@@ -294,22 +294,18 @@ export class RPG {
     }
 
     // Are we on global CD?
-    // todo MultiGuild: This shouldn't be hardcoded (#Mixu's id
+    // todo MultiGuild: This shouldn't be hardcoded (#Mixu's id)
     const guildId = interaction.guildId
     if (guildId && interaction.channelId !== '340275382093611011') {
       const guildOptions = await this.client.guildOptions.upsert({
-        where: {
-          guildId: guildId,
-        },
+        where: { guildId: guildId },
         update: {},
-        create: {
-          guildId: guildId,
-        },
+        create: { guildId: guildId },
       })
-      const globalCD = getGlobalDuelCDRemaining(guildOptions)
+      const globalCD = getGlobalRPGCDRemaining(guildOptions)
       if (globalCD) {
         await interaction.reply({
-          content: `Duels are on cooldown here. Please wait ${globalCD} before trying again.`,
+          content: `RPG Duels are on cooldown here. Please wait ${globalCD} before trying again.`,
           ephemeral: true,
           allowedMentions: { repliedUser: false },
         })
@@ -470,6 +466,15 @@ export class RPG {
         })
         return
       } else {
+        // Set the RPG global CD
+        // todo MultiGuild: This shouldn't be hardcoded
+        if (guildId && interaction.channelId !== '340275382093611011') {
+          await this.client.guildOptions.update({
+            where: { guildId: guildId },
+            data: { lastRPG: new Date() },
+          })
+        }
+
         // Disable duel
         this.challengeInProgress = false
         if (this.timeout) {
@@ -545,17 +550,6 @@ export class RPG {
               accepterEloChange
             )}LP [${accepterNewEloRank}]`,
         })
-
-        // Finally, set the CD
-        // todo MultiGuild: This shouldn't be hardcoded
-        if (interaction.channelId !== '340275382093611011') {
-          if (guildId) {
-            await this.client.guildOptions.update({
-              where: { guildId: guildId },
-              data: { lastDuel: new Date() },
-            })
-          }
-        }
       }
     })
   }

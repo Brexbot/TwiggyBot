@@ -17,6 +17,7 @@ model GuildOptions {
   gambleChance Decimal  @default(33.33)
   globalDuelCD Int      @default(60000) // 1 minute in millis
   lastDuel     DateTime @default(dbgenerated("0"))
+  lastRPG      DateTime @default(dbgenerated("0"))
 }
 
 model User {

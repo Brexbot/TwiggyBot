@@ -15,7 +15,7 @@ import { ORM } from '../persistence/ORM'
 import { Duels } from '../../prisma/generated/prisma-client-js'
 import { ColorRoles } from './roleCommands/changecolor'
 import { getCallerFromCommand, getGuildAndCallerFromCommand } from '../utils/CommandUtils'
-import { getTimeLeftInReadableFormat, getGlobalDuelCDRemaining } from '../utils/CooldownUtils'
+import { getGlobalDuelCDRemaining, getTimeLeftInReadableFormat } from '../utils/CooldownUtils'
 import { shuffleArray } from '../utils/Helpers'
 
 @Discord()
@@ -68,17 +68,13 @@ export class Duel {
     }
 
     // Are we on global CD?
-    // todo MultiGuild: This shouldn't be hardcoded (#Mixu's id
+    // todo MultiGuild: This shouldn't be hardcoded (#Mixu's id)
     const guildId = interaction.guildId
     if (guildId && interaction.channelId !== '340275382093611011') {
       const guildOptions = await this.client.guildOptions.upsert({
-        where: {
-          guildId: guildId,
-        },
+        where: { guildId: guildId },
         update: {},
-        create: {
-          guildId: guildId,
-        },
+        create: { guildId: guildId },
       })
       const globalCD = getGlobalDuelCDRemaining(guildOptions)
       if (globalCD) {
@@ -156,6 +152,15 @@ export class Duel {
         })
         return
       } else {
+        // Set the Duel global CD
+        // todo MultiGuild: This shouldn't be hardcoded
+        if (guildId && interaction.channelId !== '340275382093611011') {
+          await this.client.guildOptions.update({
+            where: { guildId: guildId },
+            data: { lastDuel: new Date() },
+          })
+        }
+
         // Disable duel
         this.inProgress = false
         // Disable the timeout that will change the message
@@ -204,17 +209,6 @@ export class Duel {
         await collectionInteraction.editReply({
           content: `${acceptorMember?.user} has rolled a ${accepterScore} and ${challengerMember?.user} has rolled a ${challengerScore}. ${winnerText}`,
         })
-
-        // Finally, set the CD
-        // todo MultiGuild: This shouldn't be hardcoded
-        if (interaction.channelId !== '340275382093611011') {
-          if (guildId) {
-            await this.client.guildOptions.update({
-              where: { guildId: guildId },
-              data: { lastDuel: new Date() },
-            })
-          }
-        }
       }
     })
   }
