@@ -3,17 +3,10 @@ import { getSeededRandomElement, rollSeeded_dy_x_TimesPick_z, mulberry32, cyrb53
 
 import { MessageEmbed, User } from 'discord.js'
 
-const preferredLetter: Record<string, string> = {
-  STR: 'S',
-  DEX: 'D',
-  CON: 'C',
-  INT: 'I',
-  WIS: 'W',
-  CHR: 'T',
-}
-
 export class Character {
-  static HIT_DICE = 4
+  static HIT_DICE = 6
+  static HIT_DICE_POOL = 10
+  static HIT_DICE_SIDES = 4
 
   stats: Record<string, number> = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHR: 0 }
 
@@ -31,7 +24,7 @@ export class Character {
 
   rng: () => number
 
-  public constructor(public user: User, private seedPhrase?: string) {
+  public constructor(public user: User, public nickname: string, private seedPhrase?: string) {
     // Maybe the screen name is better until folks can build their own character
     if (this.seedPhrase) {
       this.seed = cyrb53(this.seedPhrase)
@@ -72,29 +65,25 @@ export class Character {
     this.alignment = `${adjective} ${noun}`
     this.alignment = this.alignment[0].toUpperCase() + this.alignment.substring(1) // Capitalise
 
-    // Count the number of "2" in the input string, minimum of 1.
-    // Twos are cursed, so ya get better stats
-    const twos = this.name.split('2').length - 1
-
-    // generate HP as N d6 choose HIT_DICE
-    this.hp = rollSeeded_dy_x_TimesPick_z(6, Character.HIT_DICE + twos + 2, Character.HIT_DICE, this.rng)
-    this.maxHp = this.hp
-
-    const ustr = this.name.toUpperCase()
-
-    for (const [key, value] of Object.entries(preferredLetter)) {
-      // Roll stats by counting the occurence of the stat name in istr
-      // Having that letter turn up in your name has got to be good right?
-      // Final score is sum of best 3 of d6 rolled.
-      const char = value
-      const total_rolls = 1 + Math.max(ustr.split(char).length + twos, 2)
-      this.stats[key] = rollSeeded_dy_x_TimesPick_z(6, total_rolls, 3, this.rng)
+    for (const [key] of Object.entries(this.stats)) {
+      // Final score is sum of best 3 of 3d6 rolled.
+      this.stats[key] = rollSeeded_dy_x_TimesPick_z(6, 3, 3, this.rng)
     }
 
     // Now add the species modifier.
     for (let i = 0; i < this.characterSpecie.statBonuses.length; i++) {
       this.stats[this.characterSpecie.statBonuses[i]] += 1
     }
+
+    // generate HP as N d6 choose HIT_DICE
+    this.hp = rollSeeded_dy_x_TimesPick_z(
+      Character.HIT_DICE_SIDES,
+      Character.HIT_DICE_POOL,
+      Character.HIT_DICE,
+      this.rng
+    )
+    this.hp += this.get_modifier('CON')
+    this.maxHp = this.hp
   }
 
   public toString(): string {
@@ -136,5 +125,9 @@ export class Character {
       )
       .setColor('#009933') // Seems a nice enough colour. Could match use colour if we wanted.
     return out
+  }
+
+  public get_modifier(stat: string): number {
+    return Math.floor(this.stats[stat] / 2) - 5
   }
 }
