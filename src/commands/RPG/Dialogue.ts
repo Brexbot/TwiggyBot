@@ -202,18 +202,117 @@ export const defenceFailureTexts: Record<string, string[]> = {
 // Finally, it selects a random concluding message.
 // VICTOR is replaced with the winner's name
 // LOSER is replaced with the loser's name
-export const victoryTexts = [
-  'LOSER falls and VICTOR wins!',
-  'LOSER is smashed like a bowl of eggs. VICTOR wins!',
-  'LOSER taps out. VICTOR wins!',
-  'Sucks to suck LOSER, VICTOR wins!',
-  "LOSER can't go on, VICTOR wins!",
-  'VICTOR stands victorious, LOSER is left to lick their wounds.',
-  'VICTOR wins! GG go next.',
-  'VICTOR wins! GG no re.',
-  'LOSER faints. VICTOR jumps for joy!',
-  "LOSER can't take it any more, VICTOR wins!",
-  'LOSER is outplayed, VICTOR is the winner!',
-  'Winner winner chicken dinner for VICTOR. LOSER starves.',
-  'VICTOR wins! LOSER thinks the game is rigged!',
-]
+export const victoryTexts: Record<string, string[]> = {
+  STANDARD: [
+    'LOSER falls and VICTOR wins!',
+    'LOSER is smashed like a bowl of eggs. VICTOR wins!',
+    'LOSER taps out. VICTOR wins!',
+    'Sucks to suck LOSER, VICTOR wins!',
+    "LOSER can't go on, VICTOR wins!",
+    'VICTOR stands victorious, LOSER is left to lick their wounds.',
+    'VICTOR wins! GG go next.',
+    'VICTOR wins! GG no re.',
+    'LOSER faints. VICTOR jumps for joy!',
+    "LOSER can't take it any more, VICTOR wins!",
+    'LOSER is outplayed, VICTOR is the winner!',
+    'Winner winner chicken dinner for VICTOR. LOSER starves.',
+    'VICTOR wins! LOSER thinks the game is rigged!',
+  ],
+
+  PERFECT: [
+    'VICTOR scores a perfect victory! LOSER is shamed!',
+    'VICTOR is untouchable! LOSER never got a hit in.',
+    "VICTOR must be hacking because LOSER couldn't land a hit.",
+    'FRAUD ALERT! VICTOR scores a perfect victory over LOSER.',
+    'VICTOR wins without breaking a sweat. Was LOSER even trying?',
+  ],
+
+  CLOSE: [
+    'VICTOR stands bloodied but victorious. LOSER gave as good as they got!',
+    'VICTOR scrapes by, narrowly defeating LOSER.',
+    'VICTOR wins over LOSER by a hair.',
+    'VICTOR and LOSER are evenly matched, but VICTOR comes out ahead.',
+    'A close one, but VICTOR wins.',
+  ],
+}
+
+export const ladderTexts: Record<string, string[]> = {
+  TOP: [
+    'is the champion',
+    'is the big cheese',
+    'is top banana',
+    'is supreme ruler',
+    'is the coolest chatter',
+    'is the gout gamer',
+    'is based and RPG pilled',
+    'probably cheated',
+    'is the raid boss',
+    'is on top',
+  ],
+
+  TOP_PLURAL: [
+    'are the champions',
+    'are the big cheeses',
+    'are top bananas',
+    'are supreme rulers',
+    'are the coolest chatters',
+    'are gout gamers',
+    'are based and RPG pilled',
+    'probably cheated',
+    'are the raid bosses',
+    'are on top',
+  ],
+
+  BOTTOM: [
+    "is everyone's best friend",
+    'had their lunch money taken',
+    'has the best personality',
+    'is making the room brighter',
+    "can't seem to catch a break",
+    'is a sweet summer child',
+    'gave peace a chance',
+  ],
+
+  BOTTOM_PLURAL: [
+    "are everyone's best friends",
+    'had their lunch money taken',
+    'are making the room brighter',
+    "can't seem to catch a break",
+    'are sweet summer children',
+    'gave peace a chance',
+  ],
+
+  WINS: [
+    'has the most bedpost notches',
+    'has the biggest tally',
+    'sits on a throne of skulls',
+    'has been winning a lot',
+  ],
+
+  WINS_PLURAL: [
+    'have the most bedpost notches',
+    'have the biggest tallies',
+    'sit on a throne of skulls',
+    'have been winning a lot',
+  ],
+
+  LOSS: [
+    'has the worst luck',
+    "can't catch a break",
+    'needs to work on their technique',
+    'has found inner peace',
+    'will turn it around soon',
+    'is a victim of variance',
+    'has taken the most Ls',
+  ],
+
+  LOSS_PLURAL: [
+    'have the worst luck',
+    "can't catch a break",
+    'need to work on their technique',
+    'have found inner peace',
+    'will turn it around soon',
+    'are victims of variance',
+    'have taken the most Ls',
+  ],
+}

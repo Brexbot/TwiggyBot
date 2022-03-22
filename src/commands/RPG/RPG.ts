@@ -1,6 +1,6 @@
 import { Character } from './Character'
-import { getEloRankChange, getRandomElement as getRandomElement, roll_dy_x_TimesPick_z } from './util'
-import { attackTexts, defenceFailureTexts, defenceSuccessTexts, victoryTexts } from './Dialogue'
+import { getRandomElement as getRandomElement, roll_dy_x_TimesPick_z, getEloRankChange } from './util'
+import { attackTexts, defenceFailureTexts, defenceSuccessTexts, victoryTexts, ladderTexts } from './Dialogue'
 
 import {
   ButtonInteraction,
@@ -12,7 +12,7 @@ import {
   MessageButton,
   MessageEmbed,
 } from 'discord.js'
-import { Discord, Slash, SlashGroup } from 'discordx'
+import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
@@ -32,12 +32,21 @@ type FightResult = {
   summary: string
   challenger: Character
   accepter: Character
+  messageId: string
+  creationTime: number
 }
 
 type EloBand = {
   upperBound: number
   icon: string
   name: string
+}
+
+type LadderState = {
+  top?: RPGCharacter[]
+  bottom?: RPGCharacter[]
+  wins: RPGCharacter[]
+  losses: RPGCharacter[]
 }
 
 @Discord()
@@ -63,9 +72,10 @@ export class RPG {
 
   static SUMMARY_BUTTON_ID = 'get-log-button'
 
-  private lastFightResult?: FightResult
+  private lastFightResult: FightResult[] = []
+  private RESULT_CACHE_TIME = 1 * 60 * 1000
 
-  static cooldown = 10 * 60 * 1000
+  static cooldown = 0 * 60 * 1000
   private challengeInProgress = false
 
   private timeoutDuration = 5 * 60 * 1000 // Time before the duel is declared dead in milliseconds
@@ -99,8 +109,8 @@ export class RPG {
     const defenceRR = +this.advantages[defenceStat].includes(attackStat)
 
     // Calculate stat modifier as Floor(STAT/2) - 5, as in DnD.
-    const attackRoll = roll_dy_x_TimesPick_z(20, 1 + attackRR, 1) + Math.floor(attacker.stats[attackStat] / 2) - 5
-    const defenceRoll = roll_dy_x_TimesPick_z(20, 1 + defenceRR, 1) + Math.floor(defender.stats[defenceStat] / 2) - 5
+    const attackRoll = roll_dy_x_TimesPick_z(20, 1 + attackRR, 1) + attacker.get_modifier(attackStat)
+    const defenceRoll = roll_dy_x_TimesPick_z(20, 1 + defenceRR, 1) + defender.get_modifier(defenceStat)
 
     // Attacker text is always got by taking a random element from the relevant dict entry
     let text = getRandomElement(attackTexts[attackStat])
@@ -109,7 +119,16 @@ export class RPG {
     let damage = 0
     if (attackRoll >= defenceRoll) {
       text += ' ' + getRandomElement(defenceFailureTexts[defenceStat])
-      damage = roll_dy_x_TimesPick_z(10, 1, 1)
+
+      // If the attack is physical type, add strength modifier to damage, otherwise add INT
+      // Clamp it to zero to prevent bad stat being too fatal
+      let damageMod: number
+      if (attackStat in ['STR', 'DEX', 'CON']) {
+        damageMod = Math.max(0, attacker.get_modifier('STR'))
+      } else {
+        damageMod = Math.max(0, attacker.get_modifier('INT'))
+      }
+      damage = roll_dy_x_TimesPick_z(10, 1, 1) + damageMod
     } else {
       text += ' ' + getRandomElement(defenceSuccessTexts[defenceStat])
       damage = 0
@@ -118,7 +137,7 @@ export class RPG {
     return { damage: damage, text: text }
   }
 
-  private runRPGFight(challenger: Character, accepter: Character): FightResult {
+  private runRPGFight(challenger: Character, accepter: Character, messageId: string): FightResult {
     // Full driver function that runs the battle.
     // Supply with two Characters, returns the result and log text.
 
@@ -147,8 +166,10 @@ export class RPG {
     let log = ''
     let rounds = 0
     while (challenger.hp > 0 && accepter.hp > 0 && rounds < RPG.MAX_ROUNDS) {
-      const initative_1 = roll_dy_x_TimesPick_z(20, 1, 1) + Math.floor(challenger.stats['DEX'] / 2) - 5
-      const initative_2 = roll_dy_x_TimesPick_z(20, 1, 1) + Math.floor(accepter.stats['DEX'] / 2) - 5
+      const initative_1 =
+        roll_dy_x_TimesPick_z(20, 1, 1) + challenger.get_modifier('DEX') - accepter.get_modifier('CHR')
+      const initative_2 =
+        roll_dy_x_TimesPick_z(20, 1, 1) + accepter.get_modifier('DEX') - challenger.get_modifier('CHR')
 
       // name 2 has a slight advantageby winning draws, eh, who cares?
       const order = initative_1 > initative_2 ? [challenger, accepter] : [accepter, challenger]
@@ -165,8 +186,8 @@ export class RPG {
         res.text =
           '▪ ' +
           res.text
-            .replace(/DEF/g, `${defender.user}[${defender.hp}]`)
-            .replace(/ATK/g, `${attacker.user}[${attacker.hp}]`)
+            .replace(/DEF/g, `**${defender.nickname}**[${defender.hp}]`)
+            .replace(/ATK/g, `**${attacker.nickname}**[${attacker.hp}]`)
             .replace(/DMG/g, res.damage.toString())
 
         log += res.text + '\n'
@@ -190,13 +211,29 @@ export class RPG {
     } else {
       // Must be a draw. Leave victor and loser undefined.
       const summary = `After ${RPG.MAX_ROUNDS} rounds they decide to call it a draw.`
-      return { intro: intro, log: log, summary: summary, challenger: challenger, accepter: accepter }
+      return {
+        intro: intro,
+        log: log,
+        summary: summary,
+        challenger: challenger,
+        accepter: accepter,
+        messageId: messageId,
+        creationTime: Date.now(),
+      }
     }
 
     log += '\n\n'
-    const summary: string = getRandomElement(victoryTexts)
-      .replace(/VICTOR/g, `${victor.user}`)
-      .replace(/LOSER/g, `${loser.user}`)
+    let textList: string[]
+    if (victor.hp == victor.maxHp) {
+      textList = victoryTexts['PERFECT']
+    } else if (victor.hp < 5) {
+      textList = victoryTexts['CLOSE']
+    } else {
+      textList = victoryTexts['STANDARD']
+    }
+    const summary: string = getRandomElement(textList)
+      .replace(/VICTOR/g, `**${victor.nickname}**`)
+      .replace(/LOSER/g, `**${loser.nickname}**`)
     log += summary
 
     const result = {
@@ -207,23 +244,39 @@ export class RPG {
       summary: summary,
       challenger: challenger,
       accepter: accepter,
+      messageId: messageId,
+      creationTime: Date.now(),
     }
 
     return result
   }
 
   @Slash('character', { description: 'Show off your character sheet' })
-  async character(interaction: CommandInteraction) {
+  async character(
+    @SlashOption('silent', { type: 'BOOLEAN', required: false })
+    @SlashOption('name', { type: 'STRING', required: false })
+    silent = true,
+    name: string,
+    interaction: CommandInteraction
+  ) {
     const callerMember = getCallerFromCommand(interaction)
     const callingUser = callerMember?.user
-
     if (callingUser) {
-      const userDBRecord = await this.getUserFromDB(callerMember.user.id)
-      const eloBandIcon = this.getBandForEloRank(userDBRecord.eloRank)
-      const character = new Character(callingUser, callerMember.nickname ?? undefined)
-      interaction.reply({ embeds: [character.toEmbed(eloBandIcon.icon)] })
+      if (name) {
+        const character = new Character(callingUser, name, name)
+        interaction.reply({ embeds: [character.toEmbed('')], ephemeral: silent })
+      } else {
+        const userDBRecord = await this.getUserFromDB(callerMember.user.id)
+        const eloBandIcon = this.getBandForEloRank(userDBRecord.eloRank)
+        const character = new Character(
+          callingUser,
+          callerMember.nickname ?? callerMember.user.username,
+          callerMember.nickname ?? undefined
+        )
+        interaction.reply({ embeds: [character.toEmbed(eloBandIcon.icon)], ephemeral: silent })
+      }
     } else {
-      interaction.reply('Username undefined')
+      interaction.reply({ content: 'Username undefined', ephemeral: silent })
     }
   }
 
@@ -243,21 +296,87 @@ export class RPG {
             callerDBRecord.wins
           }W ${callerDBRecord.losses}L ${callerDBRecord.draws}D`,
         })
-        .setDescription(`**Ladder Points:** ${callerDBRecord.eloRank} - ${eloBand.icon} *${eloBand.name} League*`)
+        .setDescription(
+          `**Current Points:** ${callerDBRecord.eloRank} - ${eloBand.icon} *${eloBand.name} League*\n
+          **Peak Rank:** ${callerDBRecord.peakElo}${this.getBandForEloRank(callerDBRecord.peakElo).icon}\n
+          **Lowest Rank:** ${callerDBRecord.floorElo}${this.getBandForEloRank(callerDBRecord.floorElo).icon}`
+        )
       await interaction.followUp({ embeds: [statsEmbed] })
     } else {
       await interaction.followUp(`Hmm, ${interaction.user}... It seems you are yet to test your steel.`)
     }
   }
 
-  @Slash('challenge', { description: 'Challenge other chatters and prove your strength.' })
+  @Slash('ladder', { description: 'Who is the strongest chatter around?' })
+  async ladder(interaction: CommandInteraction) {
+    const getLadderStats = async (): Promise<LadderState> => {
+      const top = await this.client.$queryRawUnsafe<RPGCharacter[]>(
+        `SELECT * FROM RPGCharacter WHERE eloRank=(SELECT MAX(eloRank) FROM RPGCharacter)`
+      )
+      const bottom = await this.client.$queryRawUnsafe<RPGCharacter[]>(
+        `SELECT * FROM RPGCharacter WHERE eloRank=(SELECT MIN(eloRank) FROM RPGCharacter)`
+      )
+      const wins = await this.client.$queryRawUnsafe<RPGCharacter[]>(
+        `SELECT * FROM RPGCharacter WHERE wins=(SELECT MAX(wins) FROM RPGCharacter)`
+      )
+      const losses = await this.client.$queryRawUnsafe<RPGCharacter[]>(
+        `SELECT * FROM RPGCharacter WHERE losses=(SELECT MAX(losses) FROM RPGCharacter)`
+      )
+      if (top.length == 0 || bottom.length == 0) {
+        return { wins: wins, losses: losses }
+      } else {
+        return { top: top, bottom: bottom, wins: wins, losses: losses }
+      }
+    }
+
+    const processPotentiallyPluralResults = (
+      characters: RPGCharacter[],
+      position: 'TOP' | 'BOTTOM' | 'WINS' | 'LOSS'
+    ): string => {
+      let leader: RPGCharacter
+      if (characters.length > 1) {
+        leader = getRandomElement(characters)
+      } else {
+        leader = characters[0]
+      }
+
+      const score = { TOP: leader.eloRank, BOTTOM: leader.eloRank, WINS: leader.wins, LOSS: leader.losses }[position]
+      const suffix = { TOP: 'LP', BOTTOM: 'LP', WINS: 'wins', LOSS: 'losses' }[position]
+
+      if (characters.length > 1) {
+        return `<@${leader.id}> and ${characters.length - 1} others ${
+          ladderTexts[position + '_PLURAL']
+        } with ${score} ${suffix}.`
+      } else {
+        return `<@${leader.id}> ${getRandomElement(ladderTexts[position])} with ${score} ${suffix}.`
+      }
+    }
+
+    const results = await getLadderStats()
+    const ladderEmbed = new MessageEmbed().setColor('#009933').setTitle('The State of the Ladder')
+
+    if (results.top) {
+      ladderEmbed.addField('Top', processPotentiallyPluralResults(results.top, 'TOP'))
+    } else {
+      interaction.reply('The arena is clean. No violence has happened yet.')
+      return
+    }
+    if (results.bottom) {
+      ladderEmbed.addField('Tail', processPotentiallyPluralResults(results.bottom, 'BOTTOM'))
+    }
+    ladderEmbed.addField('Wins', processPotentiallyPluralResults(results.wins, 'WINS'))
+    ladderEmbed.addField('Losses', processPotentiallyPluralResults(results.losses, 'LOSS'))
+    interaction.reply({ embeds: [ladderEmbed] })
+  }
+
+  @Slash('duel', { description: 'Challenge other chatters and prove your strength.' })
   async challenge(interaction: CommandInteraction) {
     // await interaction.deferReply()
 
     // Check if a duel is currently already going on.
     if (this.challengeInProgress) {
       await interaction.reply({
-        content: 'An RPG challenge is already in progress.',
+        content: 'An RPG duel is already in progress.',
         ephemeral: true,
       })
       return
@@ -276,15 +395,19 @@ export class RPG {
       return
     } else {
       challengerDBRecord = await this.getUserFromDB(challengerUser.user.id)
-      challenger = new Character(challengerUser.user, challengerUser.nickname ?? undefined)
+      challenger = new Character(
+        challengerUser.user,
+        challengerUser.nickname ?? challengerUser.user.username,
+        challengerUser.nickname ?? undefined
+      )
     }
 
     // Check to see if the challenger has recently lost.
     if (challengerDBRecord.lastLoss.getTime() + RPG.cooldown > Date.now()) {
       await interaction.reply({
-        content: `${
-          challenger.user
-        }, you are still recovering from the last fight. Please wait ${getTimeLeftInReadableFormat(
+        content: `**${
+          challenger.nickname
+        }**, you are still recovering from the last fight. Please wait ${getTimeLeftInReadableFormat(
           challengerDBRecord.lastLoss,
           RPG.cooldown
         )} before trying again.`,
@@ -330,7 +453,7 @@ export class RPG {
         .setDisabled(true)
       const row = new MessageActionRow().addComponents(button)
       await interaction.editReply({
-        content: `No one was brave enough to do battle with ${challengerUser} ${challengerEloBand.icon}.`,
+        content: `No one was brave enough to do battle with **${challengerUser.nickname}**${challengerEloBand.icon}.`,
         components: [row],
       })
       this.challengeInProgress = false
@@ -344,7 +467,7 @@ export class RPG {
       .setLabel('Accept challenge')
     const row = new MessageActionRow().addComponents(button)
     const message = await interaction.reply({
-      content: `${challengerUser} ${challengerEloBand.icon} is throwing down the gauntlet in challenge.`,
+      content: `**${challengerUser.nickname}**${challengerEloBand.icon} is throwing down the gauntlet in challenge.`,
       fetchReply: true,
       components: [row],
     })
@@ -361,6 +484,7 @@ export class RPG {
     const collector = message.createMessageComponentCollector()
     collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
       await collectionInteraction.deferUpdate()
+      const messageId = collectionInteraction.message.id
 
       // Two possible cases exist:
       //   Someone is accepting a challenge
@@ -368,35 +492,34 @@ export class RPG {
 
       // Intercept if this is someone requesting a log of the fight
       if (collectionInteraction.customId === RPG.SUMMARY_BUTTON_ID) {
-        // Currently this gets the most recent fight, even if the button is from an older fight output message.
+        // Try to get the fight corresponding to this button message.
+        const fightFromId = this.getFightResultForId(messageId)
 
         // Completing a fight populates the lastFightResult property
-        if (this.lastFightResult) {
+        if (fightFromId) {
           // We must check the output isn't longer than discord allows,
           // otherwise send as two messages, or embed as a file as a last resort.
-          const full = `${this.lastFightResult.intro}\n${this.lastFightResult.log}`
+          const full = `${fightFromId.intro}\n${fightFromId.log}`
           if (full.length <= 2000) {
             await collectionInteraction.followUp({
               content: full,
               ephemeral: true,
             })
-          } else if (this.lastFightResult.intro.length <= 2000 && this.lastFightResult.log.length <= 2000) {
+          } else if (fightFromId.intro.length <= 2000 && fightFromId.log.length <= 2000) {
             await collectionInteraction.followUp({
-              content: this.lastFightResult.intro,
+              content: fightFromId.intro,
               ephemeral: true,
             })
             await collectionInteraction.followUp({
-              content: this.lastFightResult.log,
+              content: fightFromId.log,
               ephemeral: true,
             })
           } else {
             // Prepare the file output by replacing the user strings with screen names
-            let output = this.lastFightResult.intro.replaceAll('```', '')
-            output += this.lastFightResult.log
+            let output = fightFromId.intro.replaceAll('```', '')
+            output += fightFromId.log
 
-            output = output
-              .replaceAll(String(this.lastFightResult.challenger.user), this.lastFightResult.challenger.name)
-              .replaceAll(String(this.lastFightResult.accepter.user), this.lastFightResult.accepter.name)
+            output = output.replaceAll('**', '')
 
             await collectionInteraction.followUp({
               content: 'Phew! That was a long fight! The bards had to write it to a file.',
@@ -426,7 +549,11 @@ export class RPG {
         })
         return
       } else {
-        accepter = new Character(accepterUser.user, accepterUser.nickname ?? undefined)
+        accepter = new Character(
+          accepterUser.user,
+          accepterUser.nickname ?? accepterUser.user.username,
+          accepterUser.nickname ?? undefined
+        )
         accepterDBRecord = await this.getUserFromDB(accepterUser.user.id)
       }
 
@@ -438,7 +565,9 @@ export class RPG {
       // Check to see if the accepter has recently lost.
       if (accepterDBRecord.lastLoss.getTime() + RPG.cooldown > Date.now()) {
         await collectionInteraction.followUp({
-          content: `${accepter.user}, you have recently lost a fight. Please wait ${getTimeLeftInReadableFormat(
+          content: `**${
+            accepterUser.nickname
+          }**, you have recently lost a fight. Please wait ${getTimeLeftInReadableFormat(
             accepterDBRecord.lastLoss,
             RPG.cooldown
           )} before trying again.`,
@@ -494,7 +623,8 @@ export class RPG {
         })
 
         // Now do the actual duel.
-        this.lastFightResult = this.runRPGFight(challenger, accepter)
+        const fightResult = this.runRPGFight(challenger, accepter, messageId)
+        this.lastFightResult.push(fightResult)
 
         const challengerOldEloRank = challengerDBRecord.eloRank
         const accepterOldEloRank = accepterDBRecord.eloRank
@@ -502,17 +632,17 @@ export class RPG {
         let challengerNewEloRank: number
         let accepterNewEloRank: number
 
-        if (this.lastFightResult.winner && this.lastFightResult.loser) {
+        if (fightResult.winner && fightResult.loser) {
           // Wasn't a draw, find the winner and update
           challengerNewEloRank = await this.updateUserRPGScore(
             challengerDBRecord,
             accepterOldEloRank,
-            this.lastFightResult.winner === challenger ? 'win' : 'loss'
+            fightResult.winner === challenger ? 'win' : 'loss'
           )
           accepterNewEloRank = await this.updateUserRPGScore(
             accepterDBRecord,
             challengerOldEloRank,
-            this.lastFightResult.winner === challenger ? 'loss' : 'win'
+            fightResult.winner === challenger ? 'loss' : 'win'
           )
         } else {
           // Must be a draw
@@ -542,11 +672,11 @@ export class RPG {
         // Finally, send the reply
         await collectionInteraction.editReply({
           content:
-            `${this.lastFightResult.summary}` +
-            `\n${challenger.user}${challengerEloBand.icon} ${challengerEloVerb} ${Math.abs(
+            `${fightResult.summary}` +
+            `\n**${challengerUser.nickname}**${challengerEloBand.icon} ${challengerEloVerb} ${Math.abs(
               challengerEloChange
             )}LP [${challengerNewEloRank}]. ` +
-            `${accepter.user}${accepterEloBand.icon} ${accepterEloVerb} ${Math.abs(
+            `**${accepterUser.nickname}**${accepterEloBand.icon} ${accepterEloVerb} ${Math.abs(
               accepterEloChange
             )}LP [${accepterNewEloRank}]`,
         })
@@ -589,6 +719,8 @@ export class RPG {
           data: {
             wins: { increment: 1 },
             eloRank: newEloRank,
+            peakElo: Math.max(stats.eloRank, newEloRank),
+            floorElo: Math.min(stats.eloRank, newEloRank),
           },
         })
         break
@@ -601,6 +733,8 @@ export class RPG {
           data: {
             losses: { increment: 1 },
             eloRank: newEloRank,
+            peakElo: Math.max(stats.eloRank, newEloRank),
+            floorElo: Math.min(stats.eloRank, newEloRank),
             lastLoss: new Date(),
           },
         })
@@ -619,5 +753,24 @@ export class RPG {
     // We shouldn't get this far, but if someone does top out the ranking system
     // beyond the 999999 limit, they're almost certainly up to some tomfoolery.
     return { upperBound: -1, icon: '😎', name: 'Very Cool Hacker' }
+  }
+
+  private getFightResultForId(messageId: string): FightResult | null {
+    const time = Date.now()
+
+    // First remove expired fights from the cache
+    this.lastFightResult = this.lastFightResult.filter((result) => time - result.creationTime < this.RESULT_CACHE_TIME)
+
+    if (this.lastFightResult.length == 0) {
+      return null
+    } else {
+      for (let i = 0; i < this.lastFightResult.length; i++) {
+        if (this.lastFightResult[i].messageId == messageId) {
+          return this.lastFightResult[i]
+        }
+      }
+    }
+    // We failed to find the messageId in the cache
+    return null
   }
 }

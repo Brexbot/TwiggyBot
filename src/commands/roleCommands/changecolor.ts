@@ -18,7 +18,6 @@ export class ColorRoles {
 
   private static hexExp = /^#?[0-9A-F]{6}$/i
   private static cooldown = 60 * 60 * 1000
-  private static guildOptions: GuildOptions
 
   public constructor(private client: ORM) {}
 
@@ -98,7 +97,7 @@ export class ColorRoles {
   @SimpleCommand('lazy')
   async simpleLazyColor(
     @SimpleCommandOption('fav_color', {
-      type: "STRING",
+      type: 'STRING',
       description: 'The hex value of your favorite color',
     })
     color: string | undefined,
@@ -122,7 +121,7 @@ export class ColorRoles {
   @Slash('lazy', { description: 'Change to your favorite display color' })
   async slashLazyColor(
     @SlashOption('fav_color', {
-      type: "STRING",
+      type: 'STRING',
       description: 'The hex value of your favorite color',
       required: false,
     })
@@ -180,13 +179,11 @@ export class ColorRoles {
     }
 
     // User Cooldown Check
-    if (!ColorRoles.guildOptions) {
-      ColorRoles.guildOptions = await this.client.guildOptions.upsert({
-        where: { guildId: guild.id },
-        create: { guildId: guild.id },
-        update: {},
-      })
-    }
+    const guildOptions = await this.client.guildOptions.upsert({
+      where: { guildId: guild.id },
+      create: { guildId: guild.id },
+      update: {},
+    })
 
     const userOptions = await this.client.user.upsert({
       where: { id: member.id },
@@ -235,7 +232,7 @@ export class ColorRoles {
       }
     } else if (color === 'GAMBLE') {
       const randChance = Prisma.Decimal.random().mul(100)
-      if (randChance.lessThanOrEqualTo(ColorRoles.guildOptions.gambleChance)) {
+      if (randChance.lessThanOrEqualTo(guildOptions.gambleChance)) {
         await this.client.user.update({
           where: { id: member.id },
           data: {

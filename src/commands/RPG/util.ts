@@ -1,3 +1,5 @@
+import { classes } from './Data'
+
 export function cyrb53(str: string, seed = 0): number {
   // Hash the input string to int
   let h1 = 0xdeadbeef ^ seed,
@@ -74,4 +76,19 @@ export function getEloRankChange(rankA: number, rankB: number, K: number, result
   }
 
   return Math.round(rankA + K * (score - expectedA))
+}
+
+export function ballancingClasses() {
+  const stats = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHR'] as const
+  const data: Record<string, number> = { STR: 0, DEX: 0, CON: 0, WIS: 0, INT: 0, CHR: 0 }
+  for (let i = 0; i < classes.length; i++) {
+    const cclass = classes[i]
+    for (let j = 0; j < cclass.statPreferences.length; j++) {
+      data[cclass.statPreferences[j]] += 6 - j
+    }
+  }
+
+  for (const key of stats) {
+    console.log(key, data[key])
+  }
 }
