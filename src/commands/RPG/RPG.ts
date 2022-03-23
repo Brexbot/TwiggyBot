@@ -264,6 +264,10 @@ export class RPG {
     const callingUser = callerMember?.user
     if (callingUser) {
       if (name) {
+        if (name.length >= 256) {
+          interaction.reply({ content: 'Name must be fewer than 256 characters', ephemeral: true })
+          return
+        }
         const character = new Character(callingUser, name, name)
         interaction.reply({ embeds: [character.toEmbed('')], ephemeral: silent })
       } else {
@@ -277,7 +281,7 @@ export class RPG {
         interaction.reply({ embeds: [character.toEmbed(eloBandIcon.icon)], ephemeral: silent })
       }
     } else {
-      interaction.reply({ content: 'Username undefined', ephemeral: silent })
+      interaction.reply({ content: 'Username undefined', ephemeral: true })
     }
   }
 
@@ -308,7 +312,10 @@ export class RPG {
         )
       await interaction.reply({ embeds: [statsEmbed], ephemeral: silent })
     } else {
-      await interaction.reply(`Hmm, ${interaction.user}... It seems you are yet to test your steel.`)
+      await interaction.reply({
+        content: `Hmm, ${interaction.user}... It seems you are yet to test your steel.`,
+        ephemeral: true,
+      })
     }
   }
 
@@ -367,7 +374,7 @@ export class RPG {
     if (results.top) {
       ladderEmbed.addField('Top', processPotentiallyPluralResults(results.top, 'TOP'))
     } else {
-      interaction.reply('The arena is clean. No violence has happened yet.')
+      interaction.reply({ content: 'The arena is clean. No violence has happened yet.', ephemeral: true })
       return
     }
     if (results.bottom) {
