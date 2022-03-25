@@ -11,7 +11,6 @@ import {
   MessageAttachment,
   MessageButton,
   MessageEmbed,
-  Options,
 } from 'discord.js'
 import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
@@ -723,6 +722,8 @@ export class RPG {
           data: {
             draws: { increment: 1 },
             eloRank: newEloRank,
+            peakElo: Math.max(stats.peakElo, newEloRank),
+            floorElo: Math.min(stats.floorElo, newEloRank),
           },
         })
         break
@@ -735,8 +736,8 @@ export class RPG {
           data: {
             wins: { increment: 1 },
             eloRank: newEloRank,
-            peakElo: Math.max(stats.eloRank, newEloRank),
-            floorElo: Math.min(stats.eloRank, newEloRank),
+            peakElo: Math.max(stats.peakElo, newEloRank),
+            floorElo: Math.min(stats.floorElo, newEloRank),
           },
         })
         break
@@ -749,8 +750,8 @@ export class RPG {
           data: {
             losses: { increment: 1 },
             eloRank: newEloRank,
-            peakElo: Math.max(stats.eloRank, newEloRank),
-            floorElo: Math.min(stats.eloRank, newEloRank),
+            peakElo: Math.max(stats.peakElo, newEloRank),
+            floorElo: Math.min(stats.floorElo, newEloRank),
             lastLoss: new Date(),
           },
         })
