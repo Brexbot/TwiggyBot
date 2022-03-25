@@ -186,8 +186,8 @@ export class RPG {
         res.text =
           '▪ ' +
           res.text
-            .replace(/DEF/g, `**${defender.nickname}**[${defender.hp}]`)
-            .replace(/ATK/g, `**${attacker.nickname}**[${attacker.hp}]`)
+            .replace(/DEF/g, `**${defender.nickname ?? defender.user.username}**[${defender.hp}]`)
+            .replace(/ATK/g, `**${attacker.nickname ?? attacker.user.username}**[${attacker.hp}]`)
             .replace(/DMG/g, res.damage.toString())
 
         log += res.text + '\n'
@@ -232,8 +232,8 @@ export class RPG {
       textList = victoryTexts['STANDARD']
     }
     const summary: string = getRandomElement(textList)
-      .replace(/VICTOR/g, `**${victor.nickname}**`)
-      .replace(/LOSER/g, `**${loser.nickname}**`)
+      .replace(/VICTOR/g, `**${victor.nickname ?? victor.user.username}**`)
+      .replace(/LOSER/g, `**${loser.nickname ?? loser.user.username}**`)
     log += summary
 
     const result = {
@@ -421,7 +421,7 @@ export class RPG {
     if (challengerDBRecord.lastLoss.getTime() + RPG.cooldown > Date.now()) {
       await interaction.reply({
         content: `**${
-          challenger.nickname
+          challenger.nickname ?? challengerUser.user.username
         }**, you are still recovering from the last fight. Please wait ${getTimeLeftInReadableFormat(
           challengerDBRecord.lastLoss,
           RPG.cooldown
@@ -468,7 +468,9 @@ export class RPG {
         .setDisabled(true)
       const row = new MessageActionRow().addComponents(button)
       await interaction.editReply({
-        content: `No one was brave enough to do battle with **${challengerUser.nickname}**${challengerEloBand.icon}.`,
+        content: `No one was brave enough to do battle with **${
+          challengerUser.nickname ?? challengerUser.user.username
+        }**${challengerEloBand.icon}.`,
         components: [row],
       })
       this.challengeInProgress = false
@@ -482,7 +484,9 @@ export class RPG {
       .setLabel('Accept challenge')
     const row = new MessageActionRow().addComponents(button)
     const message = await interaction.reply({
-      content: `**${challenger.nickname}**${challengerEloBand.icon} is throwing down the gauntlet in challenge.`,
+      content: `**${challengerUser.nickname ?? challengerUser.user.username}**${
+        challengerEloBand.icon
+      } is throwing down the gauntlet in challenge.`,
       fetchReply: true,
       components: [row],
     })
@@ -581,7 +585,7 @@ export class RPG {
       if (accepterDBRecord.lastLoss.getTime() + RPG.cooldown > Date.now()) {
         await collectionInteraction.followUp({
           content: `**${
-            accepterUser.nickname
+            accepterUser.nickname ?? accepterUser.user.username
           }**, you have recently lost a fight. Please wait ${getTimeLeftInReadableFormat(
             accepterDBRecord.lastLoss,
             RPG.cooldown
@@ -688,10 +692,10 @@ export class RPG {
         await collectionInteraction.editReply({
           content:
             `${fightResult.summary}` +
-            `\n**${challenger.nickname}**${challengerEloBand.icon} ${challengerEloVerb} ${Math.abs(
-              challengerEloChange
-            )}LP [${challengerNewEloRank}]. ` +
-            `**${accepter.nickname}**${accepterEloBand.icon} ${accepterEloVerb} ${Math.abs(
+            `\n**${challenger.nickname ?? challenger.user.username}**${
+              challengerEloBand.icon
+            } ${challengerEloVerb} ${Math.abs(challengerEloChange)}LP [${challengerNewEloRank}]. ` +
+            `**${accepter.nickname ?? accepter.user.username}**${accepterEloBand.icon} ${accepterEloVerb} ${Math.abs(
               accepterEloChange
             )}LP [${accepterNewEloRank}]`,
         })
