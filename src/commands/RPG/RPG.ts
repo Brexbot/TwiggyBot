@@ -1,6 +1,7 @@
 import { Character } from './Character'
 import { getRandomElement as getRandomElement, roll_dy_x_TimesPick_z, getEloRankChange } from './util'
 import { attackTexts, defenceFailureTexts, defenceSuccessTexts, victoryTexts, ladderTexts } from './Dialogue'
+import { ELO_K } from './Data'
 
 import {
   ButtonInteraction,
@@ -57,7 +58,6 @@ export class RPG {
   // CONSTANTS
   static MAX_ROUNDS = 10
   static OUT_WIDTH = 35
-  static ELO_K = 48 // Maximum possible Elo rank change in one game. Higher makes ladder position less stable
 
   // Array of bands, ordered by upper bound
   static ELO_BANDS: EloBand[] = [
@@ -716,7 +716,7 @@ export class RPG {
   }
 
   private async updateUserRPGScore(stats: RPGCharacter, opositionEloRank: number, outcome: 'win' | 'loss' | 'draw') {
-    const newEloRank = getEloRankChange(stats.eloRank, opositionEloRank, RPG.ELO_K, outcome)
+    const newEloRank = getEloRankChange(stats.eloRank, opositionEloRank, ELO_K, outcome)
     switch (outcome) {
       case 'draw': {
         await this.client.rPGCharacter.update({

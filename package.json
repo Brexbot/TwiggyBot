@@ -8,7 +8,8 @@
     "dev": "node --loader ts-node/esm/transpile-only src/main.ts",
     "start": "nodemon --exec node --loader ts-node/esm/transpile-only src/main.ts",
     "serve": "node build/main.js",
-    "lint": "eslint -c .eslintrc.cjs src .eslintrc.cjs"
+    "lint": "eslint -c .eslintrc.cjs src .eslintrc.cjs",
+    "eloDecay": " node ./build/standalones/eloDecay.js"
   },
   "repository": {
     "type": "git",
