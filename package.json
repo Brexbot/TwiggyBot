@@ -35,6 +35,7 @@
     "typescript": "^4.5.4"
   },
   "dependencies": {
+    "@dice-roller/rpg-dice-roller": "^5.1.0",
     "@discordx/importer": "^1.1.2",
     "@discordx/pagination": "^1.1.0",
     "@discordx/utilities": "^3.3.0",
