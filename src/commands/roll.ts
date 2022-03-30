@@ -1,6 +1,7 @@
 import { DiceRoll, Exceptions } from '@dice-roller/rpg-dice-roller'
 import { CommandInteraction } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, SlashOption, Slash, SimpleCommandOption } from 'discordx'
+import { Discord, SlashOption, Slash } from 'discordx'
+import { getRandomElement } from './RPG/util'
 
 @Discord()
 class Roll {
@@ -53,6 +54,42 @@ class Roll {
       await interaction.reply(final)
     } else {
       await interaction.reply({ content: 'The output was too large to send...', ephemeral: true })
+    }
+  }
+
+  @Slash('choose', { description: 'Let the bot control your life from comma separated choices' })
+  async choose(
+    @SlashOption('choices', { type: 'STRING' })
+    choices: string,
+    interaction: CommandInteraction
+  ) {
+    if (choices.length == 0) {
+      await interaction.reply({ content: "I can't choose from nothing dumbo.", ephemeral: true })
+    } else if (choices.length > this.MAX_MESSAGE_LENGTH) {
+      await interaction.reply({
+        content: `\`choices\` must be < ${this.MAX_MESSAGE_LENGTH} characters.`,
+        ephemeral: true,
+      })
+    } else {
+      const parts = choices.split(',')
+      if (parts.length == 1) {
+        await interaction.reply({
+          content: "There's only one choice. Did you remember to separate the choices with commas?",
+          ephemeral: true,
+        })
+        return
+      }
+
+      const choice = getRandomElement(parts)
+      let ostr = ''
+      for (const i in parts) {
+        if (parseInt(i) != parts.length - 1) {
+          ostr += parts[i].trim() + ', '
+        } else {
+          ostr += 'or ' + parts[i].trim() + '?'
+        }
+      }
+      interaction.reply(ostr + '\n' + choice.trim())
     }
   }
 }
