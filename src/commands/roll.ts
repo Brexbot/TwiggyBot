@@ -9,7 +9,7 @@ class Roll {
   private MAX_MESSAGE_LENGTH = 150
 
   @Slash('roll', { description: 'Roll some dice' })
-  async slash(
+  async roll(
     @SlashOption('dice', { type: 'STRING' })
     @SlashOption('message', { type: 'STRING', required: false })
     dice: string,
@@ -55,6 +55,11 @@ class Roll {
     } else {
       await interaction.reply({ content: 'The output was too large to send...', ephemeral: true })
     }
+  }
+
+  @Slash('cursed', { description: 'more 2s = more cursed.' })
+  async cursed(interaction: CommandInteraction) {
+    await this.roll('999d444', '', interaction)
   }
 
   @Slash('choose', { description: 'Let the bot control your life from comma separated choices' })
