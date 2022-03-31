@@ -87,13 +87,11 @@ class Roll {
 
       const choice = getRandomElement(parts)
       let ostr = ''
-      for (const i in parts) {
-        if (parseInt(i) != parts.length - 1) {
-          ostr += parts[i].trim() + ', '
-        } else {
-          ostr += 'or ' + parts[i].trim() + '?'
-        }
+      for (let i = 0; i < parts.length - 1; i++) {
+        ostr += parts[i].trim() + ', '
       }
+      ostr += 'or ' + parts[parts.length - 1].trim() + '?'
+
       interaction.reply(ostr + '\n' + choice.trim())
     }
   }
