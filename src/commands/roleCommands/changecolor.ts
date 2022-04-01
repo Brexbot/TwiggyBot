@@ -1,4 +1,4 @@
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, SimpleCommandOptionType, Slash, SlashOption } from 'discordx'
 import { CommandInteraction, Formatters, Guild, GuildMember, HexColorString } from 'discord.js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
@@ -97,7 +97,7 @@ export class ColorRoles {
   @SimpleCommand('lazy')
   async simpleLazyColor(
     @SimpleCommandOption('fav_color', {
-      type: 'STRING',
+      type: SimpleCommandOptionType.String,
       description: 'The hex value of your favorite color',
     })
     color: string | undefined,

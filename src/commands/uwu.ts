@@ -1,5 +1,5 @@
 import { CommandInteraction } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, SimpleCommandOptionType, Slash, SlashOption } from 'discordx'
 
 export const uwuify = (text: string): string => {
   // Each pattern is a tuple containing a search pattern and its associated replacement string
@@ -26,7 +26,7 @@ class UwU {
 
   @SimpleCommand('uwu', { description: 'UwUify text', argSplitter: '\n' })
   async simple(
-    @SimpleCommandOption('text', { type: 'STRING' }) text: string | undefined,
+    @SimpleCommandOption('text', { type: SimpleCommandOptionType.String }) text: string | undefined,
     command: SimpleCommandMessage
   ) {
     if (!text) {

@@ -1,5 +1,5 @@
 import { CommandInteraction, Formatters, Guild, GuildMember, GuildMemberRoleManager, User } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, SimpleCommandOptionType, Slash, SlashOption } from 'discordx'
 import { PermissionSuperUserOnly } from '../guards/RoleChecks'
 
 @Discord()
@@ -54,7 +54,7 @@ abstract class Timeout {
   async sudokuCommand(
     // message: everything after the command and before a new line
     @SimpleCommandOption('message', {
-      type: 'STRING',
+      type: SimpleCommandOptionType.String,
       description: 'Your last message before committing sudoku',
     })
     message: string | undefined,
@@ -91,8 +91,8 @@ abstract class Timeout {
   @SimpleCommand('timeout')
   @PermissionSuperUserOnly
   async timeoutCommand(
-    @SimpleCommandOption('user', { type: 'USER' }) user: GuildMember | User | undefined,
-    @SimpleCommandOption('duration', { type: 'NUMBER' }) duration: number | undefined,
+    @SimpleCommandOption('user', { type: SimpleCommandOptionType.User }) user: GuildMember | User | undefined,
+    @SimpleCommandOption('duration', { type: SimpleCommandOptionType.Number }) duration: number | undefined,
     command: SimpleCommandMessage
   ) {
     if (!(user instanceof GuildMember) || !this.hasPermission(command, user)) {
