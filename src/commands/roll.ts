@@ -1,14 +1,16 @@
-import { DiceRoll, Exceptions } from '@dice-roller/rpg-dice-roller'
+import { DiceRoll } from '@dice-roller/rpg-dice-roller'
 import { CommandInteraction } from 'discord.js'
-import { Discord, SlashOption, Slash } from 'discordx'
+import { Discord, SlashOption, Slash, SlashGroup } from 'discordx'
 import { getRandomElement } from './RPG/util'
 
+@SlashGroup({ name: 'roll', description: 'Ask the dice for advice' })
+@SlashGroup('roll')
 @Discord()
 class Roll {
   private MAX_REPLY_LENGTH = 200
   private MAX_MESSAGE_LENGTH = 150
 
-  @Slash('roll', { description: 'Roll some dice' })
+  @Slash('dice', { description: 'Roll some dice' })
   async roll(
     @SlashOption('dice', { type: 'STRING' })
     @SlashOption('message', { type: 'STRING', required: false })
@@ -76,7 +78,7 @@ class Roll {
         ephemeral: true,
       })
     } else {
-      const parts = choices.split(',')
+      const parts = choices.split(',').map((c) => c.trim())
       if (parts.length == 1) {
         await interaction.reply({
           content: "There's only one choice. Did you remember to separate the choices with commas?",
@@ -86,13 +88,9 @@ class Roll {
       }
 
       const choice = getRandomElement(parts)
-      let ostr = ''
-      for (let i = 0; i < parts.length - 1; i++) {
-        ostr += parts[i].trim() + ', '
-      }
-      ostr += 'or ' + parts[parts.length - 1].trim() + '?'
+      const listEcho = `${parts.slice(0, -1).join(', ')}, or ${parts[parts.length - 1]}?`
 
-      interaction.reply(ostr + '\n' + choice.trim())
+      interaction.reply(listEcho + '\n' + choice.trim())
     }
   }
 }
