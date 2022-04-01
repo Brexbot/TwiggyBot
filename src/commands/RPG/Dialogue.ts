@@ -176,6 +176,7 @@ export const defenceFailureTexts: Record<string, string[]> = {
     'DEF forgot the words to their spell and takes DMG damage.',
     "DEF doesn't know what hit them. DMG damage.",
     "and DEF can't think of a solution to the DMG damage.",
+    'DEF hurt themself in confusion for DMG damage.',
   ],
   WIS: [
     "and DEF's power abandons them, taking DMG damage.",
