@@ -1,5 +1,5 @@
 import { CommandInteraction } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, SimpleCommandOptionType, Slash, SlashOption } from 'discordx'
 import { uwuify } from './uwu'
 import fetch from 'node-fetch'
 
@@ -36,7 +36,7 @@ class quoteCommand {
 
   @SimpleCommand('quote', { description: 'Get server quote', argSplitter: '\n' })
   private async quoteSimple(
-    @SimpleCommandOption('id', { type: 'NUMBER' })
+    @SimpleCommandOption('id', { type: SimpleCommandOptionType.Number })
     id: number | undefined,
     command: SimpleCommandMessage
   ) {
@@ -59,7 +59,7 @@ class quoteCommand {
 
   @SimpleCommand('quwuote', { description: 'Get sewvew quwuote', argSplitter: '\n' })
   private async quwuoteSimple(
-    @SimpleCommandOption('id', { type: 'NUMBER' })
+    @SimpleCommandOption('id', { type: SimpleCommandOptionType.Number })
     id: number | undefined,
     command: SimpleCommandMessage
   ) {

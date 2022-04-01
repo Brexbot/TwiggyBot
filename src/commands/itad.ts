@@ -1,5 +1,5 @@
 import { CommandInteraction } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, SlashOption, Slash } from 'discordx'
+import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, SlashOption, Slash, SimpleCommandOptionType } from 'discordx'
 
 import fetch from 'node-fetch'
 
@@ -46,7 +46,7 @@ class IsThereAnyDeal {
 
   @SimpleCommand('itad', { description: 'Check isthereanydeal.com for deals', argSplitter: '\n' })
   async simple(
-    @SimpleCommandOption('game', { type: 'STRING' })
+    @SimpleCommandOption('game', { type: SimpleCommandOptionType.String })
     game: string | undefined,
     command: SimpleCommandMessage
   ) {

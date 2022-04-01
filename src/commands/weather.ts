@@ -1,5 +1,5 @@
 import { ColorResolvable, CommandInteraction, MessageEmbed } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, SlashOption, Slash, SimpleCommandOption } from 'discordx'
+import { Discord, SimpleCommand, SimpleCommandMessage, SlashOption, Slash, SimpleCommandOption, SimpleCommandOptionType } from 'discordx'
 import fetch from 'node-fetch'
 import hslRgb from 'hsl-rgb'
 
@@ -20,7 +20,7 @@ interface weatherDirections {
 @Discord()
 class Weather {
   @SimpleCommand('weather', { description: 'Get the weather for a location', argSplitter: '\n' })
-  async simple(@SimpleCommandOption('location', { type: 'STRING' }) text: string, command: SimpleCommandMessage) {
+  async simple(@SimpleCommandOption('location', { type:SimpleCommandOptionType.String }) text: string, command: SimpleCommandMessage) {
     if (!text) {
       return command.sendUsageSyntax()
     }

@@ -1,5 +1,5 @@
 import { CommandInteraction, MessageEmbed, ColorResolvable } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, SimpleCommandOptionType, Slash, SlashOption } from 'discordx'
 import { localiseInput } from 'localisetimemodule'
 
 const embedColors: Array<ColorResolvable> = ["#30cb9c", "#cf3463"]
@@ -14,7 +14,7 @@ class MyTime {
   @SimpleCommand('mytime', { description: 'Localised times within the provided text', argSplitter: "\t" })
   async simple(
     @SimpleCommandOption('text', {
-      type: 'STRING',
+      type: SimpleCommandOptionType.String,
       description: 'Text containing times',
     })
     text: string,
