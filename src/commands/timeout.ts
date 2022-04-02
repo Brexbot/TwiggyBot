@@ -1,6 +1,23 @@
-import { CommandInteraction, Formatters, Guild, GuildMember, GuildMemberRoleManager, User } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, SimpleCommandOptionType, Slash, SlashOption } from 'discordx'
-import { PermissionSuperUserOnly } from '../guards/RoleChecks'
+import {
+  CommandInteraction,
+  Formatters,
+  Guild,
+  GuildMember,
+  GuildMemberRoleManager,
+  MessageActionRow,
+  MessageButton,
+  User,
+} from 'discord.js'
+import {
+  Discord,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  SimpleCommandOptionType,
+  Slash,
+  SlashOption,
+} from 'discordx'
+import { memberIsSU, PermissionSuperUserOnly } from '../guards/RoleChecks'
 
 @Discord()
 abstract class Timeout {
@@ -46,6 +63,25 @@ abstract class Timeout {
     const time = this.sudokuDuration()
     await member?.timeout(time * 1000, "Sudoku'd").catch(console.error)
     const msg = message && message.length < 150 ? `\n${Formatters.quote(message)}` : ''
+
+    // If the Sudoku-ee is a Super User send them a DM with a button to remove the timeout
+    if (memberIsSU(member)) {
+      const jailbreaker2000 = new MessageActionRow().addComponents(
+        new MessageButton().setCustomId('pardon-btn').setLabel('Break out of Jail').setEmoji('⛏').setStyle('DANGER')
+      )
+      await member?.createDM().then((dm) => {
+        dm.send({
+          content: `It's dangerous to go alone! Take this.`,
+          components: [jailbreaker2000],
+        })
+        const jailbreakCollector = dm.createMessageComponentCollector({ max: 1 })
+        jailbreakCollector.on('collect', (i) => {
+          jailbreaker2000.components[0].setDisabled(true)
+          i.update({ components: [jailbreaker2000] })
+          member?.timeout(null)
+        })
+      })
+    }
 
     return `${member}, you're timed out for ${time} seconds.${msg}`
   }
