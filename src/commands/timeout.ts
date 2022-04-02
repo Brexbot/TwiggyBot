@@ -52,7 +52,7 @@ abstract class Timeout {
     if (!highestBotRole || !highestMemberRole) {
       return false
     }
-    return !(guild?.ownerId === userId && highestBotRole.comparePositionTo(highestMemberRole) > 0)
+    return userId !== guild?.ownerId && highestBotRole.comparePositionTo(highestMemberRole) > 0
   }
 
   sudokuDuration(): number {
