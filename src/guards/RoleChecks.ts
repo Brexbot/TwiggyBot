@@ -1,16 +1,15 @@
-import { ArgsOf, ClassMethodDecorator, Permission } from 'discordx'
-import { GuardFunction, SimpleCommandMessage } from 'discordx'
+import { ArgsOf, GuardFunction, Permission, SimpleCommandMessage } from 'discordx'
 import {
   ApplicationCommandPermissions,
   ButtonInteraction,
   CommandInteraction,
   ContextMenuInteraction,
+  GuildMember,
   Message,
   MessageReaction,
   SelectMenuInteraction,
   VoiceState,
 } from 'discord.js'
-import constructor from 'tsyringe/dist/typings/types/constructor'
 
 export const superUserIds = [
   ...(process.env.DISCORD_SUPER_USER_ID ? [process.env.DISCORD_SUPER_USER_ID] : []), // Local Dev SU Role
@@ -67,4 +66,15 @@ export const NotBot: GuardFunction<
   if (!user?.bot) {
     await next()
   }
+}
+
+export function memberIsSU(member?: GuildMember | null): boolean {
+  return SuperUsers.some((permission) => {
+    switch (permission.type) {
+      case 'ROLE':
+        return member?.roles.cache.has(permission.id)
+      case 'USER':
+        return member?.id === permission.id
+    }
+  })
 }

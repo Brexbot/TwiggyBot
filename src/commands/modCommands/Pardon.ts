@@ -21,6 +21,11 @@ class Pardon {
       return
     }
 
+    // Remove Guild Timeout if exists
+    if (mentionedMember.isCommunicationDisabled()) {
+      await mentionedMember.timeout(null)
+    }
+
     await this.client.user.update({
       where: {
         id: mentionedMember.id,
