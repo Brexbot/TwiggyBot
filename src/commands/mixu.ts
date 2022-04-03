@@ -21,7 +21,7 @@ class Mixu {
 
   private async getBestMixu(): Promise<BestMixu> {
     // If mixu has never been queried from the DB, the owner will be an empty string
-    if(this.bestMixu.owner === '') {
+    if (this.bestMixu.owner === '') {
       // upsert with an empty update {} can be used as a findOrCreate
       this.bestMixu = await this.client.bestMixu.upsert({
         where: { id: '1' },
@@ -92,14 +92,14 @@ class Mixu {
     const score = this.score(tiles)
 
     if (score > (await this.getBestMixu()).score) {
-      this.setBestMixu({id: '1', owner: username, tiles: tiles.join(','), score})
+      this.setBestMixu({ id: '1', owner: username, tiles: tiles.join(','), score })
     }
 
     const text = this.stringify(tiles, guild)
     return `:regional_indicator_m::regional_indicator_i::regional_indicator_x::regional_indicator_u:${text}`
   }
 
-  private async formatBestMixu(guild: Guild): Promise<[string, string]|null> {
+  private async formatBestMixu(guild: Guild): Promise<[string, string] | null> {
     const mixu = await this.getBestMixu()
     const tiles = mixu.tiles.split(',').map((n) => +n)
     if (tiles.length !== 16) {
@@ -134,10 +134,7 @@ class Mixu {
       return
     }
 
-    const message = await this.generateMixu(
-      interaction.command.guild,
-      interaction.command.client.user.username
-    )
+    const message = await this.generateMixu(interaction.command.guild, interaction.command.client.user.username)
     await interaction.followUp(message)
   }
 
@@ -148,7 +145,7 @@ class Mixu {
     }
 
     const mixuInfo = await this.formatBestMixu(command.message.guild)
-    if(!mixuInfo) {
+    if (!mixuInfo) {
       return
     }
     const [owner, text] = mixuInfo
@@ -173,7 +170,7 @@ class Mixu {
     }
 
     const mixuInfo = await this.formatBestMixu(interaction.command.guild)
-    if(!mixuInfo) {
+    if (!mixuInfo) {
       await interaction.followUp({ content: 'Unable to get current Mixu right now', ephemeral: true })
       return
     }
@@ -181,7 +178,6 @@ class Mixu {
 
     await interaction.followUp(owner)
     await interaction.followUp(text)
-
   }
 
   @SimpleCommand('mikustare', { directMessage: false })
@@ -200,11 +196,7 @@ class Mixu {
   async mikustareSlash(interaction: CommandInteraction) {
     await interaction.deferReply()
 
-    if (
-      !interaction.command?.guild ||
-      !interaction.channel?.id ||
-      !this.isMixuChannel(interaction.channel.id)
-    ) {
+    if (!interaction.command?.guild || !interaction.channel?.id || !this.isMixuChannel(interaction.channel.id)) {
       await interaction.followUp({ content: 'This command can only be used in the #mixu channel', ephemeral: true })
       return
     }

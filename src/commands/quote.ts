@@ -1,5 +1,13 @@
 import { CommandInteraction } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, SimpleCommandOptionType, Slash, SlashOption } from 'discordx'
+import {
+  Discord,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  SimpleCommandOptionType,
+  Slash,
+  SlashOption,
+} from 'discordx'
 import { uwuify } from './uwu'
 import fetch from 'node-fetch'
 

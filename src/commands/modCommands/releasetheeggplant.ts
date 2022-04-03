@@ -1,5 +1,5 @@
 import { User } from 'discord.js'
-import {Discord, Permission, SimpleCommand, SimpleCommandMessage, SimpleCommandOption} from 'discordx'
+import { Discord, Permission, SimpleCommand, SimpleCommandMessage, SimpleCommandOption } from 'discordx'
 import { SuperUsers } from '../../guards/RoleChecks'
 
 @Discord()
@@ -12,8 +12,8 @@ class ReleaseTheEggplant {
   })
   simple(@SimpleCommandOption('name') name: User, command: SimpleCommandMessage) {
     if (!name) return command.message.reply('usage: ``>releasetheeggplant <user>``')
-    let botId = command.message.client.user?.id
-    let thisBot = command.message.guild?.members.cache.find((u) => u.id === botId)
+    const botId = command.message.client.user?.id
+    const thisBot = command.message.guild?.members.cache.find((u) => u.id === botId)
     thisBot?.setNickname('🍆🔪')
     command.message.channel
       .send(`I'm coming for you, ${name}!`)
