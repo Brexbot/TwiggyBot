@@ -1,5 +1,13 @@
 import { CommandInteraction } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, SlashOption, Slash, SimpleCommandOptionType } from 'discordx'
+import {
+  Discord,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  SlashOption,
+  Slash,
+  SimpleCommandOptionType,
+} from 'discordx'
 
 import fetch from 'node-fetch'
 

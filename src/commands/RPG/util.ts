@@ -24,12 +24,12 @@ export function mulberry32(a: number): () => number {
   }
 }
 
-export function getRandomElement(a: any[]) {
+export function getRandomElement<T>(a: T[]): T {
   // returns a random element from a using Math.random()
   return getSeededRandomElement(a, Math.random)
 }
 
-export function getSeededRandomElement(a: any[], rng: () => number) {
+export function getSeededRandomElement<T>(a: T[], rng: () => number): T {
   // returns a random element from a,
   // calling rng argument to get random number.
   return a[Math.floor(rng() * a.length)]
@@ -78,7 +78,7 @@ export function getEloRankChange(rankA: number, rankB: number, K: number, result
   return Math.round(rankA + K * (score - expectedA))
 }
 
-export function ballancingClasses() {
+export function balancingClasses() {
   const stats = ['STR', 'DEX', 'CON', 'WIS', 'INT', 'CHR'] as const
   const data: Record<string, number> = { STR: 0, DEX: 0, CON: 0, WIS: 0, INT: 0, CHR: 0 }
   for (let i = 0; i < classes.length; i++) {

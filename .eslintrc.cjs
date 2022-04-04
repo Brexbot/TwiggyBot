@@ -29,17 +29,17 @@ module.exports = {
       },
     },
     {
-      files: ['src/commands/*.ts'],
+      files: ['src/commands/*.ts', 'src/commands/**/*.ts', 'src/events/*.ts'],
       rules: {
         'no-unused-vars': 'off',
-        '@typescript-eslint/no-unused-vars': 'off'
+        '@typescript-eslint/no-unused-vars': 'off',
       },
     },
     {
       files: ['*.js'],
       rules: {
-        '@typescript-eslint/no-var-requires': 'off'
+        '@typescript-eslint/no-var-requires': 'off',
       },
     },
   ],
-};
+}
