@@ -1,5 +1,14 @@
 import { CommandInteraction, Formatters } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, Slash } from 'discordx'
+import {
+  Discord,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  SimpleCommandOptionType,
+  Slash,
+  SlashChoice,
+  SlashOption,
+} from 'discordx'
 
 class Board {
   private width: number
@@ -127,21 +136,33 @@ class Minesweeper {
   static mixuChannel = '340275382093611011'
   private lastUse = 0
 
-  @SimpleCommand('minesweeper')
-  async simpleCommand(command: SimpleCommandMessage) {
-    const { content, ephemeral } = this.newGame(command.message.channelId)
+  @SimpleCommand('minesweeper', { description: 'Play a game of minesweeper', argSplitter: '\t' })
+  async simpleCommand(
+    @SimpleCommandOption('difficulty', { type: SimpleCommandOptionType.String })
+    difficulty: string | undefined,
+    command: SimpleCommandMessage
+  ) {
+    const { content, ephemeral } = this.newGame(command.message.channelId, difficulty)
     if (!ephemeral) {
       await command.message.channel.send(content)
     }
   }
 
   @Slash('minesweeper', { description: 'Play a game of minesweeper' })
-  async slashCommand(interaction: CommandInteraction) {
-    const reply = this.newGame(interaction.channelId)
+  async slashCommand(
+    @SlashChoice({ name: 'Easy', value: 'easy' })
+    @SlashChoice({ name: 'Normal', value: 'normal' })
+    @SlashChoice({ name: 'Hard', value: 'hard' })
+    @SlashChoice({ name: 'Ultra nightmare', value: 'ultra nightmare' })
+    @SlashOption('difficulty', { description: 'Which difficulty would you like to choose?', type: 'STRING' })
+    difficulty: string | undefined,
+    interaction: CommandInteraction
+  ) {
+    const reply = this.newGame(interaction.channelId, difficulty)
     await interaction.reply(reply)
   }
 
-  private newGame(channelId: string): { content: string; ephemeral: boolean } {
+  private newGame(channelId: string, difficulty?: string): { content: string; ephemeral: boolean } {
     if (channelId !== Minesweeper.mixuChannel) {
       return { content: 'You cannot use this command outside of #Mixu.', ephemeral: true }
     }
@@ -150,7 +171,20 @@ class Minesweeper {
     }
 
     this.lastUse = Date.now()
-    const board = new Board()
+    const board = new Board(...this.chooseDifficulty(difficulty))
     return { content: board.printBoard(), ephemeral: false }
+  }
+
+  private chooseDifficulty(difficulty?: string): [number, number, number] {
+    switch (difficulty?.toLowerCase()) {
+      case 'easy':
+        return [8, 8, 8]
+      case 'hard':
+        return [8, 8, 18]
+      case 'ultra nightmare':
+        return [8, 8, 24]
+      default:
+        return [8, 8, 12]
+    }
   }
 }
