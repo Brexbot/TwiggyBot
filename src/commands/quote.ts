@@ -36,9 +36,8 @@ class quoteCommand {
     id: number | undefined,
     interaction: CommandInteraction
   ) {
-    await interaction.deferReply()
     await this.generateMessage(id).then(
-      async ([message, error]) => await interaction.followUp({ content: message, ephemeral: error })
+      async ([message, error]) => await interaction.reply({ content: message, ephemeral: error })
     )
   }
 
@@ -59,9 +58,8 @@ class quoteCommand {
     id: number | undefined,
     interaction: CommandInteraction
   ) {
-    await interaction.deferReply()
     await this.generateMessage(id, uwuify).then(
-      async ([message, error]) => await interaction.followUp({ content: message, ephemeral: error })
+      async ([message, error]) => await interaction.reply({ content: message, ephemeral: error })
     )
   }
 
@@ -105,11 +103,15 @@ class quoteCommand {
   private async updateQuotes() {
     // Only get the quotes if there aren't any yet or the cache has expired
     if (this.quotes.length == 0 || this.lastFetch.getTime() + this.cacheDuration < Date.now()) {
-      const quotes = await this.fetchQuotes()
-      if (quotes) {
-        this.lastFetch = new Date()
-        this.quotes = quotes.data
-      }
+      await this.fetchQuotes()
+        .then((quotes) => {
+          this.quotes = quotes.data
+        })
+        .catch(console.log)
+        .finally(() => {
+          // Setting lastFetch date to avoid bombarding Buf's server with requests
+          this.lastFetch = new Date()
+        })
     }
   }
 
@@ -118,7 +120,9 @@ class quoteCommand {
     return await fetch(this.endpoint).then(async (resp) => {
       if (resp.ok) {
         return await resp.json()
-      } else return Promise.reject('An error occurred while fetching quotes')
+      } else {
+        return Promise.reject(`An error occurred while fetching quotes (status: ${resp.status} - ${resp.statusText}`)
+      }
     })
   }
 }
