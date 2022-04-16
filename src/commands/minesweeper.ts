@@ -124,33 +124,33 @@ class Board {
 @Discord()
 class Minesweeper {
   static cooldown = 10 * 60 * 1000 // Cooldown period is 10 minutes
+  static mixuChannel = '340275382093611011'
   private lastUse = 0
 
   @SimpleCommand('minesweeper')
   async simpleCommand(command: SimpleCommandMessage) {
-    const content = this.newGame()
-    if (content) {
+    const { content, ephemeral } = this.newGame(command.message.channelId)
+    if (!ephemeral) {
       await command.message.channel.send(content)
     }
   }
 
   @Slash('minesweeper', { description: 'Play a game of minesweeper' })
   async slashCommand(interaction: CommandInteraction) {
-    const content = this.newGame()
-    if (!content) {
-      await interaction.reply({ content: 'This command is on cooldown.', ephemeral: true })
-      return
-    }
-    await interaction.reply({ content, allowedMentions: { repliedUser: false } })
+    const reply = this.newGame(interaction.channelId)
+    await interaction.reply(reply)
   }
 
-  private newGame(): string | undefined {
+  private newGame(channelId: string): { content: string; ephemeral: boolean } {
+    if (channelId !== Minesweeper.mixuChannel) {
+      return { content: 'You cannot use this command outside of #Mixu.', ephemeral: true }
+    }
     if (Date.now() < this.lastUse + Minesweeper.cooldown) {
-      return
+      return { content: 'Command is on cooldown.', ephemeral: true }
     }
 
     this.lastUse = Date.now()
     const board = new Board()
-    return board.printBoard()
+    return { content: board.printBoard(), ephemeral: false }
   }
 }
