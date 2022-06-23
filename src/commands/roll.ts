@@ -67,7 +67,9 @@ class Roll {
   @Slash('choose', { description: 'Let the bot control your life from comma separated choices' })
   async choose(
     @SlashOption('choices', { type: 'STRING' })
+    @SlashOption('message', { type: 'STRING', required: false })
     choices: string,
+    message: string,
     interaction: CommandInteraction
   ) {
     if (choices.length == 0) {
@@ -75,6 +77,12 @@ class Roll {
     } else if (choices.length > this.MAX_MESSAGE_LENGTH) {
       await interaction.reply({
         content: `\`choices\` must be < ${this.MAX_MESSAGE_LENGTH} characters.`,
+        ephemeral: true,
+      })
+    } else if (message && message.length > this.MAX_MESSAGE_LENGTH) {
+      // Technically this means choices with a message can be 2x MAX_MESSAGE_LENGTH
+      await interaction.reply({
+        content: `\`message\` must be < ${this.MAX_MESSAGE_LENGTH} characters.`,
         ephemeral: true,
       })
     } else {
@@ -88,7 +96,13 @@ class Roll {
       }
 
       const choice = getRandomElement(parts)
-      const listEcho = `${parts.slice(0, -1).join(', ')}, or ${parts[parts.length - 1]}?`
+
+      let listEcho: string
+      if (!message) {
+        listEcho = `${message}: ${parts.slice(0, -1).join(', ')}, or ${parts[parts.length - 1]}?`
+      } else {
+        listEcho = `${parts.slice(0, -1).join(', ')}, or ${parts[parts.length - 1]}?`
+      }
 
       interaction.reply(listEcho + '\n' + choice.trim())
     }
