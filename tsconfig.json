@@ -15,7 +15,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "types": [
-      "./src/@types/hsl-rgb"
+      "./src/@types/hsl-rgb",
+      "node"
     ]
   },
   "include": [
