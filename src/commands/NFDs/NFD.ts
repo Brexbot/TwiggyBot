@@ -1,10 +1,11 @@
-import { createCanvas, loadImage } from 'canvas'
+import { createCanvas, loadImage, Canvas } from 'canvas'
 import { getRandomElement } from '../../commands/RPG/util'
 import * as fs from 'fs'
 import * as path from 'path'
-import { CommandInteraction, GuildMember, Message, MessageAttachment } from 'discord.js'
+import { CommandInteraction, GuildMember, Interaction, Message, MessageAttachment } from 'discord.js'
 import { Discord, SlashOption, Slash, SlashGroup } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
+import { ComparisonModifier } from '@dice-roller/rpg-dice-roller/types/modifiers'
 
 type BodyParts = {
   body: string
@@ -16,30 +17,21 @@ type BodyParts = {
 @SlashGroup('nfd')
 @Discord()
 class NFD {
-  private MINT_COOLDOWN = 60*60*24
+  private MINT_COOLDOWN = 60 * 60 * 24
 
   private FRAGMENT_PATH = path.join(__dirname, 'fragments')
+  private OUTPUT_PATH = path.join(__dirname, 'images')
 
   @Slash('mint', { description: 'Mint a new NFD' })
   async mint(interaction: CommandInteraction) {
     const parts = this.getParts()
-    const pngStream = await this.mintNFD(parts)
+    const imageCanvas = await this.mintNFD(parts)
 
     const outputName = this.makeName(parts)
 
-    const attachmentImage = new MessageAttachment(pngStream)
+    const outputFilePath = path.join(this.OUTPUT_PATH, outputName + '.png')
 
-    console.log(attachmentImage.attachment)
-
-    const owner = getCallerFromCommand(interaction)
-    if (owner) {
-      interaction.reply({
-        embeds: [this.buildReply(outputName, owner.nickname ?? owner?.user.username, attachmentImage.url)],
-        files: [attachmentImage],
-      })
-    } else {
-      interaction.reply({ content: 'Username undefined', ephemeral: true })
-    }
+    this.canvasToFileAndReply(imageCanvas, outputFilePath, interaction)
   }
 
   private getParts(): BodyParts {
@@ -75,26 +67,7 @@ class NFD {
       ctx.drawImage(image, 0, 0)
     })
 
-    const stream = canvas.createPNGStream()
-    return stream
-  }
-
-  private buildReply(outputName: string, ownder: GuildMember, imageURL: string) {
-    const embed = {
-      color: 0xffbf00,
-      title: outputName,
-      image: {
-        url: imageURL,
-      },
-      timestamp: new Date(),
-      fields: [
-        {
-          name: 'Owner',
-          value: ownder,
-        },
-      ],
-    }
-    return embed
+    return canvas
   }
 
   private makeName(parts: BodyParts) {
@@ -109,5 +82,46 @@ class NFD {
     return (
       bodyStr.slice(0, bodyEnd) + mouthStr.slice(mouthStart, mouthStart + 3) + eyesStr.slice(eyesStart, eyesStart + 3)
     )
+  }
+
+  private canvasToFileAndReply(canvas: Canvas, fileName: string, interaction: CommandInteraction) {
+    const out = fs.createWriteStream(fileName)
+    const stream = canvas.createPNGStream()
+
+    stream.pipe(out)
+    out.on('finish', () => {
+      this.makeReply(fileName, interaction)
+    })
+  }
+
+  private makeReply(filePath: string, interaction: CommandInteraction) {
+    const owner = getCallerFromCommand(interaction)
+    const nfdName = path.basename(filePath).replace('.png', '')
+
+    const time = new Date()
+
+    if (!owner) {
+      interaction.reply({ content: 'Username undefined' + filePath, ephemeral: true })
+    } else {
+      const imageAttachment = new MessageAttachment(filePath)
+      const embed = {
+        color: 0xffbf00,
+        title: nfdName,
+        image: {
+          url: 'attachment://' + nfdName + '.png',
+        },
+        author: {
+          name: owner.nickname ?? owner.user.username,
+          icon_url: owner.user.avatarURL(),
+        },
+        footer: {
+          text: `Minted on ${time.toLocaleDateString()}`,
+        },
+      }
+      interaction.reply({
+        embeds: [embed],
+        files: [imageAttachment],
+      })
+    }
   }
 }
