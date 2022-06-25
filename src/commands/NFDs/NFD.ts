@@ -2,8 +2,9 @@ import { createCanvas, loadImage } from 'canvas'
 import { getRandomElement } from '../../commands/RPG/util'
 import * as fs from 'fs'
 import * as path from 'path'
-import { CommandInteraction, MessageAttachment } from 'discord.js'
+import { CommandInteraction, GuildMember, Message, MessageAttachment } from 'discord.js'
 import { Discord, SlashOption, Slash, SlashGroup } from 'discordx'
+import { getCallerFromCommand } from '../../utils/CommandUtils'
 
 type BodyParts = {
   body: string
@@ -15,25 +16,30 @@ type BodyParts = {
 @SlashGroup('nfd')
 @Discord()
 class NFD {
-  private FREE_MINT_COOLDOWN = 60
+  private MINT_COOLDOWN = 60*60*24
 
   private FRAGMENT_PATH = path.join(__dirname, 'fragments')
-  private OUTPUT_PATH = path.join(__dirname, 'images')
-
-  private currentInteraction?: CommandInteraction = undefined
 
   @Slash('mint', { description: 'Mint a new NFD' })
   async mint(interaction: CommandInteraction) {
-    if (this.currentInteraction) {
-      interaction.reply({ content: 'Im already busy minting something. Please try again later', ephemeral: true })
-      return
-    }
-    this.currentInteraction = interaction
     const parts = this.getParts()
-    await this.mintNFD(parts).then(() => {
-      // this.currentInteraction = undefined
-      console.log("foo")
-    })
+    const pngStream = await this.mintNFD(parts)
+
+    const outputName = this.makeName(parts)
+
+    const attachmentImage = new MessageAttachment(pngStream)
+
+    console.log(attachmentImage.attachment)
+
+    const owner = getCallerFromCommand(interaction)
+    if (owner) {
+      interaction.reply({
+        embeds: [this.buildReply(outputName, owner.nickname ?? owner?.user.username, attachmentImage.url)],
+        files: [attachmentImage],
+      })
+    } else {
+      interaction.reply({ content: 'Username undefined', ephemeral: true })
+    }
   }
 
   private getParts(): BodyParts {
@@ -69,35 +75,22 @@ class NFD {
       ctx.drawImage(image, 0, 0)
     })
 
-    const outputName = this.makeName(parts)
-    const outputFilePath = path.join(this.OUTPUT_PATH, outputName + '.png')
-
-    const out = fs.createWriteStream(outputFilePath)
     const stream = canvas.createPNGStream()
-    stream.pipe(out)
-    out.on('finish', () => {
-      this.currentInteraction
-        ? this.currentInteraction.reply({
-            embeds: [this.buildReply(outputName, outputFilePath, 'No one')],
-            files: [new MessageAttachment(outputFilePath)],
-          })
-        : console.log('The PNG was created but no interaction exists.')
-    })
+    return stream
   }
 
-  private buildReply(outputName: string, outputFile: string, outputOwnerName: string) {
-    console.log('OUT FILE: ', outputFile)
+  private buildReply(outputName: string, ownder: GuildMember, imageURL: string) {
     const embed = {
       color: 0xffbf00,
       title: outputName,
       image: {
-        url: 'attachment://' + path.basename(outputFile),
+        url: imageURL,
       },
       timestamp: new Date(),
       fields: [
         {
           name: 'Owner',
-          value: outputOwnerName,
+          value: ownder,
         },
       ],
     }
