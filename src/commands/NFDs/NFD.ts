@@ -1,11 +1,10 @@
-import { createCanvas, loadImage, Canvas } from 'canvas'
+import { Canvas, createCanvas, loadImage } from 'canvas'
 import { getRandomElement } from '../../commands/RPG/util'
 import * as fs from 'fs'
 import * as path from 'path'
-import { CommandInteraction, GuildMember, Interaction, Message, MessageAttachment } from 'discord.js'
-import { Discord, SlashOption, Slash, SlashGroup } from 'discordx'
+import { CommandInteraction, MessageAttachment, MessageEmbed } from 'discord.js'
+import { Discord, Slash, SlashGroup } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
-import { ComparisonModifier } from '@dice-roller/rpg-dice-roller/types/modifiers'
 
 type BodyParts = {
   body: string
@@ -25,13 +24,20 @@ class NFD {
   @Slash('mint', { description: 'Mint a new NFD' })
   async mint(interaction: CommandInteraction) {
     const parts = this.getParts()
-    const imageCanvas = await this.mintNFD(parts)
-
-    const outputName = this.makeName(parts)
-
-    const outputFilePath = path.join(this.OUTPUT_PATH, outputName + '.png')
-
-    this.canvasToFileAndReply(imageCanvas, outputFilePath, interaction)
+    this.mintNFD(parts)
+      .then((canvas) => {
+        const outputName = this.makeName(parts)
+        const outputFilePath = path.join(this.OUTPUT_PATH, outputName + '.png')
+        return this.saveNFD(canvas, outputFilePath)
+      })
+      .then((nfd) => {
+        this.makeReply(nfd, interaction)
+      })
+      .catch((err) => {
+        interaction.reply({ content: 'The dinochain broke... what a surprise', ephemeral: true }).catch((err) => {
+          console.error('Something really went wrong minting this NFD...', err)
+        })
+      })
   }
 
   private getParts(): BodyParts {
@@ -84,13 +90,24 @@ class NFD {
     )
   }
 
-  private canvasToFileAndReply(canvas: Canvas, fileName: string, interaction: CommandInteraction) {
-    const out = fs.createWriteStream(fileName)
-    const stream = canvas.createPNGStream()
+  private async saveNFD(canvas: Canvas, fileName: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const out = fs.createWriteStream(fileName)
+      const stream = canvas.createPNGStream()
 
-    stream.pipe(out)
-    out.on('finish', () => {
-      this.makeReply(fileName, interaction)
+      function cleanup(err: Error) {
+        // In case we fail reject the promise
+        reject(err)
+        out.end()
+      }
+
+      stream.pipe(out)
+      out
+        .on('finish', () => {
+          // Promise resolves with the fileName
+          resolve(fileName)
+        })
+        .on('error', cleanup)
     })
   }
 
@@ -101,24 +118,17 @@ class NFD {
     const time = new Date()
 
     if (!owner) {
-      interaction.reply({ content: 'Username undefined' + filePath, ephemeral: true })
+      return interaction.reply({ content: 'Username undefined' + filePath, ephemeral: true })
     } else {
       const imageAttachment = new MessageAttachment(filePath)
-      const embed = {
-        color: 0xffbf00,
-        title: nfdName,
-        image: {
-          url: 'attachment://' + nfdName + '.png',
-        },
-        author: {
-          name: owner.nickname ?? owner.user.username,
-          icon_url: owner.user.avatarURL(),
-        },
-        footer: {
-          text: `Minted on ${time.toLocaleDateString()}`,
-        },
-      }
-      interaction.reply({
+      const embed = new MessageEmbed()
+        .setColor(0xffbf00)
+        .setAuthor({ name: owner.nickname ?? owner.user.username, iconURL: owner.user.avatarURL() ?? undefined })
+        .setTitle(nfdName)
+        .setImage(`attachment://${nfdName}.png`)
+        .setFooter({ text: `Minted on ${time.toLocaleDateString()}` })
+
+      return interaction.reply({
         embeds: [embed],
         files: [imageAttachment],
       })
