@@ -36,7 +36,7 @@ client.once('ready', async () => {
   })
 
   // init permissions; enabled log to see changes
-  await client.initApplicationPermissions(true)
+  // await client.initApplicationPermissions(true)
 
   // uncomment this line to clear all guild commands,
   // useful when moving to global commands from guild commands
