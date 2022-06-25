@@ -28,7 +28,7 @@ class NFD {
       .then((canvas) => {
         const outputName = this.makeName(parts)
         const outputFilePath = path.join(this.OUTPUT_PATH, outputName + '.png')
-        return this.canvasToFileAndReply(canvas, outputFilePath)
+        return this.saveNFD(canvas, outputFilePath)
       })
       .then((nfd) => {
         this.makeReply(nfd, interaction)
@@ -90,7 +90,7 @@ class NFD {
     )
   }
 
-  private async canvasToFileAndReply(canvas: Canvas, fileName: string): Promise<string> {
+  private async saveNFD(canvas: Canvas, fileName: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const out = fs.createWriteStream(fileName)
       const stream = canvas.createPNGStream()
@@ -104,6 +104,7 @@ class NFD {
       stream.pipe(out)
       out
         .on('finish', () => {
+          // Promise resolves with the fileName
           resolve(fileName)
         })
         .on('error', cleanup)
