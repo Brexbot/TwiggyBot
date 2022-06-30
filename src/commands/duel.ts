@@ -377,7 +377,7 @@ export class Duel {
   }
 
   private createButton(disabled: boolean): MessageButton {
-    let button = new MessageButton().setEmoji('⚔️').setStyle('PRIMARY').setCustomId('duel-btn')
+    let button = new MessageButton().setEmoji('🎲').setStyle('PRIMARY').setCustomId('duel-btn')
     if (disabled) {
       button = button.setLabel("It's over").setDisabled(true)
     } else {

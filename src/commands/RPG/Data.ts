@@ -1,5 +1,5 @@
-export const ELO_DECAY_FACTOR = 0.05 // Linear factor determining daily Elo rank decay
-export const ELO_K = 48 // Maximum possible Elo rank change in one game. Higher makes ladder position less stable
+export const ELO_DECAY_FACTOR = 0.01 // Linear factor determining daily Elo rank decay
+export const ELO_K = 56 // Maximum possible Elo rank change in one game. Higher makes ladder position less stable
 
 // Alignments are built as "$ADJECTIVE $NOUN", these lists contain them
 export const adjectives = [
