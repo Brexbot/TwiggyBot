@@ -58,3 +58,10 @@ model RPGCharacter {
   peakElo       Int       @default(1000)
   floorElo      Int       @default(1000)
 }
+
+model NFDItem {
+  name          String    @id @unique
+  code          String    @unique
+  filename      String    @unique
+  owner         String    @default("")
+}
