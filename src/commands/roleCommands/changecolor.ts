@@ -21,7 +21,7 @@ import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils'
 export class ColorRoles {
   // guildId, roleId
   private static allowedMemberRoles = new Map<string, string[]>([
-    ['103678524375699456', ['345501570483355648']], // BRex Subscriber
+    ['942605361129611315', ['993539679943139469']], // BRex Subscriber
   ])
 
   private static hexExp = /^#?[0-9A-F]{6}$/i
@@ -180,6 +180,10 @@ export class ColorRoles {
     if (!member || !guild) {
       return Promise.reject()
     }
+
+    // Run the simple check that removes any orphaned color roles that may have developed
+    // e.g. when someone with a color leaves the server.
+    this.clearUnusedColorRoles(guild)
 
     // User Role Check
     if (!member.roles.cache.some((_, id) => this.getAllowedRoles(guild.id).includes(id))) {
@@ -363,5 +367,15 @@ export class ColorRoles {
 
   private getAllowedRoles(guildId: string): string[] {
     return superUserRoles.map((su) => su.id).concat(ColorRoles.allowedMemberRoles.get(guildId) ?? [])
+  }
+
+  private clearUnusedColorRoles(guild: Guild) {
+    // Function to clean up orphaned color roles that seem to accumulate over time.
+    const killList = guild.roles.cache.filter((element) => {
+      return element.name[0] == '#' && element.name != '#FFFFFF' && element.members.size == 0
+    })
+    killList.forEach((element) => {
+      guild.roles.delete(element)
+    })
   }
 }
