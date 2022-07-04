@@ -5,21 +5,27 @@ import * as path from 'path'
 import { CommandInteraction, MessageAttachment, MessageEmbed } from 'discord.js'
 import { Discord, Slash, SlashGroup } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
+import { injectable } from 'tsyringe'
+import { ORM } from '../../persistence'
 
 type BodyParts = {
   body: string
   mouth: string
   eyes: string
+  code: string
 }
 
+@Discord()
 @SlashGroup({ name: 'nfd', description: 'Take part in the non-fungible dino economy' })
 @SlashGroup('nfd')
-@Discord()
+@injectable()
 class NFD {
   private MINT_COOLDOWN = 60 * 60 * 24
 
   private FRAGMENT_PATH = path.join(__dirname, 'fragments')
   private OUTPUT_PATH = path.join(__dirname, 'images')
+
+  public constructor(private client: ORM) {}
 
   @Slash('mint', { description: 'Mint a new NFD' })
   async mint(interaction: CommandInteraction) {
@@ -50,11 +56,13 @@ class NFD {
     const mouth = getRandomElement(mouthList)
     const eyes = getRandomElement(eyesList)
 
+    const code = `${body},${mouth},${eyes}`
+
     console.log(`There are ${bodyList.length * mouthList.length * eyesList.length} possible NFDs`)
 
     console.log(`picked: ${body}, ${mouth}, ${eyes}`)
 
-    return { body: body, mouth: mouth, eyes: eyes }
+    return { body: body, mouth: mouth, eyes: eyes, code: code }
   }
 
   private async mintNFD(parts: BodyParts) {
@@ -74,6 +82,10 @@ class NFD {
     })
 
     return canvas
+  }
+
+  private async checkNFDExistence(code: string) {
+    return await this.client
   }
 
   private makeName(parts: BodyParts) {
