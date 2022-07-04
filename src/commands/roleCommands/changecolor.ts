@@ -181,6 +181,10 @@ export class ColorRoles {
       return Promise.reject()
     }
 
+    // Run the simple check that removes any orphaned color roles that may have developed
+    // e.g. when someone with a color leaves the server.
+    this.clearUnusedColorRoles(guild)
+
     // User Role Check
     if (!member.roles.cache.some((_, id) => this.getAllowedRoles(guild.id).includes(id))) {
       return 'Yay! You get to keep your white color!'
@@ -363,5 +367,15 @@ export class ColorRoles {
 
   private getAllowedRoles(guildId: string): string[] {
     return superUserRoles.map((su) => su.id).concat(ColorRoles.allowedMemberRoles.get(guildId) ?? [])
+  }
+
+  private clearUnusedColorRoles(guild: Guild) {
+    // Function to clean up orphaned color roles that seem to accumulate over time.
+    const killList = guild.roles.cache.filter((element) => {
+      return element.name[0] == '#' && element.name != '#FFFFFF' && element.members.size == 0
+    })
+    killList.forEach((element) => {
+      guild.roles.delete(element)
+    })
   }
 }
