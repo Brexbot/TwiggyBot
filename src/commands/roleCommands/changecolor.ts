@@ -21,7 +21,7 @@ import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils'
 export class ColorRoles {
   // guildId, roleId
   private static allowedMemberRoles = new Map<string, string[]>([
-    ['942605361129611315', ['993539679943139469']], // BRex Subscriber
+    ['103678524375699456', ['345501570483355648']], // BRex Subscriber
   ])
 
   private static hexExp = /^#?[0-9A-F]{6}$/i
