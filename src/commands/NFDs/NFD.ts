@@ -2,7 +2,7 @@ import { Canvas, createCanvas, loadImage } from 'canvas'
 import { cyrb53, getRandomElement } from '../../commands/RPG/util'
 import * as fs from 'fs'
 import * as path from 'path'
-import { CommandInteraction, MessageAttachment, MessageEmbed, User } from 'discord.js'
+import { CommandInteraction, GuildMember, MessageAttachment, MessageEmbed, User } from 'discord.js'
 import { Discord, Slash, SlashGroup } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
 import { injectable } from 'tsyringe'
@@ -70,6 +70,10 @@ class NFD {
         return this.saveNFD(canvas, (parts.filePath = path.join(this.OUTPUT_PATH, parts.name + '.png')))
       })
       .then((nfd) => {
+        this.storeNFDinDatabase(parts, getCallerFromCommand(interaction))
+        return nfd
+      })
+      .then((nfd) => {
         this.makeReply(nfd, interaction)
       })
       .catch((err) => {
@@ -129,6 +133,25 @@ class NFD {
         name: name,
       },
     })
+  }
+
+  private async storeNFDinDatabase(parts: BodyParts, owner: GuildMember | null) {
+    if (!parts.name || !parts.filePath) {
+      return Promise.reject('Name and filePath cannot be null')
+    }
+    if (!owner) {
+      return Promise.reject('User cannot be null.')
+    }
+
+    this.client.nFDItem.create({
+      data: {
+        name: parts.name,
+        code: parts.code,
+        filename: parts.filePath,
+        owner: owner.id,
+      },
+    })
+    return Promise.resolve()
   }
 
   private makeName(parts: BodyParts) {
