@@ -1,5 +1,5 @@
 import { Canvas, createCanvas, loadImage } from 'canvas'
-import { getRandomElement } from '../../commands/RPG/util'
+import { cyrb53, getRandomElement } from '../../commands/RPG/util'
 import * as fs from 'fs'
 import * as path from 'path'
 import { CommandInteraction, MessageAttachment, MessageEmbed } from 'discord.js'
@@ -97,8 +97,21 @@ class NFD {
     const mouthStart = Math.min(3, mouthStr.length - 3)
     const eyesStart = Math.min(6, eyesStr.length - 3)
 
+    // The name needs to be unique so we'll add in two characters at the end determined by
+    // hashing the 'code' for the NFD (which is guaranteed unique) into two characters
+    // that get appended to the name. Fingers crossed this then drastically lowers the possibility
+    // of collisions.
+    // TODO: Brute check that there are no collisions.
+    const salt = cyrb53(parts.code).toString()
+    const chr1 = String.fromCharCode(97 + (+salt.slice(0, Math.floor(salt.length / 2)) % 24))
+    const chr2 = String.fromCharCode(97 + (+salt.slice(Math.floor(salt.length / 2), salt.length) % 24))
+
     return (
-      bodyStr.slice(0, bodyEnd) + mouthStr.slice(mouthStart, mouthStart + 3) + eyesStr.slice(eyesStart, eyesStart + 3)
+      bodyStr.slice(0, bodyEnd) +
+      mouthStr.slice(mouthStart, mouthStart + 3) +
+      eyesStr.slice(eyesStart, eyesStart + 3) +
+      chr1 +
+      chr2
     )
   }
 
