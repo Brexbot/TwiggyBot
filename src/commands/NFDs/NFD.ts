@@ -2,7 +2,7 @@ import { Canvas, createCanvas, loadImage } from 'canvas'
 import { cyrb53, getRandomElement } from '../../commands/RPG/util'
 import * as fs from 'fs'
 import * as path from 'path'
-import { CommandInteraction, MessageAttachment, MessageEmbed } from 'discord.js'
+import { CommandInteraction, MessageAttachment, MessageEmbed, User } from 'discord.js'
 import { Discord, Slash, SlashGroup } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
 import { injectable } from 'tsyringe'
@@ -13,6 +13,8 @@ type BodyParts = {
   mouth: string
   eyes: string
   code: string
+  name?: string
+  filePath?: string
 }
 
 @Discord()
@@ -22,6 +24,8 @@ type BodyParts = {
 class NFD {
   private MINT_COOLDOWN = 60 * 60 * 24
 
+  private MAXIMUM_MINT_ATTEMPTS = 10
+
   private FRAGMENT_PATH = path.join(__dirname, 'fragments')
   private OUTPUT_PATH = path.join(__dirname, 'images')
 
@@ -29,12 +33,41 @@ class NFD {
 
   @Slash('mint', { description: 'Mint a new NFD' })
   async mint(interaction: CommandInteraction) {
-    const parts = this.getParts()
+    let i = 0
+    let parts: BodyParts
+
+    do {
+      parts = this.getParts()
+
+      const isDuplicate = await this.checkNFDExistenceByCode(parts.code)
+      if (isDuplicate) {
+        console.log(parts.code + 'already exists in the database')
+        continue
+      }
+
+      parts.name = this.makeName(parts)
+      const isClash = await this.checkNFDExistenceByName(parts.name)
+      if (isClash) {
+        console.log(parts.code + ' is unique but ' + parts.name + ' exists. Clash in naming detected!')
+        console.log('clashing NFD is ' + isClash.code)
+        continue
+      }
+
+      break
+    } while (i++ < this.MAXIMUM_MINT_ATTEMPTS)
+
+    // Check to see if we failed to make a unique one
+    if (i >= this.MAXIMUM_MINT_ATTEMPTS) {
+      interaction.reply({
+        content: "I tried really hard but I wasn't able to make a unique NFD for you. Sorry... :'(",
+        ephemeral: true,
+      })
+      return
+    }
+
     this.mintNFD(parts)
       .then((canvas) => {
-        const outputName = this.makeName(parts)
-        const outputFilePath = path.join(this.OUTPUT_PATH, outputName + '.png')
-        return this.saveNFD(canvas, outputFilePath)
+        return this.saveNFD(canvas, (parts.filePath = path.join(this.OUTPUT_PATH, parts.name + '.png')))
       })
       .then((nfd) => {
         this.makeReply(nfd, interaction)
@@ -69,8 +102,6 @@ class NFD {
     const canvas = createCanvas(112, 112)
     const ctx = canvas.getContext('2d')
 
-    console.log('Loading images...')
-
     await loadImage(path.join(this.FRAGMENT_PATH, parts.body)).then((image) => {
       ctx.drawImage(image, 0, 0)
     })
@@ -84,8 +115,20 @@ class NFD {
     return canvas
   }
 
-  private async checkNFDExistence(code: string) {
-    return await this.client
+  private async checkNFDExistenceByCode(code: string) {
+    return await this.client.nFDItem.findUnique({
+      where: {
+        code: code,
+      },
+    })
+  }
+
+  private async checkNFDExistenceByName(name: string) {
+    return await this.client.nFDItem.findUnique({
+      where: {
+        name: name,
+      },
+    })
   }
 
   private makeName(parts: BodyParts) {
