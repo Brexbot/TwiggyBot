@@ -97,13 +97,23 @@ class NFD {
     interaction: CommandInteraction
   ) {
     const nfd = await this.getNFDByName(name)
-    console.log(nfd)
     if (!nfd) {
       interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
       return
-    } else {
-      console.log(nfd.name)
     }
+    if (!interaction.guild) {
+      interaction.reply({ content: 'The dinochain is broken. The guild is missing :(', ephemeral: true })
+      return
+    }
+    const owner = interaction.guild.members.cache.get(nfd.owner)
+
+    if (!owner) {
+      // Maybe give the NDF to the viewing member in this case?
+      interaction.reply({ content: 'It seems like the owner is no where to be found...', ephemeral: true })
+      return
+    }
+
+    await this.makeReply(nfd.filename, interaction, owner)
   }
 
   private getParts(): BodyParts {
@@ -169,7 +179,7 @@ class NFD {
     console.log('Saving as ' + parts.name)
     console.log('Saving code ' + parts.code)
 
-    this.client.nFDItem.create({
+    await this.client.nFDItem.create({
       data: {
         name: parts.name,
         code: parts.code,
