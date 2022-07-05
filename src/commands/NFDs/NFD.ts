@@ -3,7 +3,7 @@ import { cyrb53, getRandomElement } from '../../commands/RPG/util'
 import * as fs from 'fs'
 import * as path from 'path'
 import { CommandInteraction, GuildMember, MessageAttachment, MessageEmbed, User } from 'discord.js'
-import { Discord, Slash, SlashGroup } from 'discordx'
+import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
@@ -36,19 +36,24 @@ class NFD {
     let i = 0
     let parts: BodyParts
 
+    const ownerMember = getCallerFromCommand(interaction)
+    if (!ownerMember) {
+      return interaction.reply({ content: 'User undefined X(', ephemeral: true })
+    }
+
     do {
       parts = this.getParts()
 
-      const isDuplicate = await this.checkNFDExistenceByCode(parts.code)
+      const isDuplicate = await this.getNFDByCode(parts.code)
       if (isDuplicate) {
         console.log(parts.code + 'already exists in the database')
         continue
       }
 
       parts.name = this.makeName(parts)
-      const isClash = await this.checkNFDExistenceByName(parts.name)
+      const isClash = await this.getNFDByName(parts.name)
       if (isClash) {
-        console.log(parts.code + ' is unique but ' + parts.name + ' exists. Clash in naming detected!')
+        console.log(parts.code + ' is unique but the name ' + parts.name + ' exists. Clash in naming detected!')
         console.log('clashing NFD is ' + isClash.code)
         continue
       }
@@ -74,13 +79,31 @@ class NFD {
         return nfd
       })
       .then((nfd) => {
-        this.makeReply(nfd, interaction)
+        this.makeReply(nfd, interaction, ownerMember)
       })
       .catch((err) => {
         interaction.reply({ content: 'The dinochain broke... what a surprise', ephemeral: true }).catch((err) => {
           console.error('Something really went wrong minting this NFD...', err)
         })
       })
+  }
+
+  @Slash('view', { description: 'View an existing NFD.' })
+  async view(
+    @SlashOption('name', { type: 'STRING', required: true })
+    @SlashOption('silent', { type: 'STRING', required: false })
+    name: string,
+    silent = true,
+    interaction: CommandInteraction
+  ) {
+    const nfd = await this.getNFDByName(name)
+    console.log(nfd)
+    if (!nfd) {
+      interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
+      return
+    } else {
+      console.log(nfd.name)
+    }
   }
 
   private getParts(): BodyParts {
@@ -119,7 +142,7 @@ class NFD {
     return canvas
   }
 
-  private async checkNFDExistenceByCode(code: string) {
+  private async getNFDByCode(code: string) {
     return await this.client.nFDItem.findUnique({
       where: {
         code: code,
@@ -127,7 +150,7 @@ class NFD {
     })
   }
 
-  private async checkNFDExistenceByName(name: string) {
+  private async getNFDByName(name: string) {
     return await this.client.nFDItem.findUnique({
       where: {
         name: name,
@@ -142,6 +165,9 @@ class NFD {
     if (!owner) {
       return Promise.reject('User cannot be null.')
     }
+
+    console.log('Saving as ' + parts.name)
+    console.log('Saving code ' + parts.code)
 
     this.client.nFDItem.create({
       data: {
@@ -202,10 +228,8 @@ class NFD {
     })
   }
 
-  private makeReply(filePath: string, interaction: CommandInteraction) {
-    const owner = getCallerFromCommand(interaction)
+  private makeReply(filePath: string, interaction: CommandInteraction, owner: GuildMember) {
     const nfdName = path.basename(filePath).replace('.png', '')
-
     const time = new Date()
 
     if (!owner) {
