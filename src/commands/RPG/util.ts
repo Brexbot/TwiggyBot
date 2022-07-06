@@ -35,6 +35,18 @@ export function getSeededRandomElement<T>(a: T[], rng: () => number): T {
   return a[Math.floor(rng() * a.length)]
 }
 
+export function shuffleArray<T>(a: T[]) {
+  // In place Fisher-Yates shuffle stolen from Stack Overflow
+  let j, x, i
+  for (i = a.length - 1; i > 0; i--) {
+    j = Math.floor(Math.random() * (i + 1))
+    x = a[i]
+    a[i] = a[j]
+    a[j] = x
+  }
+  return a
+}
+
 export function rollSeeded_dy_x_TimesPick_z(sides: number, total: number, pick: number, rng: () => number): number {
   // Roll {total} d{sides} dice, and sum the top {pick} results
   // if provided, the {rng} argument is used for random numbers,

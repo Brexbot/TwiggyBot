@@ -1,5 +1,5 @@
 import { Canvas, createCanvas, loadImage } from 'canvas'
-import { cyrb53, getRandomElement } from '../../commands/RPG/util'
+import { cyrb53, getRandomElement, shuffleArray } from '../../commands/RPG/util'
 import * as fs from 'fs'
 import * as path from 'path'
 import { CommandInteraction, GuildMember, MessageAttachment, MessageEmbed, User } from 'discord.js'
@@ -28,6 +28,8 @@ class NFD {
 
   private FRAGMENT_PATH = path.join(__dirname, 'fragments')
   private OUTPUT_PATH = path.join(__dirname, 'images')
+
+  private MAX_NFD_LISTED = 10
 
   public constructor(private client: ORM) {}
 
@@ -109,11 +111,45 @@ class NFD {
 
     if (!owner) {
       // Maybe give the NDF to the viewing member in this case?
-      interaction.reply({ content: 'It seems like the owner is no where to be found...', ephemeral: true })
-      return
+      return interaction.reply({ content: 'It seems like the owner is no where to be found...', ephemeral: true })
     }
 
-    await this.makeReply(nfd.filename, interaction, owner)
+    await this.makeReply(nfd.filename, interaction, owner, silent)
+  }
+
+  @Slash('collection', { description: "view a fellow NFD enjoyer's collection" })
+  async colleciton(
+    @SlashOption('owner', {
+      type: 'STRING',
+      required: false,
+      description: "The person who's collection you want to see",
+    })
+    @SlashOption('silent', { type: 'BOOLEAN', required: false })
+    owner: string,
+    silent: true,
+    interaction: CommandInteraction
+  ) {
+    const caller = getCallerFromCommand(interaction)
+    if (!owner) {
+      if (!caller) {
+        return interaction.reply({
+          content: 'The calling user is missing, and not alternative owner was provided. No one to look for.',
+          ephemeral: true,
+        })
+      }
+      owner = caller.id
+    }
+
+    let collection = await this.client.nFDItem.findMany({
+      where: { owner: owner },
+    })
+
+    collection = shuffleArray(collection)
+
+    if (collection.length > this.MAXIMUM_MINT_ATTEMPTS) {
+      const toShow = collection.slice(0, this.MAXIMUM_MINT_ATTEMPTS)
+      const remainder = collection.length - this.MAXIMUM_MINT_ATTEMPTS
+    }
   }
 
   private getParts(): BodyParts {
@@ -238,7 +274,7 @@ class NFD {
     })
   }
 
-  private makeReply(filePath: string, interaction: CommandInteraction, owner: GuildMember) {
+  private makeReply(filePath: string, interaction: CommandInteraction, owner: GuildMember, ephemeral = false) {
     const nfdName = path.basename(filePath).replace('.png', '')
     const time = new Date()
 
@@ -256,6 +292,7 @@ class NFD {
       return interaction.reply({
         embeds: [embed],
         files: [imageAttachment],
+        ephemeral: ephemeral,
       })
     }
   }
