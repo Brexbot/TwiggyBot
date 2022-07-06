@@ -63,5 +63,5 @@ model NFDItem {
   name          String    @id @unique
   code          String    @unique
   filename      String    @unique
-  owner         String    @default("")
+  owner         String
 }
