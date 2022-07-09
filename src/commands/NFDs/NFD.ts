@@ -2,11 +2,12 @@ import { Canvas, createCanvas, loadImage } from 'canvas'
 import { cyrb53, getRandomElement, shuffleArray } from '../../commands/RPG/util'
 import * as fs from 'fs'
 import * as path from 'path'
-import { CommandInteraction, GuildMember, MessageAttachment, MessageEmbed, User } from 'discord.js'
+import { Collection, CommandInteraction, GuildMember, MessageAttachment, MessageEmbed, User } from 'discord.js'
 import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
+import { NFDItem } from '../../../prisma/generated/prisma-client-js'
 
 type BodyParts = {
   body: string
@@ -30,6 +31,8 @@ class NFD {
   private OUTPUT_PATH = path.join(__dirname, 'images')
 
   private MAX_NFD_LISTED = 10
+
+  private NFD_COLOR = 0xffbf00
 
   public constructor(private client: ORM) {}
 
@@ -126,9 +129,13 @@ class NFD {
     })
     @SlashOption('silent', { type: 'BOOLEAN', required: false })
     owner: string,
-    silent: true,
+    silent = true,
     interaction: CommandInteraction
   ) {
+    if (!interaction.guild) {
+      return interaction.reply({ content: 'Guild is missing from interaction.', ephemeral: true })
+    }
+
     const caller = getCallerFromCommand(interaction)
     if (!owner) {
       if (!caller) {
@@ -140,16 +147,64 @@ class NFD {
       owner = caller.id
     }
 
+    const ownerMember = interaction.guild.members.cache.get(owner)
+    if (!ownerMember) {
+      return interaction.reply({ content: 'Member ' + owner + " couldn't be found in the guild", ephemeral: true })
+    }
+    const ownerName = ownerMember.nickname ?? ownerMember.user.username
+
     let collection = await this.client.nFDItem.findMany({
       where: { owner: owner },
     })
 
+    if (collection.length == 0) {
+      return interaction.reply({
+        content: ownerName + " doesn't own any NFDs. 🧻🙌",
+        ephemeral: silent,
+      })
+    }
+
     collection = shuffleArray(collection)
 
+    let toShow: NFDItem[]
+    let remainder: number
+
     if (collection.length > this.MAXIMUM_MINT_ATTEMPTS) {
-      const toShow = collection.slice(0, this.MAXIMUM_MINT_ATTEMPTS)
-      const remainder = collection.length - this.MAXIMUM_MINT_ATTEMPTS
+      toShow = collection.slice(0, this.MAXIMUM_MINT_ATTEMPTS)
+      remainder = collection.length - this.MAXIMUM_MINT_ATTEMPTS
+    } else {
+      toShow = collection
+      remainder = 0
     }
+
+    // let ostr = ownerName + ' owns: ' + collection.map((x) => x.name).join(', ')
+    const fieldTitle = ownerName + ' owns: '
+    let ostr = collection.map((x) => x.name).join(', ')
+
+    if (remainder > 1) {
+      ostr += ` and ${remainder} others.`
+    } else {
+      ostr += '.'
+    }
+
+    const imageAttachment = new MessageAttachment(toShow[0].filename)
+    const embed = new MessageEmbed()
+      .setColor(this.NFD_COLOR)
+      .setAuthor({
+        name: ownerMember.nickname ?? ownerMember.user.username,
+        iconURL: ownerMember.user.avatarURL() ?? undefined,
+      })
+      .setTitle(ownerName + "'s collection")
+      .setImage(`attachment://${toShow[0].name}.png`)
+      .setFooter({ text: `${ownerName} owns ${collection.length} NFDs. 💎🙌` })
+      // .setDescription(ostr)
+      .addField(fieldTitle, ostr, true)
+
+    return interaction.reply({
+      embeds: [embed],
+      files: [imageAttachment],
+      ephemeral: silent,
+    })
   }
 
   private getParts(): BodyParts {
@@ -283,7 +338,7 @@ class NFD {
     } else {
       const imageAttachment = new MessageAttachment(filePath)
       const embed = new MessageEmbed()
-        .setColor(0xffbf00)
+        .setColor(this.NFD_COLOR)
         .setAuthor({ name: owner.nickname ?? owner.user.username, iconURL: owner.user.avatarURL() ?? undefined })
         .setTitle(nfdName)
         .setImage(`attachment://${nfdName}.png`)
