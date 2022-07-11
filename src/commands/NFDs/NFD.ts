@@ -79,9 +79,8 @@ class NFD {
       .then((canvas) => {
         return this.saveNFD(canvas, (parts.filePath = path.join(this.OUTPUT_PATH, parts.name + '.png')))
       })
-      .then((nfd) => {
-        this.storeNFDinDatabase(parts, getCallerFromCommand(interaction))
-        return nfd
+      .then(() => {
+        return this.storeNFDinDatabase(parts, getCallerFromCommand(interaction))
       })
       .then((nfd) => {
         this.makeReply(nfd, interaction, ownerMember)
@@ -117,7 +116,7 @@ class NFD {
       return interaction.reply({ content: 'It seems like the owner is no where to be found...', ephemeral: true })
     }
 
-    await this.makeReply(nfd.filename, interaction, owner, silent)
+    await this.makeReply(nfd, interaction, owner, silent)
   }
 
   @Slash('collection', { description: "view a fellow NFD enjoyer's collection" })
@@ -270,15 +269,16 @@ class NFD {
     console.log('Saving as ' + parts.name)
     console.log('Saving code ' + parts.code)
 
-    await this.client.nFDItem.create({
+    const entry = await this.client.nFDItem.create({
       data: {
         name: parts.name,
         code: parts.code,
         filename: parts.filePath,
         owner: owner.id,
+        mintDate: new Date(),
       },
     })
-    return Promise.resolve()
+    return Promise.resolve(entry)
   }
 
   private makeName(parts: BodyParts) {
@@ -329,21 +329,23 @@ class NFD {
     })
   }
 
-  private makeReply(filePath: string, interaction: CommandInteraction, owner: GuildMember, ephemeral = false) {
-    const nfdName = path.basename(filePath).replace('.png', '')
+  private makeReply(nfd: NFDItem, interaction: CommandInteraction, owner: GuildMember, ephemeral = false) {
+    const nfdName = path.basename(nfd.filename).replace('.png', '')
     const time = new Date()
 
     if (!owner) {
-      return interaction.reply({ content: 'Username undefined' + filePath, ephemeral: true })
+      return interaction.reply({ content: 'Username undefined' + nfd.filename, ephemeral: true })
     } else {
-      const imageAttachment = new MessageAttachment(filePath)
+      const imageAttachment = new MessageAttachment(nfd.filename)
       const embed = new MessageEmbed()
         .setColor(this.NFD_COLOR)
         .setAuthor({ name: owner.nickname ?? owner.user.username, iconURL: owner.user.avatarURL() ?? undefined })
         .setTitle(nfdName)
         .setImage(`attachment://${nfdName}.png`)
-        .setFooter({ text: `Minted on ${time.toLocaleDateString()}` })
-
+        // .setFooter({ text: `Minted on ${nfd.mintDate.toLocaleDateString()} at ${nfd.mintDate.toLocaleTimeString()}` })
+        // Showing minting time as a field is better as it allows local timezone conversion,
+        // even if the filed name thing looks ugly
+        .addField('Minted:', `<t:${nfd.mintDate.getTime()}>`, true)
       return interaction.reply({
         embeds: [embed],
         files: [imageAttachment],

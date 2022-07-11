@@ -64,4 +64,5 @@ model NFDItem {
   code          String    @unique
   filename      String    @unique
   owner         String
+  mintDate      DateTime  @default(dbgenerated("0"))
 }
