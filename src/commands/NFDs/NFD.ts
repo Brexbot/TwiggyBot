@@ -75,6 +75,10 @@ class NFD {
       return
     }
 
+    // If we got this far then we are all set to mint.
+    const ownerRecordPrev = await this.getUserFromDB(ownerMember.id)
+    console.log('Has minted: ', ownerRecordPrev.mintCount, 'times')
+
     this.mintNFD(parts)
       .then((canvas) => {
         return this.saveNFD(canvas, (parts.filePath = path.join(this.OUTPUT_PATH, parts.name + '.png')))
@@ -84,6 +88,9 @@ class NFD {
       })
       .then((nfd) => {
         this.makeReply(nfd, interaction, ownerMember)
+      })
+      .then(() => {
+        this.updateDBSuccessfulMint(ownerMember.id)
       })
       .catch((err) => {
         interaction.reply({ content: 'The dinochain broke... what a surprise', ephemeral: true }).catch((err) => {
@@ -306,6 +313,29 @@ class NFD {
       chr1 +
       chr2
     )
+  }
+
+  private async getUserFromDB(userId: string) {
+    return await this.client.nFDEnjoyer.upsert({
+      where: {
+        id: userId,
+      },
+      create: {
+        id: userId,
+      },
+      update: {},
+    })
+  }
+
+  private async updateDBSuccessfulMint(userId: string) {
+    return await this.client.nFDEnjoyer.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        mintCount: { increment: 1 },
+      },
+    })
   }
 
   private async saveNFD(canvas: Canvas, fileName: string): Promise<string> {
