@@ -66,3 +66,8 @@ model NFDItem {
   owner         String
   mintDate      DateTime  @default(dbgenerated("0"))
 }
+
+model NFDEnjoyer {
+  id            String    @id @unique
+  mintCount     Int       @default(0)
+}
