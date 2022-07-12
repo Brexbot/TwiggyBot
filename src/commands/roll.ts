@@ -98,7 +98,7 @@ class Roll {
       const choice = getRandomElement(parts)
 
       let listEcho: string
-      if (!message) {
+      if (message) {
         listEcho = `${message}: ${parts.slice(0, -1).join(', ')}, or ${parts[parts.length - 1]}?`
       } else {
         listEcho = `${parts.slice(0, -1).join(', ')}, or ${parts[parts.length - 1]}?`
