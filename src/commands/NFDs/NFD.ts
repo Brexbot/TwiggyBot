@@ -177,6 +177,7 @@ class NFD {
 
     if (collection.length > this.MAXIMUM_MINT_ATTEMPTS) {
       toShow = collection.slice(0, this.MAXIMUM_MINT_ATTEMPTS)
+      console.log(toShow.length)
       remainder = collection.length - this.MAXIMUM_MINT_ATTEMPTS
     } else {
       toShow = collection
@@ -185,7 +186,7 @@ class NFD {
 
     // let ostr = ownerName + ' owns: ' + collection.map((x) => x.name).join(', ')
     const fieldTitle = ownerName + ' owns: '
-    let ostr = collection.map((x) => x.name).join(', ')
+    let ostr = toShow.map((x) => x.name).join(', ')
 
     if (remainder > 1) {
       ostr += ` and ${remainder} others.`
