@@ -79,7 +79,7 @@ class NFD {
     const ownerRecordPrev = await this.getUserFromDB(ownerMember.id)
     console.log('Has minted: ', ownerRecordPrev.mintCount, 'times')
 
-    this.mintNFD(parts)
+    this.composeNFD(parts)
       .then((canvas) => {
         return this.saveNFD(canvas, (parts.filePath = path.join(this.OUTPUT_PATH, parts.name + '.png')))
       })
@@ -233,7 +233,7 @@ class NFD {
     return { body: body, mouth: mouth, eyes: eyes, code: code }
   }
 
-  private async mintNFD(parts: BodyParts) {
+  private async composeNFD(parts: BodyParts) {
     const canvas = createCanvas(112, 112)
     const ctx = canvas.getContext('2d')
 
@@ -360,6 +360,27 @@ class NFD {
     })
   }
 
+  private codeToParts(code: string): BodyParts {
+    const parts = code.split(',')
+    return { body: parts[0], mouth: parts[1], eyes: parts[2], code: code }
+  }
+
+  private async ensureImageExists(filename: string, code: string) {
+    // If the file exists, easy just return the name
+    if (fs.existsSync(filename)) {
+      return filename
+    }
+
+    console.log('file does not exist')
+    const parts = this.codeToParts(code)
+    console.log(`parts ${parts.body}, ${parts.eyes}, ${parts.mouth}`)
+    return this.composeNFD(parts)
+      .then((canvas) => this.saveNFD(canvas, (parts.filePath = path.join(this.OUTPUT_PATH, parts.name + '.png'))))
+      .catch(() => {
+        return Promise.reject('The required image fragments are missing.')
+      })
+  }
+
   private makeReply(nfd: NFDItem, interaction: CommandInteraction, owner: GuildMember, ephemeral = false) {
     const nfdName = path.basename(nfd.filename).replace('.png', '')
     const time = new Date()
@@ -367,21 +388,34 @@ class NFD {
     if (!owner) {
       return interaction.reply({ content: 'Username undefined' + nfd.filename, ephemeral: true })
     } else {
-      const imageAttachment = new MessageAttachment(nfd.filename)
-      const embed = new MessageEmbed()
-        .setColor(this.NFD_COLOR)
-        .setAuthor({ name: owner.nickname ?? owner.user.username, iconURL: owner.user.avatarURL() ?? undefined })
-        .setTitle(nfdName)
-        .setImage(`attachment://${nfdName}.png`)
-        // .setFooter({ text: `Minted on ${nfd.mintDate.toLocaleDateString()} at ${nfd.mintDate.toLocaleTimeString()}` })
-        // Showing minting time as a field is better as it allows local timezone conversion,
-        // even if the filed name thing looks ugly
-        .addField('Minted:', `<t:${nfd.mintDate.getTime()}>`, true)
-      return interaction.reply({
-        embeds: [embed],
-        files: [imageAttachment],
-        ephemeral: ephemeral,
-      })
+      // Check for the existence of the image in the cache, if it doesn't exist, make it.
+
+      this.ensureImageExists(nfd.filename, nfd.code)
+        .then(() => {
+          const imageAttachment = new MessageAttachment(nfd.filename)
+          const embed = new MessageEmbed()
+            .setColor(this.NFD_COLOR)
+            .setAuthor({ name: owner.nickname ?? owner.user.username, iconURL: owner.user.avatarURL() ?? undefined })
+            .setTitle(nfdName)
+            .setImage(`attachment://${nfdName}.png`)
+            // .setFooter({ text: `Minted on ${nfd.mintDate.toLocaleDateString()} at ${nfd.mintDate.toLocaleTimeString()}` })
+            // Showing minting time as a field is better as it allows local timezone conversion,
+            // even if the filed name thing looks ugly
+            .addField('Minted:', `<t:${nfd.mintDate.getTime()}>`, true)
+          return interaction.reply({
+            embeds: [embed],
+            files: [imageAttachment],
+            ephemeral: ephemeral,
+          })
+        })
+        .catch((reason) => {
+          const err = 'Something went wrong while building the NFD: ' + reason
+          console.log(err, 'filename: ', nfd.filename, 'nfd code:', nfd.code)
+          return interaction.reply({
+            content: err,
+            ephemeral: true,
+          })
+        })
     }
   }
 }
