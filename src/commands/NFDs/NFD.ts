@@ -365,17 +365,16 @@ class NFD {
     return { body: parts[0], mouth: parts[1], eyes: parts[2], code: code }
   }
 
-  private async ensureImageExists(filename: string, code: string) {
+  private async ensureImageExists(filename: string, name: string, code: string) {
     // If the file exists, easy just return the name
     if (fs.existsSync(filename)) {
       return filename
     }
 
-    console.log('file does not exist')
     const parts = this.codeToParts(code)
-    console.log(`parts ${parts.body}, ${parts.eyes}, ${parts.mouth}`)
+
     return this.composeNFD(parts)
-      .then((canvas) => this.saveNFD(canvas, (parts.filePath = path.join(this.OUTPUT_PATH, parts.name + '.png'))))
+      .then((canvas) => this.saveNFD(canvas, (parts.filePath = path.join(this.OUTPUT_PATH, name + '.png'))))
       .catch(() => {
         return Promise.reject('The required image fragments are missing.')
       })
@@ -390,7 +389,7 @@ class NFD {
     } else {
       // Check for the existence of the image in the cache, if it doesn't exist, make it.
 
-      this.ensureImageExists(nfd.filename, nfd.code)
+      this.ensureImageExists(nfd.filename, nfd.name, nfd.code)
         .then(() => {
           const imageAttachment = new MessageAttachment(nfd.filename)
           const embed = new MessageEmbed()
