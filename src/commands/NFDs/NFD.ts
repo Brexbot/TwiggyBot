@@ -177,7 +177,6 @@ class NFD {
 
     if (collection.length > this.MAXIMUM_MINT_ATTEMPTS) {
       toShow = collection.slice(0, this.MAXIMUM_MINT_ATTEMPTS)
-      console.log(toShow.length)
       remainder = collection.length - this.MAXIMUM_MINT_ATTEMPTS
     } else {
       toShow = collection
@@ -194,23 +193,26 @@ class NFD {
       ostr += '.'
     }
 
-    const imageAttachment = new MessageAttachment(toShow[0].filename)
-    const embed = new MessageEmbed()
-      .setColor(this.NFD_COLOR)
-      .setAuthor({
-        name: ownerMember.nickname ?? ownerMember.user.username,
-        iconURL: ownerMember.user.avatarURL() ?? undefined,
-      })
-      .setTitle(ownerName + "'s collection")
-      .setImage(`attachment://${toShow[0].name}.png`)
-      .setFooter({ text: `${ownerName} owns ${collection.length} NFDs. 💎🙌` })
-      // .setDescription(ostr)
-      .addField(fieldTitle, ostr, true)
+    this.ensureImageExists(toShow[0].filename, toShow[0].name, toShow[0].code).then((fileName) => {
+      console.log(fileName)
+      const imageAttachment = new MessageAttachment(fileName)
+      const embed = new MessageEmbed()
+        .setColor(this.NFD_COLOR)
+        .setAuthor({
+          name: ownerMember.nickname ?? ownerMember.user.username,
+          iconURL: ownerMember.user.avatarURL() ?? undefined,
+        })
+        .setTitle(ownerName + "'s collection")
+        .setImage(`attachment://${path.basename(fileName)}`)
+        .setFooter({ text: `${ownerName} owns ${collection.length} NFDs. 💎🙌` })
+        // .setDescription(ostr)
+        .addField(fieldTitle, ostr, true)
 
-    return interaction.reply({
-      embeds: [embed],
-      files: [imageAttachment],
-      ephemeral: silent,
+      return interaction.reply({
+        embeds: [embed],
+        files: [imageAttachment],
+        ephemeral: silent,
+      })
     })
   }
 
@@ -400,7 +402,7 @@ class NFD {
             // .setFooter({ text: `Minted on ${nfd.mintDate.toLocaleDateString()} at ${nfd.mintDate.toLocaleTimeString()}` })
             // Showing minting time as a field is better as it allows local timezone conversion,
             // even if the filed name thing looks ugly
-            .addField('Minted:', `<t:${nfd.mintDate.getTime()}>`, true)
+            .setDescription(`**Minted:** <t:${Math.round(nfd.mintDate.getTime() / 1000)}>`)
           return interaction.reply({
             embeds: [embed],
             files: [imageAttachment],
