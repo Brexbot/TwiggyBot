@@ -23,7 +23,7 @@ type BodyParts = {
 @SlashGroup('nfd')
 @injectable()
 class NFD {
-  private MINT_COOLDOWN = 60 * 60 * 24
+  private MINT_COOLDOWN = 1000 * 60 * 60 * 23
 
   private MAXIMUM_MINT_ATTEMPTS = 10
 
@@ -78,6 +78,16 @@ class NFD {
     // If we got this far then we are all set to mint.
     const ownerRecordPrev = await this.getUserFromDB(ownerMember.id)
     console.log('Has minted: ', ownerRecordPrev.mintCount, 'times')
+
+    // Check for the cooldowns
+    if (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN > Date.now()) {
+      return interaction.reply({
+        content: `Don't be greedy! You can mint again <t:${Math.round(
+          (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN) / 1000
+        )}:R>.`,
+        ephemeral: true,
+      })
+    }
 
     this.composeNFD(parts)
       .then((canvas) => {
@@ -337,6 +347,8 @@ class NFD {
       },
       data: {
         mintCount: { increment: 1 },
+        successfulMints: { increment: 1 },
+        lastMint: new Date(),
       },
     })
   }
