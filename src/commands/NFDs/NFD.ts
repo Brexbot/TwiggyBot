@@ -134,12 +134,10 @@ class NFD {
   ) {
     const nfd = await this.getNFDByName(name)
     if (!nfd) {
-      interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
-      return
+      return interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
     }
     if (!interaction.guild) {
-      interaction.reply({ content: 'The dinochain is broken. The guild is missing :(', ephemeral: true })
-      return
+      return interaction.reply({ content: 'The dinochain is broken. The guild is missing :(', ephemeral: true })
     }
     const owner = interaction.guild.members.cache.get(nfd.owner)
 
@@ -241,6 +239,56 @@ class NFD {
     })
   }
 
+  @Slash('gift', { description: 'Gift your NFD to another chatter. How kind.' })
+  async gift(
+    @SlashOption('name', { type: 'STRING', description: 'The name of the NFD to be gifted.', required: true })
+    @SlashOption('recipient', {
+      type: 'STRING',
+      description: 'The ID of the chatter to receive the NFD.',
+      required: true,
+    })
+    name: string,
+    recipient: string,
+    interaction: CommandInteraction
+  ) {
+    // First confirm the recipient exists
+    if (!interaction.guild) {
+      return interaction.reply({ content: 'The dinochain is broken. The guild is missing :(', ephemeral: true })
+    }
+    const recipientUser = interaction.guild.members.cache.get(recipient)
+    if (!recipientUser) {
+      return interaction.reply({ content: "I can't find that user in this server.", ephemeral: true })
+    }
+    if (recipientUser.id == interaction.user.id) {
+      return interaction.reply({ content: "You can't gift something to yourself.", ephemeral: true })
+    }
+
+    // Now confirm the NFD exists
+    const nfd = await this.getNFDByName(name)
+    if (!nfd) {
+      return interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
+    }
+
+    // Confirm that the caller owns the NFD
+    if (nfd.owner != interaction.user.id) {
+      return interaction.reply({ content: "You can't gift something you don't own!", ephemeral: true })
+    }
+
+    // All checks have passed. Carry out the change of owner.
+    const ownerList = nfd.previousOwners + `,<@${recipientUser.id}>`
+    await this.client.nFDItem.update({
+      where: {
+        name: nfd.name,
+      },
+      data: {
+        previousOwners: ownerList,
+        owner: recipientUser.id,
+      },
+    })
+
+    return interaction.reply({ content: `${interaction.user} gifted ${nfd.name} to ${recipientUser}! How kind!` })
+  }
+
   private getParts(): BodyParts {
     const imageList = fs.readdirSync(this.FRAGMENT_PATH)
     const bodyList = imageList.filter((filename) => filename.includes('_b.png'))
@@ -311,6 +359,7 @@ class NFD {
         filename: parts.filePath,
         owner: owner.id,
         mintDate: new Date(),
+        previousOwners: `<@${owner.id}>`,
       },
     })
     return Promise.resolve(entry)
@@ -439,7 +488,7 @@ class NFD {
             .setAuthor({ name: owner.nickname ?? owner.user.username, iconURL: owner.user.avatarURL() ?? undefined })
             .setTitle(nfdName)
             .setImage(`attachment://${nfdName}.png`)
-            // .setFooter({ text: `Minted on ${nfd.mintDate.toLocaleDateString()} at ${nfd.mintDate.toLocaleTimeString()}` })
+            .setFooter({ text: `${nfd.name} has been traded ${nfd.previousOwners.split(',').length - 1} times.` })
             // Showing minting time as a field is better as it allows local timezone conversion,
             // even if the filed name thing looks ugly
             .setDescription(`**Minted:** <t:${Math.round(nfd.mintDate.getTime() / 1000)}>`)
