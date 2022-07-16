@@ -200,6 +200,11 @@ class NFD {
 
     collection = shuffleArray(collection)
 
+    let totalValue = 0
+    for (let i = 0; i < collection.length; i++) {
+      totalValue += this.getNFDPrice(collection[i])
+    }
+
     let toShow: NFDItem[]
     let remainder: number
 
@@ -211,8 +216,6 @@ class NFD {
       remainder = 0
     }
 
-    // let ostr = ownerName + ' owns: ' + collection.map((x) => x.name).join(', ')
-    const fieldTitle = ownerName + ' owns: '
     let ostr = toShow.map((x) => x.name).join(', ')
 
     if (remainder > 1) {
@@ -234,7 +237,7 @@ class NFD {
         })
         .setTitle(ownerName + "'s collection")
         .setImage(`attachment://${path.basename(validatedFilename)}`)
-        .setFooter({ text: `${ownerName} owns ${collection.length} NFDs. 💎🙌` })
+        .setFooter({ text: `${ownerName} owns ${collection.length} NFDs worth \$${totalValue} in total. 💎🙌` })
         .setDescription(ostr)
 
       return interaction.reply({
@@ -540,6 +543,10 @@ class NFD {
     return { body: parts[0], mouth: parts[1], eyes: parts[2], code: code }
   }
 
+  private getNFDPrice(nfd: NFDItem) {
+    return 2 ** Math.min(nfd.previousOwners.split(',').length - 1, this.MAX_NFD_PRICE_EXPONENT)
+  }
+
   private async ensureImageExists(filename: string, name: string, code: string) {
     // If the file exists, easy just return the name
     if (fs.existsSync(filename)) {
@@ -579,9 +586,7 @@ class NFD {
             .setTitle(nfdName)
             .setImage(`attachment://${path.basename(validatedFilename)}`)
             .setFooter({
-              text: `${nfd.name} is worth \$${
-                2 ** Math.min(nfd.previousOwners.split(',').length - 1, this.MAX_NFD_PRICE_EXPONENT)
-              }!`,
+              text: `${nfd.name} is worth \$${this.getNFDPrice(nfd)}!`,
             })
             // Showing minting time as a field is better as it allows local timezone conversion,
             // even if the filed name thing looks ugly
