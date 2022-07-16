@@ -68,6 +68,10 @@ model NFDItem {
 }
 
 model NFDEnjoyer {
-  id            String    @id @unique
-  mintCount     Int       @default(0)
+  id                String    @id @unique
+  mintCount         Int       @default(0)
+  lastMint          DateTime  @default(dbgenerated("0"))
+  consecutiveFails  Int       @default(0)
+  successfulMints   Int       @default(0)
+  failedMints       Int       @default(0)
 }
