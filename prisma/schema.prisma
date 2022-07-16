@@ -60,11 +60,12 @@ model RPGCharacter {
 }
 
 model NFDItem {
-  name          String    @id @unique
-  code          String    @unique
-  filename      String    @unique
-  owner         String
-  mintDate      DateTime  @default(dbgenerated("0"))
+  name            String    @id @unique
+  code            String    @unique
+  filename        String    @unique
+  owner           String
+  mintDate        DateTime  @default(dbgenerated("0"))
+  previousOwners  String    @default("")
 }
 
 model NFDEnjoyer {
