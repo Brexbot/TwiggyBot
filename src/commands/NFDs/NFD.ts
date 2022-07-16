@@ -26,9 +26,11 @@ class NFD {
   // private MINT_COOLDOWN = 1000 * 60 * 60 * 23
   private MINT_COOLDOWN = 1000
   private GIFT_COOLDOWN = 1000 * 60
+  private RENAME_COOLDOWN = 1000 * 60
 
   private MAXIMUM_MINT_ATTEMPTS = 10
 
+  private MIN_NFD_NAME_LENGTH = 6
   private MAX_NFD_NAME_LENGTH = 15
 
   private MAX_NFD_PRICE_EXPONENT = 30
@@ -50,6 +52,17 @@ class NFD {
     const ownerMember = getCallerFromCommand(interaction)
     if (!ownerMember) {
       return interaction.reply({ content: 'User undefined X(', ephemeral: true })
+    }
+
+    // Check for the cooldowns
+    const ownerRecordPrev = await this.getUserFromDB(ownerMember.id)
+    if (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN > Date.now()) {
+      return interaction.reply({
+        content: `Don't be greedy! You can mint again <t:${Math.round(
+          (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN) / 1000
+        )}:R>.`,
+        ephemeral: true,
+      })
     }
 
     do {
@@ -82,19 +95,6 @@ class NFD {
     }
 
     // If we got this far then we are all set to mint.
-    const ownerRecordPrev = await this.getUserFromDB(ownerMember.id)
-    console.log('Has minted: ', ownerRecordPrev.mintCount, 'times')
-
-    // Check for the cooldowns
-    if (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN > Date.now()) {
-      return interaction.reply({
-        content: `Don't be greedy! You can mint again <t:${Math.round(
-          (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN) / 1000
-        )}:R>.`,
-        ephemeral: true,
-      })
-    }
-
     // Roll the mint check
     const res = roll_dy_x_TimesPick_z(4, 1, 1)
     if (res <= 3 - ownerRecordPrev.consecutiveFails) {
@@ -323,10 +323,31 @@ class NFD {
     replacement: string,
     interaction: CommandInteraction
   ) {
-    // Sanity check the new name
-    if (replacement.length > this.MAXIMUM_MINT_ATTEMPTS) {
+    // Sanity check the new name. Only alphanumeric characters allowed
+    if (
+      replacement.length < this.MIN_NFD_NAME_LENGTH ||
+      replacement.length > this.MAX_NFD_NAME_LENGTH ||
+      replacement.match(/[^a-zA-Z0-9]/g)
+    ) {
       return interaction.reply({
-        content: `That name is too long. Names must be < ${this.MAX_NFD_NAME_LENGTH}`,
+        content: `That name is bad. Names must be ${this.MIN_NFD_NAME_LENGTH}-${this.MAX_NFD_NAME_LENGTH} alphanumeric characters.`,
+        ephemeral: true,
+      })
+    }
+
+    // Check the user's cooldowns.
+    const user = await this.client.nFDEnjoyer.findUnique({ where: { id: interaction.user.id } })
+    if (!user) {
+      return interaction.reply({
+        content: "It seems you don't exist in the database. Try minting something first!",
+        ephemeral: true,
+      })
+    }
+    if (user.lastRename.getTime() + this.RENAME_COOLDOWN > Date.now()) {
+      return interaction.reply({
+        content: `Please wait. You can rename again <t:${Math.round(
+          (user.lastRename.getTime() + this.RENAME_COOLDOWN) / 1000
+        )}:R>.`,
         ephemeral: true,
       })
     }
@@ -359,6 +380,15 @@ class NFD {
       },
       data: {
         name: replacement,
+      },
+    })
+
+    await this.client.nFDEnjoyer.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        lastRename: new Date(),
       },
     })
 
