@@ -25,9 +25,13 @@ type BodyParts = {
 class NFD {
   // private MINT_COOLDOWN = 1000 * 60 * 60 * 23
   private MINT_COOLDOWN = 1000
-  private GIFT_COOLDOWN = 1000 * 60 * 60
+  private GIFT_COOLDOWN = 1000 * 60
 
   private MAXIMUM_MINT_ATTEMPTS = 10
+
+  private MAX_NFD_NAME_LENGTH = 15
+
+  private MAX_NFD_PRICE_EXPONENT = 30
 
   private FRAGMENT_PATH = path.join(__dirname, 'fragments')
   private OUTPUT_PATH = path.join(__dirname, 'images')
@@ -217,9 +221,11 @@ class NFD {
       ostr += '.'
     }
 
-    this.ensureImageExists(toShow[0].filename, toShow[0].name, toShow[0].code).then((fileName) => {
-      console.log(fileName)
-      const imageAttachment = new MessageAttachment(fileName)
+    this.ensureImageExists(toShow[0].filename, toShow[0].name, toShow[0].code).then((validatedFilename) => {
+      if (!validatedFilename) {
+        return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
+      }
+      const imageAttachment = new MessageAttachment(validatedFilename)
       const embed = new MessageEmbed()
         .setColor(this.NFD_COLOR)
         .setAuthor({
@@ -227,10 +233,9 @@ class NFD {
           iconURL: ownerMember.user.avatarURL() ?? undefined,
         })
         .setTitle(ownerName + "'s collection")
-        .setImage(`attachment://${path.basename(fileName)}`)
+        .setImage(`attachment://${path.basename(validatedFilename)}`)
         .setFooter({ text: `${ownerName} owns ${collection.length} NFDs. 💎🙌` })
-        // .setDescription(ostr)
-        .addField(fieldTitle, ostr, true)
+        .setDescription(ostr)
 
       return interaction.reply({
         embeds: [embed],
@@ -305,6 +310,56 @@ class NFD {
     await this.updateDBsuccessfulGift(interaction.user.id)
 
     return interaction.reply({ content: `${interaction.user} gifted ${nfd.name} to ${recipientUser}! How kind!` })
+  }
+
+  @Slash('rename', { description: 'Give your NFD a better name' })
+  async rename(
+    @SlashOption('name', { type: 'STRING', required: true, description: 'The *existing* name for the NFD.' })
+    @SlashOption('replacement', { type: 'STRING', required: true, description: 'The *new* name for the NFD.' })
+    name: string,
+    replacement: string,
+    interaction: CommandInteraction
+  ) {
+    // Sanity check the new name
+    if (replacement.length > this.MAXIMUM_MINT_ATTEMPTS) {
+      return interaction.reply({
+        content: `That name is too long. Names must be < ${this.MAX_NFD_NAME_LENGTH}`,
+        ephemeral: true,
+      })
+    }
+
+    // Confirm the NFD exists
+    const nfd = await this.getNFDByName(name)
+    if (!nfd) {
+      return interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
+    }
+
+    // Confirm that the caller owns the NFD
+    if (nfd.owner != interaction.user.id) {
+      return interaction.reply({ content: "You can't rename something you don't own!", ephemeral: true })
+    }
+
+    // Confirm that no NFD already exists with that name
+    const existing = await this.client.nFDItem.findUnique({
+      where: {
+        name: replacement,
+      },
+    })
+    if (existing) {
+      return interaction.reply({ content: 'An NFD already exists with that name.', ephemeral: true })
+    }
+
+    // All checks passed, update the record and announce it.
+    await this.client.nFDItem.update({
+      where: {
+        name: name,
+      },
+      data: {
+        name: replacement,
+      },
+    })
+
+    return interaction.reply({ content: `${interaction.user} renamed **${name}** to **${replacement}**!` })
   }
 
   private getParts(): BodyParts {
@@ -493,16 +548,19 @@ class NFD {
 
     const parts = this.codeToParts(code)
 
-    return this.composeNFD(parts)
+    return await this.composeNFD(parts)
       .then((canvas) => this.saveNFD(canvas, (parts.filePath = path.join(this.OUTPUT_PATH, name + '.png'))))
+      .then(() => {
+        this.client.nFDItem.update({ where: { name: name }, data: { filename: parts.filePath } })
+        return Promise.resolve(parts.filePath)
+      })
       .catch(() => {
         return Promise.reject('The required image fragments are missing.')
       })
   }
 
   private makeReply(nfd: NFDItem, interaction: CommandInteraction, owner: GuildMember, ephemeral = false) {
-    const nfdName = path.basename(nfd.filename).replace('.png', '')
-    const time = new Date()
+    const nfdName = nfd.name
 
     if (!owner) {
       return interaction.reply({ content: 'Username undefined' + nfd.filename, ephemeral: true })
@@ -510,14 +568,21 @@ class NFD {
       // Check for the existence of the image in the cache, if it doesn't exist, make it.
 
       this.ensureImageExists(nfd.filename, nfd.name, nfd.code)
-        .then(() => {
-          const imageAttachment = new MessageAttachment(nfd.filename)
+        .then((validatedFilename) => {
+          if (!validatedFilename) {
+            return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
+          }
+          const imageAttachment = new MessageAttachment(validatedFilename)
           const embed = new MessageEmbed()
             .setColor(this.NFD_COLOR)
             .setAuthor({ name: owner.nickname ?? owner.user.username, iconURL: owner.user.avatarURL() ?? undefined })
             .setTitle(nfdName)
-            .setImage(`attachment://${nfdName}.png`)
-            .setFooter({ text: `${nfd.name} has been traded ${nfd.previousOwners.split(',').length - 1} times.` })
+            .setImage(`attachment://${path.basename(validatedFilename)}`)
+            .setFooter({
+              text: `${nfd.name} is worth \$${
+                2 ** Math.min(nfd.previousOwners.split(',').length - 1, this.MAX_NFD_PRICE_EXPONENT)
+              }!`,
+            })
             // Showing minting time as a field is better as it allows local timezone conversion,
             // even if the filed name thing looks ugly
             .setDescription(`**Minted:** <t:${Math.round(nfd.mintDate.getTime() / 1000)}>`)
