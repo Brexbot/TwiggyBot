@@ -1,5 +1,5 @@
 import { Canvas, createCanvas, loadImage } from 'canvas'
-import { cyrb53, getRandomElement, shuffleArray } from '../../commands/RPG/util'
+import { cyrb53, getRandomElement, roll_dy_x_TimesPick_z, shuffleArray } from '../../commands/RPG/util'
 import * as fs from 'fs'
 import * as path from 'path'
 import { Collection, CommandInteraction, GuildMember, MessageAttachment, MessageEmbed, User } from 'discord.js'
@@ -23,7 +23,8 @@ type BodyParts = {
 @SlashGroup('nfd')
 @injectable()
 class NFD {
-  private MINT_COOLDOWN = 1000 * 60 * 60 * 23
+  // private MINT_COOLDOWN = 1000 * 60 * 60 * 23
+  private MINT_COOLDOWN = 1000
 
   private MAXIMUM_MINT_ATTEMPTS = 10
 
@@ -89,6 +90,20 @@ class NFD {
       })
     }
 
+    // Roll the mint check
+    const res = roll_dy_x_TimesPick_z(4, 1, 1)
+    if (res <= 3 - ownerRecordPrev.consecutiveFails) {
+      this.updateDBfailedMint(ownerMember.id)
+      const nextMint = Math.round((Date.now() + this.MINT_COOLDOWN) / 1000)
+      const numbers = ['1st', '2nd', '3rd', '4th'] // Should never get to 4th
+      return interaction.reply({
+        content: `You failed to mint for the ${
+          numbers[ownerRecordPrev.consecutiveFails]
+        } time, better luck next time. You can try again <t:${nextMint}:R>`,
+      })
+    }
+
+    // mint was successful!
     this.composeNFD(parts)
       .then((canvas) => {
         return this.saveNFD(canvas, (parts.filePath = path.join(this.OUTPUT_PATH, parts.name + '.png')))
@@ -348,6 +363,19 @@ class NFD {
       data: {
         mintCount: { increment: 1 },
         successfulMints: { increment: 1 },
+        lastMint: new Date(),
+        consecutiveFails: 0,
+      },
+    })
+  }
+
+  private async updateDBfailedMint(userId: string) {
+    return await this.client.nFDEnjoyer.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        consecutiveFails: { increment: 1 },
         lastMint: new Date(),
       },
     })
