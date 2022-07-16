@@ -25,6 +25,7 @@ type BodyParts = {
 class NFD {
   // private MINT_COOLDOWN = 1000 * 60 * 60 * 23
   private MINT_COOLDOWN = 1000
+  private GIFT_COOLDOWN = 1000 * 60 * 60
 
   private MAXIMUM_MINT_ATTEMPTS = 10
 
@@ -198,9 +199,9 @@ class NFD {
     let toShow: NFDItem[]
     let remainder: number
 
-    if (collection.length > this.MAXIMUM_MINT_ATTEMPTS) {
-      toShow = collection.slice(0, this.MAXIMUM_MINT_ATTEMPTS)
-      remainder = collection.length - this.MAXIMUM_MINT_ATTEMPTS
+    if (collection.length > this.MAX_NFD_LISTED) {
+      toShow = collection.slice(0, this.MAX_NFD_LISTED)
+      remainder = collection.length - this.MAX_NFD_LISTED
     } else {
       toShow = collection
       remainder = 0
@@ -251,6 +252,21 @@ class NFD {
     recipient: string,
     interaction: CommandInteraction
   ) {
+    // Confirm the caller isn't on cooldown
+    const caller = await this.client.nFDEnjoyer.findUnique({ where: { id: interaction.user.id } })
+    if (!caller) {
+      return interaction.reply({ content: 'The dinochain is broken. The calling user is missing :(', ephemeral: true })
+    }
+    console.log('attempt:', caller.lastGiftGiven.getTime() + this.GIFT_COOLDOWN, Date.now())
+    if (caller.lastGiftGiven.getTime() + this.GIFT_COOLDOWN > Date.now()) {
+      return interaction.reply({
+        content: `You're gifting too often. You can gift again in <t:${Math.round(
+          (caller.lastGiftGiven.getTime() + this.GIFT_COOLDOWN) / 1000
+        )}:R>.`,
+        ephemeral: true,
+      })
+    }
+
     // First confirm the recipient exists
     if (!interaction.guild) {
       return interaction.reply({ content: 'The dinochain is broken. The guild is missing :(', ephemeral: true })
@@ -285,6 +301,8 @@ class NFD {
         owner: recipientUser.id,
       },
     })
+
+    await this.updateDBsuccessfulGift(interaction.user.id)
 
     return interaction.reply({ content: `${interaction.user} gifted ${nfd.name} to ${recipientUser}! How kind!` })
   }
@@ -426,6 +444,17 @@ class NFD {
       data: {
         consecutiveFails: { increment: 1 },
         lastMint: new Date(),
+      },
+    })
+  }
+
+  private async updateDBsuccessfulGift(userId: string) {
+    return await this.client.nFDEnjoyer.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        lastGiftGiven: new Date(),
       },
     })
   }

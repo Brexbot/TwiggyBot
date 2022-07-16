@@ -72,6 +72,7 @@ model NFDEnjoyer {
   id                String    @id @unique
   mintCount         Int       @default(0)
   lastMint          DateTime  @default(dbgenerated("0"))
+  lastGiftGiven     DateTime  @default(dbgenerated("0"))
   consecutiveFails  Int       @default(0)
   successfulMints   Int       @default(0)
   failedMints       Int       @default(0)
