@@ -20,7 +20,7 @@ type BodyParts = {
 
 @Discord()
 @SlashGroup({ name: 'nfd', description: 'Take part in the non-fungible dino economy' })
-@SlashGroup('nfd')
+@SlashGroup({ name: 'mod', description: 'Moderator only commands', root: 'nfd' })
 @injectable()
 class NFD {
   // private MINT_COOLDOWN = 1000 * 60 * 60 * 23
@@ -43,8 +43,8 @@ class NFD {
   private NFD_COLOR = 0xffbf00
 
   public constructor(private client: ORM) {}
-
   @Slash('mint', { description: 'Mint a new NFD' })
+  @SlashGroup('nfd')
   async mint(interaction: CommandInteraction) {
     let i = 0
     let parts: BodyParts
@@ -130,6 +130,7 @@ class NFD {
   }
 
   @Slash('view', { description: 'View an existing NFD.' })
+  @SlashGroup('nfd')
   async view(
     @SlashOption('name', { type: 'STRING', required: true })
     @SlashOption('silent', { type: 'STRING', required: false })
@@ -155,6 +156,7 @@ class NFD {
   }
 
   @Slash('collection', { description: "view a fellow NFD enjoyer's collection" })
+  @SlashGroup('nfd')
   async colleciton(
     @SlashOption('owner', {
       type: 'STRING',
@@ -249,6 +251,7 @@ class NFD {
   }
 
   @Slash('gift', { description: 'Gift your NFD to another chatter. How kind.' })
+  @SlashGroup('nfd')
   async gift(
     @SlashOption('name', { type: 'STRING', description: 'The name of the NFD to be gifted.', required: true })
     @SlashOption('recipient', {
@@ -316,6 +319,7 @@ class NFD {
   }
 
   @Slash('rename', { description: 'Give your NFD a better name' })
+  @SlashGroup('nfd')
   async rename(
     @SlashOption('name', { type: 'STRING', required: true, description: 'The *existing* name for the NFD.' })
     @SlashOption('replacement', { type: 'STRING', required: true, description: 'The *new* name for the NFD.' })
@@ -636,5 +640,21 @@ class NFD {
           })
         })
     }
+  }
+
+  // ==================
+  // MODERATOR BASEMENT
+  // ==================
+
+  @Slash('purge', { description: 'Remove an NFD from the database.' })
+  @SlashGroup('mod', 'nfd')
+  async purge(interaction: CommandInteraction) {
+    interaction.reply({ content: 'pong' })
+  }
+
+  @Slash('cooldown', { description: 'Reset either mint, gift, or rename cooldown.' })
+  @SlashGroup('mod', 'nfd')
+  async cooldown(interaction: CommandInteraction) {
+    interaction.reply({ content: 'cooldown pong' })
   }
 }
