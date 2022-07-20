@@ -8,6 +8,7 @@ import { getCallerFromCommand } from '../../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
 import { NFDItem } from '../../../prisma/generated/prisma-client-js'
+import { PermissionSuperUserOnly } from '../../guards/RoleChecks'
 
 type BodyParts = {
   body: string
@@ -648,12 +649,29 @@ class NFD {
 
   @Slash('purge', { description: 'Remove an NFD from the database.' })
   @SlashGroup('mod', 'nfd')
-  async purge(interaction: CommandInteraction) {
-    interaction.reply({ content: 'pong' })
+  @PermissionSuperUserOnly
+  async purge(
+    @SlashOption('name', { type: 'STRING', required: true })
+    name: string,
+    interaction: CommandInteraction
+  ) {
+    const nfd = await this.getNFDByName(name)
+    if (!nfd) {
+      return interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
+    }
+
+    await this.client.nFDItem.delete({
+      where: {
+        name: nfd.name,
+      },
+    })
+
+    return interaction.reply({ content: `${nfd.name} has been deleted from the database.` })
   }
 
   @Slash('cooldown', { description: 'Reset either mint, gift, or rename cooldown.' })
   @SlashGroup('mod', 'nfd')
+  @PermissionSuperUserOnly
   async cooldown(interaction: CommandInteraction) {
     interaction.reply({ content: 'cooldown pong' })
   }
