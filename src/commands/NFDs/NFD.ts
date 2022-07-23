@@ -582,16 +582,16 @@ class NFD {
     return 2 ** Math.min(nfd.previousOwners.split(',').length - 1, this.MAX_NFD_PRICE_EXPONENT)
   }
 
-  private async ensureImageExists(filename: string, name: string, code: string) {
+  private async ensureImageExists(filePath: string, name: string, code: string) {
     // If the file exists, easy just return the name
-    if (fs.existsSync(filename)) {
-      return filename
+    if (fs.existsSync(filePath)) {
+      return filePath
     }
 
     const parts = this.codeToParts(code)
 
     return await this.composeNFD(parts)
-      .then((canvas) => this.saveNFD(canvas, (parts.filePath = path.join(this.OUTPUT_PATH, name + '.png'))))
+      .then((canvas) => this.saveNFD(canvas, (parts.filePath = filePath)))
       .then(() => {
         this.client.nFDItem.update({ where: { name: name }, data: { filename: parts.filePath } })
         return Promise.resolve(parts.filePath)
