@@ -25,10 +25,9 @@ type BodyParts = {
 @SlashGroup({ name: 'mod', description: 'Moderator only commands', root: 'nfd' })
 @injectable()
 class NFD {
-  // private MINT_COOLDOWN = 1000 * 60 * 60 * 23
-  private MINT_COOLDOWN = 1000 * 60
-  private GIFT_COOLDOWN = 1000 * 60
-  private RENAME_COOLDOWN = 1000 * 60
+  private MINT_COOLDOWN = 1000 * 60 * 60 * 23
+  private GIFT_COOLDOWN = 1000 * 60 * 60
+  private RENAME_COOLDOWN = 1000 * 60 * 60
 
   private MAXIMUM_MINT_ATTEMPTS = 10
 
@@ -44,7 +43,18 @@ class NFD {
 
   private NFD_COLOR = 0xffbf00
 
-  public constructor(private client: ORM) {}
+  public constructor(private client: ORM) {
+    // Check for the existence of the required directories
+    if (!fs.existsSync(this.FRAGMENT_PATH)) {
+      console.error(this.FRAGMENT_PATH + ' was missing, NFDs will not work!')
+    }
+
+    if (!fs.existsSync(this.OUTPUT_PATH)) {
+      fs.mkdirSync(this.OUTPUT_PATH)
+      console.log(this.OUTPUT_PATH + ' did not exist so I created it.')
+    }
+  }
+
   @Slash('mint', { description: 'Mint a new NFD' })
   @SlashGroup('nfd')
   async mint(interaction: CommandInteraction) {
