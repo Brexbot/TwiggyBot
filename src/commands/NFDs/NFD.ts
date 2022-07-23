@@ -2,7 +2,7 @@ import { Canvas, createCanvas, loadImage } from 'canvas'
 import { cyrb53, getRandomElement, roll_dy_x_TimesPick_z, shuffleArray } from '../../commands/RPG/util'
 import * as fs from 'fs'
 import * as path from 'path'
-import { Collection, CommandInteraction, GuildMember, MessageAttachment, MessageEmbed, User } from 'discord.js'
+import { Collection, CommandInteraction, Guild, GuildMember, MessageAttachment, MessageEmbed, User } from 'discord.js'
 import { Discord, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
 import { injectable } from 'tsyringe'
@@ -161,12 +161,12 @@ class NFD {
   @SlashGroup('nfd')
   async colleciton(
     @SlashOption('owner', {
-      type: 'STRING',
+      type: 'USER',
       required: false,
       description: "The person who's collection you want to see",
     })
     @SlashOption('silent', { type: 'BOOLEAN', required: false })
-    owner: string,
+    owner: GuildMember,
     silent = true,
     interaction: CommandInteraction
   ) {
@@ -182,17 +182,13 @@ class NFD {
           ephemeral: true,
         })
       }
-      owner = caller.id
+      owner = caller
     }
 
-    const ownerMember = interaction.guild.members.cache.get(owner)
-    if (!ownerMember) {
-      return interaction.reply({ content: 'Member ' + owner + " couldn't be found in the guild", ephemeral: true })
-    }
-    const ownerName = ownerMember.nickname ?? ownerMember.user.username
+    const ownerName = owner.nickname ?? owner.user.username
 
     let collection = await this.client.nFDItem.findMany({
-      where: { owner: owner },
+      where: { owner: owner.id },
     })
 
     if (collection.length == 0) {
@@ -236,8 +232,8 @@ class NFD {
       const embed = new MessageEmbed()
         .setColor(this.NFD_COLOR)
         .setAuthor({
-          name: ownerMember.nickname ?? ownerMember.user.username,
-          iconURL: ownerMember.user.avatarURL() ?? undefined,
+          name: ownerName,
+          iconURL: owner.user.avatarURL() ?? undefined,
         })
         .setTitle(ownerName + "'s collection")
         .setImage(`attachment://${path.basename(validatedFilename)}`)
