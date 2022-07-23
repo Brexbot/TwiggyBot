@@ -3,12 +3,13 @@ import { cyrb53, getRandomElement, roll_dy_x_TimesPick_z, shuffleArray } from '.
 import * as fs from 'fs'
 import * as path from 'path'
 import { Collection, CommandInteraction, GuildMember, MessageAttachment, MessageEmbed, User } from 'discord.js'
-import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
+import { Discord, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
 import { NFDItem } from '../../../prisma/generated/prisma-client-js'
 import { PermissionSuperUserOnly } from '../../guards/RoleChecks'
+import { userInfo } from 'os'
 
 type BodyParts = {
   body: string
@@ -25,7 +26,7 @@ type BodyParts = {
 @injectable()
 class NFD {
   // private MINT_COOLDOWN = 1000 * 60 * 60 * 23
-  private MINT_COOLDOWN = 1000
+  private MINT_COOLDOWN = 1000 * 60
   private GIFT_COOLDOWN = 1000 * 60
   private RENAME_COOLDOWN = 1000 * 60
 
@@ -672,7 +673,81 @@ class NFD {
   @Slash('cooldown', { description: 'Reset either mint, gift, or rename cooldown.' })
   @SlashGroup('mod', 'nfd')
   @PermissionSuperUserOnly
-  async cooldown(interaction: CommandInteraction) {
-    interaction.reply({ content: 'cooldown pong' })
+  async cooldown(
+    @SlashOption('chatter', {
+      type: 'USER',
+      required: true,
+      description: "The chatter who's cooldowns should be reset",
+    })
+    chatter: User | GuildMember,
+    @SlashOption('cooldown', {
+      type: 'STRING',
+      required: true,
+      description: 'Which NFD cooldown should be cooled down.',
+    })
+    @SlashChoice({ name: 'Mint', value: 'MINT' })
+    @SlashChoice({ name: 'Rename', value: 'RENAME' })
+    @SlashChoice({ name: 'Gift', value: 'GIFT' })
+    @SlashChoice({ name: 'All', value: 'ALL' })
+    cooldown: string,
+    interaction: CommandInteraction
+  ) {
+    switch (cooldown) {
+      case 'MINT':
+        await this.client.nFDEnjoyer.upsert({
+          where: {
+            id: chatter.id,
+          },
+          create: {
+            id: chatter.id,
+          },
+          update: {
+            lastMint: new Date('0'),
+          },
+        })
+        break
+      case 'RENAME':
+        await this.client.nFDEnjoyer.upsert({
+          where: {
+            id: chatter.id,
+          },
+          create: {
+            id: chatter.id,
+          },
+          update: {
+            lastRename: new Date('0'),
+          },
+        })
+        break
+      case 'GIFT':
+        await this.client.nFDEnjoyer.upsert({
+          where: {
+            id: chatter.id,
+          },
+          create: {
+            id: chatter.id,
+          },
+          update: {
+            lastGiftGiven: new Date('0'),
+          },
+        })
+        break
+      case 'ALL':
+        await this.client.nFDEnjoyer.upsert({
+          where: {
+            id: chatter.id,
+          },
+          create: {
+            id: chatter.id,
+          },
+          update: {
+            lastMint: new Date('0'),
+            lastRename: new Date('0'),
+            lastGiftGiven: new Date('0'),
+          },
+        })
+        break
+    }
+    return interaction.reply({ content: `${interaction.user} reset ${cooldown} cooldown for ${chatter}.` })
   }
 }
