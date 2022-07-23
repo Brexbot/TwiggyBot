@@ -187,6 +187,17 @@ class NFD {
 
     const ownerName = owner.nickname ?? owner.user.username
 
+    // Get (or create) the owner of the collection from the database
+    const ownerRecord = await this.client.nFDEnjoyer.upsert({
+      where: {
+        id: owner.id,
+      },
+      create: {
+        id: owner.id,
+      },
+      update: {},
+    })
+
     let collection = await this.client.nFDItem.findMany({
       where: { owner: owner.id },
     })
@@ -199,6 +210,26 @@ class NFD {
     }
 
     collection = shuffleArray(collection)
+
+    let favourite: NFDItem | undefined
+
+    console.log('pre', collection.length)
+
+    if (ownerRecord.favourite) {
+      // Pick the user's favourite out of their collection.
+      // Remains undefined if missing
+      for (let i = 0; i < collection.length; i++) {
+        if (collection[i].name == ownerRecord.favourite) {
+          favourite = collection[i]
+        }
+      }
+      // Remove the favourite from the collection.
+      collection.filter((x) => {
+        x.name == ownerRecord.favourite
+      })
+    }
+
+    console.log('post', collection.length)
 
     let totalValue = 0
     for (let i = 0; i < collection.length; i++) {
@@ -224,7 +255,10 @@ class NFD {
       ostr += '.'
     }
 
-    this.ensureImageExists(toShow[0].filename, toShow[0].name, toShow[0].code).then((validatedFilename) => {
+    // The picture in the embed should either be the favourite or the first in the list
+    const imageNFD = favourite ?? toShow[0]
+
+    this.ensureImageExists(imageNFD.filename, imageNFD.name, imageNFD.code).then((validatedFilename) => {
       if (!validatedFilename) {
         return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
       }
@@ -240,6 +274,10 @@ class NFD {
         .setFooter({ text: `${ownerName} owns ${collection.length} NFDs worth \$${totalValue} in total. 💎🙌` })
         .setDescription(ostr)
 
+      if (favourite) {
+        embed.addField('Favourite:', favourite.name, true)
+      }
+
       return interaction.reply({
         embeds: [embed],
         files: [imageAttachment],
@@ -252,14 +290,22 @@ class NFD {
   @SlashGroup('nfd')
   async gift(
     @SlashOption('nfd', { type: 'STRING', description: 'The name of the NFD to be gifted.', required: true })
+    nfd: string,
     @SlashOption('recipient', {
       type: 'USER',
       description: 'The chatter to receive the NFD.',
       required: true,
     })
+    recipient: User | GuildMember,
+    interaction: CommandInteraction
+  ) {
+    return await this.performGift(nfd, recipient, false, interaction)
+  }
+
+  private async performGift(
     nfd: string,
     recipient: User | GuildMember,
-    sudo = false,
+    sudo: boolean,
     interaction: CommandInteraction
   ) {
     // Confirm the caller isn't on cooldown (sudo overrides)
@@ -800,6 +846,6 @@ class NFD {
     interaction: CommandInteraction
   ) {
     // Call gift with sudo enabled.
-    return this.gift(nfd, recipient, true, interaction)
+    return this.performGift(nfd, recipient, true, interaction)
   }
 }
