@@ -213,8 +213,6 @@ class NFD {
 
     let favourite: NFDItem | undefined
 
-    console.log('pre', collection.length)
-
     if (ownerRecord.favourite) {
       // Pick the user's favourite out of their collection.
       // Remains undefined if missing
@@ -228,8 +226,6 @@ class NFD {
         x.name == ownerRecord.favourite
       })
     }
-
-    console.log('post', collection.length)
 
     let totalValue = 0
     for (let i = 0; i < collection.length; i++) {
@@ -317,7 +313,7 @@ class NFD {
           ephemeral: true,
         })
       }
-      console.log('attempt:', caller.lastGiftGiven.getTime() + this.GIFT_COOLDOWN, Date.now())
+
       if (caller.lastGiftGiven.getTime() + this.GIFT_COOLDOWN > Date.now()) {
         return interaction.reply({
           content: `You're gifting too often. You can gift again in <t:${Math.round(
@@ -434,12 +430,14 @@ class NFD {
       },
     })
 
+    const favourite = user.favourite == nfd.name ? replacement : user.favourite
     await this.client.nFDEnjoyer.update({
       where: {
         id: user.id,
       },
       data: {
         lastRename: new Date(),
+        favourite: favourite,
       },
     })
 
@@ -492,10 +490,6 @@ class NFD {
     const eyes = getRandomElement(eyesList)
 
     const code = `${body},${mouth},${eyes}`
-
-    console.log(`There are ${bodyList.length * mouthList.length * eyesList.length} possible NFDs`)
-
-    console.log(`picked: ${body}, ${mouth}, ${eyes}`)
 
     return { body: body, mouth: mouth, eyes: eyes, code: code }
   }
