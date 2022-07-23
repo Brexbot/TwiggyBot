@@ -55,7 +55,7 @@ class NFD {
     }
   }
 
-  @Slash('mint', { description: 'Mint a new NFD' })
+  @Slash('mint', { description: 'Attempt to mint a new NFD.' })
   @SlashGroup('nfd')
   async mint(interaction: CommandInteraction) {
     const ownerMember = getCallerFromCommand(interaction)
@@ -161,16 +161,16 @@ class NFD {
 
     const owner = interaction.guild.members.cache.get(nfd.owner)
 
-    await this.makeReply(nfd, interaction, owner, silent)
+    return this.makeReply(nfd, interaction, owner, silent)
   }
 
-  @Slash('collection', { description: "view a fellow NFD enjoyer's collection" })
+  @Slash('collection', { description: "View a fellow NFD enjoyer's collection." })
   @SlashGroup('nfd')
   async colleciton(
     @SlashOption('owner', {
       type: 'USER',
       required: false,
-      description: "The person who's collection you want to see",
+      description: "The person who's collection you want to see.",
     })
     @SlashOption('silent', { type: 'BOOLEAN', required: false })
     owner: GuildMember,
@@ -192,8 +192,6 @@ class NFD {
       owner = caller
     }
 
-    const ownerName = owner.nickname ?? owner.user.username
-
     // Get (or create) the owner of the collection from the database
     const ownerRecord = await this.client.nFDEnjoyer.upsert({
       where: {
@@ -209,6 +207,8 @@ class NFD {
       where: { owner: owner.id },
     })
 
+    const ownerName = owner.nickname ?? owner.user.username
+
     if (collection.length == 0) {
       return interaction.reply({
         content: ownerName + " doesn't own any NFDs. 🧻🙌",
@@ -217,6 +217,9 @@ class NFD {
     }
 
     collection = shuffleArray(collection)
+
+    // We want the user's favourite NFD to take pride of place in the collection
+    // so try to find it and remove it from the masses.
 
     let favourite: NFDItem | undefined
 
@@ -239,6 +242,7 @@ class NFD {
       totalValue += this.getNFDPrice(collection[i])
     }
 
+    // Truncate the output length to stop spam.
     let toShow: NFDItem[]
     let remainder: number
 
@@ -261,32 +265,36 @@ class NFD {
     // The picture in the embed should either be the favourite or the first in the list
     const imageNFD = favourite ?? toShow[0]
 
-    this.ensureImageExists(imageNFD.filename, imageNFD.name, imageNFD.code).then((validatedFilename) => {
-      if (!validatedFilename) {
-        return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
-      }
-      const imageAttachment = new MessageAttachment(validatedFilename)
-      const embed = new MessageEmbed()
-        .setColor(this.NFD_COLOR)
-        .setAuthor({
-          name: ownerName,
-          iconURL: owner.user.avatarURL() ?? undefined,
+    this.ensureImageExists(imageNFD.filename, imageNFD.name, imageNFD.code)
+      .then((validatedFilename) => {
+        if (!validatedFilename) {
+          return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
+        }
+        const imageAttachment = new MessageAttachment(validatedFilename)
+        const embed = new MessageEmbed()
+          .setColor(this.NFD_COLOR)
+          .setAuthor({
+            name: ownerName,
+            iconURL: owner.user.avatarURL() ?? undefined,
+          })
+          .setTitle(ownerName + "'s collection")
+          .setImage(`attachment://${path.basename(validatedFilename)}`)
+          .setFooter({ text: `${ownerName} owns ${collection.length} NFDs worth \$${totalValue} in total. 💎🙌` })
+          .setDescription(ostr)
+
+        if (favourite) {
+          embed.addField('Favourite:', favourite.name, true)
+        }
+
+        return interaction.reply({
+          embeds: [embed],
+          files: [imageAttachment],
+          ephemeral: silent,
         })
-        .setTitle(ownerName + "'s collection")
-        .setImage(`attachment://${path.basename(validatedFilename)}`)
-        .setFooter({ text: `${ownerName} owns ${collection.length} NFDs worth \$${totalValue} in total. 💎🙌` })
-        .setDescription(ostr)
-
-      if (favourite) {
-        embed.addField('Favourite:', favourite.name, true)
-      }
-
-      return interaction.reply({
-        embeds: [embed],
-        files: [imageAttachment],
-        ephemeral: silent,
       })
-    })
+      .catch((err) => {
+        console.error('something went very wrong in making a collection', err)
+      })
   }
 
   @Slash('gift', { description: 'Gift your NFD to another chatter. How kind.' })
@@ -305,6 +313,7 @@ class NFD {
     return await this.performGift(nfd, recipient, false, interaction)
   }
 
+  // Function that actually carries out the transaction
   private async performGift(
     nfd: string,
     recipient: User | GuildMember,
@@ -437,6 +446,7 @@ class NFD {
       },
     })
 
+    // If this was the user's favourite NFD, update the record to the new name
     const favourite = user.favourite == nfd.name ? replacement : user.favourite
     await this.client.nFDEnjoyer.update({
       where: {
@@ -451,7 +461,7 @@ class NFD {
     return interaction.reply({ content: `${interaction.user} renamed **${name}** to **${replacement}**!` })
   }
 
-  @Slash('favourite', { description: 'Set your favourited NFD to another chatter. How kind.' })
+  @Slash('favourite', { description: 'Set your favourite NFD.' })
   @SlashGroup('nfd')
   async favourite(
     @SlashOption('name', { type: 'STRING', description: 'The name of your new favourite NFD.' })
@@ -598,13 +608,20 @@ class NFD {
   }
 
   private async updateDBSuccessfulMint(userId: string) {
-    return await this.client.nFDEnjoyer.update({
+    return await this.client.nFDEnjoyer.upsert({
       where: {
         id: userId,
       },
-      data: {
+      update: {
         mintCount: { increment: 1 },
         successfulMints: { increment: 1 },
+        lastMint: new Date(),
+        consecutiveFails: 0,
+      },
+      create: {
+        id: userId,
+        mintCount: 1,
+        successfulMints: 1,
         lastMint: new Date(),
         consecutiveFails: 0,
       },
@@ -612,23 +629,32 @@ class NFD {
   }
 
   private async updateDBfailedMint(userId: string) {
-    return await this.client.nFDEnjoyer.update({
+    return await this.client.nFDEnjoyer.upsert({
       where: {
         id: userId,
       },
-      data: {
+      update: {
         consecutiveFails: { increment: 1 },
+        lastMint: new Date(),
+      },
+      create: {
+        id: userId,
+        consecutiveFails: 1,
         lastMint: new Date(),
       },
     })
   }
 
   private async updateDBsuccessfulGift(userId: string) {
-    return await this.client.nFDEnjoyer.update({
+    return await this.client.nFDEnjoyer.upsert({
       where: {
         id: userId,
       },
-      data: {
+      update: {
+        lastGiftGiven: new Date(),
+      },
+      create: {
+        id: userId,
         lastGiftGiven: new Date(),
       },
     })
@@ -660,14 +686,17 @@ class NFD {
     return { body: parts[0], mouth: parts[1], eyes: parts[2], code: code }
   }
 
-  private getNFDPrice(nfd: NFDItem) {
-    return 2 ** Math.min(nfd.previousOwners.split(',').length - 1, this.MAX_NFD_PRICE_EXPONENT)
+  private getNFDPrice(nfd: NFDItem): number {
+    // Stupid little function to make an NFD more "valuable" the more times it has been traded, with a bit of drift
+    return +(
+      2 ** Math.min(nfd.previousOwners.split(',').length - 1 + Math.random(), this.MAX_NFD_PRICE_EXPONENT)
+    ).toFixed(2)
   }
 
   private async ensureImageExists(filePath: string, name: string, code: string) {
     // If the file exists, easy just return the name
     if (fs.existsSync(filePath)) {
-      return filePath
+      return Promise.resolve(filePath)
     }
 
     const parts = this.codeToParts(code)
@@ -705,8 +734,6 @@ class NFD {
           .setFooter({
             text: `${nfd.name} is worth \$${this.getNFDPrice(nfd)}!`,
           })
-          // Showing minting time as a field is better as it allows local timezone conversion,
-          // even if the filed name thing looks ugly
           .setDescription(`**Minted:** <t:${Math.round(nfd.mintDate.getTime() / 1000)}>`)
         return interaction.reply({
           embeds: [embed],
@@ -750,7 +777,7 @@ class NFD {
     return interaction.reply({ content: `${nfd.name} has been deleted from the database.` })
   }
 
-  @Slash('cooldown', { description: 'Reset either mint, gift, or rename cooldown.' })
+  @Slash('cooldown', { description: 'Reset mint, gift, and/or rename cooldowns.' })
   @SlashGroup('mod', 'nfd')
   @PermissionSuperUserOnly
   async cooldown(
