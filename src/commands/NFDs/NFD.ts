@@ -58,9 +58,6 @@ class NFD {
   @Slash('mint', { description: 'Mint a new NFD' })
   @SlashGroup('nfd')
   async mint(interaction: CommandInteraction) {
-    let i = 0
-    let parts: BodyParts
-
     const ownerMember = getCallerFromCommand(interaction)
     if (!ownerMember) {
       return interaction.reply({ content: 'User undefined X(', ephemeral: true })
@@ -77,6 +74,9 @@ class NFD {
       })
     }
 
+    // Loop through, repeatedly trying to make an NFD that doesn't already exist yet
+    let i = 0
+    let parts: BodyParts
     do {
       parts = this.getParts()
 
@@ -150,19 +150,16 @@ class NFD {
     silent = true,
     interaction: CommandInteraction
   ) {
+    if (!interaction.guild) {
+      return interaction.reply({ content: 'The dinochain is broken. The guild is missing :(', ephemeral: true })
+    }
+
     const nfd = await this.getNFDByName(name)
     if (!nfd) {
       return interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
     }
-    if (!interaction.guild) {
-      return interaction.reply({ content: 'The dinochain is broken. The guild is missing :(', ephemeral: true })
-    }
-    const owner = interaction.guild.members.cache.get(nfd.owner)
 
-    if (!owner) {
-      // Maybe give the NDF to the viewing member in this case?
-      return interaction.reply({ content: 'It seems like the owner is no where to be found...', ephemeral: true })
-    }
+    const owner = interaction.guild.members.cache.get(nfd.owner)
 
     await this.makeReply(nfd, interaction, owner, silent)
   }
@@ -686,46 +683,45 @@ class NFD {
       })
   }
 
-  private makeReply(nfd: NFDItem, interaction: CommandInteraction, owner: GuildMember, ephemeral = false) {
+  private makeReply(nfd: NFDItem, interaction: CommandInteraction, owner: GuildMember | undefined, ephemeral = false) {
     const nfdName = nfd.name
 
-    if (!owner) {
-      return interaction.reply({ content: 'Username undefined' + nfd.filename, ephemeral: true })
-    } else {
-      // Check for the existence of the image in the cache, if it doesn't exist, make it.
+    const author = owner ? owner.nickname ?? owner.user.username : 'UNKNOWN'
+    const avatar = owner ? owner.user.avatarURL() ?? undefined : undefined
 
-      this.ensureImageExists(nfd.filename, nfd.name, nfd.code)
-        .then((validatedFilename) => {
-          if (!validatedFilename) {
-            return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
-          }
-          const imageAttachment = new MessageAttachment(validatedFilename)
-          const embed = new MessageEmbed()
-            .setColor(this.NFD_COLOR)
-            .setAuthor({ name: owner.nickname ?? owner.user.username, iconURL: owner.user.avatarURL() ?? undefined })
-            .setTitle(nfdName)
-            .setImage(`attachment://${path.basename(validatedFilename)}`)
-            .setFooter({
-              text: `${nfd.name} is worth \$${this.getNFDPrice(nfd)}!`,
-            })
-            // Showing minting time as a field is better as it allows local timezone conversion,
-            // even if the filed name thing looks ugly
-            .setDescription(`**Minted:** <t:${Math.round(nfd.mintDate.getTime() / 1000)}>`)
-          return interaction.reply({
-            embeds: [embed],
-            files: [imageAttachment],
-            ephemeral: ephemeral,
+    // Check for the existence of the image in the cache, if it doesn't exist, make it.
+
+    this.ensureImageExists(nfd.filename, nfd.name, nfd.code)
+      .then((validatedFilename) => {
+        if (!validatedFilename) {
+          return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
+        }
+        const imageAttachment = new MessageAttachment(validatedFilename)
+        const embed = new MessageEmbed()
+          .setColor(this.NFD_COLOR)
+          .setAuthor({ name: author, iconURL: avatar })
+          .setTitle(nfdName)
+          .setImage(`attachment://${path.basename(validatedFilename)}`)
+          .setFooter({
+            text: `${nfd.name} is worth \$${this.getNFDPrice(nfd)}!`,
           })
+          // Showing minting time as a field is better as it allows local timezone conversion,
+          // even if the filed name thing looks ugly
+          .setDescription(`**Minted:** <t:${Math.round(nfd.mintDate.getTime() / 1000)}>`)
+        return interaction.reply({
+          embeds: [embed],
+          files: [imageAttachment],
+          ephemeral: ephemeral,
         })
-        .catch((reason) => {
-          const err = 'Something went wrong while building the NFD: ' + reason
-          console.log(err, 'filename: ', nfd.filename, 'nfd code:', nfd.code)
-          return interaction.reply({
-            content: err,
-            ephemeral: true,
-          })
+      })
+      .catch((reason) => {
+        const err = 'Something went wrong while building the NFD: ' + reason
+        console.log(err, 'filename: ', nfd.filename, 'nfd code:', nfd.code)
+        return interaction.reply({
+          content: err,
+          ephemeral: true,
         })
-    }
+      })
   }
 
   // ==================
