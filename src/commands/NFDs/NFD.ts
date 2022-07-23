@@ -255,69 +255,72 @@ class NFD {
   @Slash('gift', { description: 'Gift your NFD to another chatter. How kind.' })
   @SlashGroup('nfd')
   async gift(
-    @SlashOption('name', { type: 'STRING', description: 'The name of the NFD to be gifted.', required: true })
+    @SlashOption('nfd', { type: 'STRING', description: 'The name of the NFD to be gifted.', required: true })
     @SlashOption('recipient', {
-      type: 'STRING',
-      description: 'The ID of the chatter to receive the NFD.',
+      type: 'USER',
+      description: 'The chatter to receive the NFD.',
       required: true,
     })
-    name: string,
-    recipient: string,
+    nfd: string,
+    recipient: User | GuildMember,
+    sudo = false,
     interaction: CommandInteraction
   ) {
-    // Confirm the caller isn't on cooldown
-    const caller = await this.client.nFDEnjoyer.findUnique({ where: { id: interaction.user.id } })
-    if (!caller) {
-      return interaction.reply({ content: 'The dinochain is broken. The calling user is missing :(', ephemeral: true })
-    }
-    console.log('attempt:', caller.lastGiftGiven.getTime() + this.GIFT_COOLDOWN, Date.now())
-    if (caller.lastGiftGiven.getTime() + this.GIFT_COOLDOWN > Date.now()) {
-      return interaction.reply({
-        content: `You're gifting too often. You can gift again in <t:${Math.round(
-          (caller.lastGiftGiven.getTime() + this.GIFT_COOLDOWN) / 1000
-        )}:R>.`,
-        ephemeral: true,
-      })
-    }
-
-    // First confirm the recipient exists
-    if (!interaction.guild) {
-      return interaction.reply({ content: 'The dinochain is broken. The guild is missing :(', ephemeral: true })
-    }
-    const recipientUser = interaction.guild.members.cache.get(recipient)
-    if (!recipientUser) {
-      return interaction.reply({ content: "I can't find that user in this server.", ephemeral: true })
-    }
-    if (recipientUser.id == interaction.user.id) {
-      return interaction.reply({ content: "You can't gift something to yourself.", ephemeral: true })
+    // Confirm the caller isn't on cooldown (sudo overrides)
+    if (!sudo) {
+      const caller = await this.client.nFDEnjoyer.findUnique({ where: { id: interaction.user.id } })
+      if (!caller) {
+        return interaction.reply({
+          content: 'The dinochain is broken. The calling user is missing :(',
+          ephemeral: true,
+        })
+      }
+      console.log('attempt:', caller.lastGiftGiven.getTime() + this.GIFT_COOLDOWN, Date.now())
+      if (caller.lastGiftGiven.getTime() + this.GIFT_COOLDOWN > Date.now()) {
+        return interaction.reply({
+          content: `You're gifting too often. You can gift again in <t:${Math.round(
+            (caller.lastGiftGiven.getTime() + this.GIFT_COOLDOWN) / 1000
+          )}:R>.`,
+          ephemeral: true,
+        })
+      }
+      // and confirm the caller isn't gifting to themselves (sudo overrides)
+      if (recipient.id == interaction.user.id) {
+        return interaction.reply({ content: "You can't gift something to yourself.", ephemeral: true })
+      }
     }
 
     // Now confirm the NFD exists
-    const nfd = await this.getNFDByName(name)
-    if (!nfd) {
+    const nfd_item = await this.getNFDByName(nfd)
+    if (!nfd_item) {
       return interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
     }
 
-    // Confirm that the caller owns the NFD
-    if (nfd.owner != interaction.user.id) {
+    // Confirm that the caller owns the NFD (sudo overrides)
+    if (nfd_item.owner != interaction.user.id && !sudo) {
       return interaction.reply({ content: "You can't gift something you don't own!", ephemeral: true })
     }
 
     // All checks have passed. Carry out the change of owner.
-    const ownerList = nfd.previousOwners + `,<@${recipientUser.id}>`
+    const ownerList = nfd_item.previousOwners + `,<@${recipient.id}>`
     await this.client.nFDItem.update({
       where: {
-        name: nfd.name,
+        name: nfd_item.name,
       },
       data: {
         previousOwners: ownerList,
-        owner: recipientUser.id,
+        owner: recipient.id,
       },
     })
 
-    await this.updateDBsuccessfulGift(interaction.user.id)
-
-    return interaction.reply({ content: `${interaction.user} gifted ${nfd.name} to ${recipientUser}! How kind!` })
+    if (sudo) {
+      return interaction.reply({
+        content: `${interaction.user} reassigned ${nfd_item.name} to ${recipient} using their mod powers.`,
+      })
+    } else {
+      await this.updateDBsuccessfulGift(interaction.user.id)
+      return interaction.reply({ content: `${interaction.user} gifted ${nfd_item.name} to ${recipient}! How kind!` })
+    }
   }
 
   @Slash('rename', { description: 'Give your NFD a better name' })
@@ -749,5 +752,23 @@ class NFD {
         break
     }
     return interaction.reply({ content: `${interaction.user} reset ${cooldown} cooldown for ${chatter}.` })
+  }
+
+  @Slash('reassign', { description: 'Forcibly change the owner of an NFD.' })
+  @SlashGroup('mod', 'nfd')
+  @PermissionSuperUserOnly
+  async reassign(
+    @SlashOption('nfd', { type: 'STRING', description: 'The name of the NFD to be gifted.', required: true })
+    @SlashOption('recipient', {
+      type: 'USER',
+      description: 'The chatter to receive the NFD.',
+      required: true,
+    })
+    nfd: string,
+    recipient: User | GuildMember,
+    interaction: CommandInteraction
+  ) {
+    // Call gift with sudo enabled.
+    return this.gift(nfd, recipient, true, interaction)
   }
 }
