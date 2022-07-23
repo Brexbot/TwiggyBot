@@ -400,6 +400,41 @@ class NFD {
     return interaction.reply({ content: `${interaction.user} renamed **${name}** to **${replacement}**!` })
   }
 
+  @Slash('favourite', { description: 'Set your favourited NFD to another chatter. How kind.' })
+  @SlashGroup('nfd')
+  async favourite(
+    @SlashOption('name', { type: 'STRING', description: 'The name of your new favourite NFD.' })
+    name: string,
+    interaction: CommandInteraction
+  ) {
+    // Confirm the NFD exists
+    const nfd = await this.getNFDByName(name)
+    if (!nfd) {
+      return interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
+    }
+
+    // Confirm that the caller owns the NFD
+    if (nfd.owner != interaction.user.id) {
+      return interaction.reply({ content: "You can't favourite something you don't own!", ephemeral: true })
+    }
+
+    // upsert should never create, because a user that doesn't exist doesn't own anything.
+    await this.client.nFDEnjoyer.upsert({
+      where: {
+        id: interaction.user.id,
+      },
+      create: {
+        id: interaction.user.id,
+        favourite: nfd.name,
+      },
+      update: {
+        favourite: nfd.name,
+      },
+    })
+
+    return interaction.reply({ content: nfd.name + ' has been set as your favourite NFD!', ephemeral: true })
+  }
+
   private getParts(): BodyParts {
     const imageList = fs.readdirSync(this.FRAGMENT_PATH)
     const bodyList = imageList.filter((filename) => filename.includes('_b.png'))
