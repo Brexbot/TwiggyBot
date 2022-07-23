@@ -77,4 +77,5 @@ model NFDEnjoyer {
   consecutiveFails  Int       @default(0)
   successfulMints   Int       @default(0)
   failedMints       Int       @default(0)
+  favourite         String    @default("") 
 }
