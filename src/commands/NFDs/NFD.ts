@@ -279,7 +279,9 @@ class NFD {
           })
           .setTitle(ownerName + "'s collection")
           .setImage(`attachment://${path.basename(validatedFilename)}`)
-          .setFooter({ text: `${ownerName} owns ${collection.length} NFDs worth \$${totalValue} in total. 💎🙌` })
+          .setFooter({
+            text: `${ownerName} owns ${collection.length} NFDs worth \$${totalValue.toFixed(2)} in total. 💎🙌`,
+          })
           .setDescription(ostr)
 
         if (favourite) {
@@ -688,9 +690,7 @@ class NFD {
 
   private getNFDPrice(nfd: NFDItem): number {
     // Stupid little function to make an NFD more "valuable" the more times it has been traded, with a bit of drift
-    return +(
-      2 ** Math.min(nfd.previousOwners.split(',').length - 1 + Math.random(), this.MAX_NFD_PRICE_EXPONENT)
-    ).toFixed(2)
+    return 2 ** Math.min(nfd.previousOwners.split(',').length - 1 + Math.random(), this.MAX_NFD_PRICE_EXPONENT)
   }
 
   private async ensureImageExists(filePath: string, name: string, code: string) {
@@ -732,7 +732,7 @@ class NFD {
           .setTitle(nfdName)
           .setImage(`attachment://${path.basename(validatedFilename)}`)
           .setFooter({
-            text: `${nfd.name} is worth \$${this.getNFDPrice(nfd)}!`,
+            text: `${nfd.name} is worth \$${this.getNFDPrice(nfd).toFixed(2)}!`,
           })
           .setDescription(`**Minted:** <t:${Math.round(nfd.mintDate.getTime() / 1000)}>`)
         return interaction.reply({
