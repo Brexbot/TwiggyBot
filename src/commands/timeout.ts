@@ -52,7 +52,7 @@ abstract class Timeout {
       userId = target.user.id
     }
 
-    const highestBotRole = guild?.members?.cache?.get(guild?.client?.user?.id ?? '')?.roles.highest
+    const highestBotRole = guild?.members?.me?.roles.highest
     const highestMemberRole = memberRoles?.highest
     if (!highestBotRole || !highestMemberRole) {
       return false
