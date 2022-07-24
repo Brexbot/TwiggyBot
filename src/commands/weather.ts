@@ -1,18 +1,18 @@
-import { ColorResolvable, CommandInteraction, MessageEmbed } from 'discord.js'
+import { ApplicationCommandOptionType, ColorResolvable, CommandInteraction, EmbedBuilder } from 'discord.js'
 import {
   Discord,
   SimpleCommand,
   SimpleCommandMessage,
-  SlashOption,
-  Slash,
   SimpleCommandOption,
   SimpleCommandOptionType,
+  Slash,
+  SlashOption,
 } from 'discordx'
 import fetch from 'node-fetch'
 import hslRgb from 'hsl-rgb'
 
 interface weatherResponse {
-  msg: MessageEmbed
+  msg: EmbedBuilder
   ephemeral: boolean
 }
 interface weatherInfo {
@@ -41,7 +41,7 @@ class Weather {
 
   @Slash('weather', { description: 'Get the weather for a location' })
   async slash(
-    @SlashOption('location', { type: 'STRING' })
+    @SlashOption('location', { type: ApplicationCommandOptionType.String })
     message: string,
     interaction: CommandInteraction
   ) {
@@ -240,7 +240,7 @@ class Weather {
     const tmpCountry = data.sys.country ? `, ${data.sys.country}` : ''
 
     return {
-      msg: new MessageEmbed()
+      msg: new EmbedBuilder()
         .setAuthor({
           name: `${data.name}${tmpCountry} — ${this.timestampTo12Hour(data.timezone)}`,
           iconURL: `http://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
@@ -251,8 +251,8 @@ class Weather {
     }
   }
 
-  private newBasicEmbed(description = '', color: ColorResolvable = '#ffffff'): MessageEmbed {
-    return new MessageEmbed().setColor(color).setAuthor({ name: 'Weather' }).setDescription(description)
+  private newBasicEmbed(description = '', color: ColorResolvable = '#ffffff'): EmbedBuilder {
+    return new EmbedBuilder().setColor(color).setAuthor({ name: 'Weather' }).setDescription(description)
   }
 
   // TODO: Replace any with a more precise type

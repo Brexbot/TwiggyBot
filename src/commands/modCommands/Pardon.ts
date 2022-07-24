@@ -1,12 +1,12 @@
-import { Discord, SimpleCommand, SimpleCommandMessage } from 'discordx'
+import { Client, Discord, Guard, SimpleCommand, SimpleCommandMessage} from 'discordx'
 import { GuildMember } from 'discord.js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
-import { PermissionSuperUserOnly } from '../../guards/RoleChecks'
+import { IsSuperUser } from '../../guards/RoleChecks'
 
 @Discord()
 @injectable()
-@PermissionSuperUserOnly
+@Guard(IsSuperUser)
 class Pardon {
   public constructor(private client: ORM) {}
 

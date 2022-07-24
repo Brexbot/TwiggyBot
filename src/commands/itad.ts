@@ -1,12 +1,12 @@
-import { CommandInteraction } from 'discord.js'
+import { ApplicationCommandOptionType, CommandInteraction } from 'discord.js'
 import {
   Discord,
   SimpleCommand,
   SimpleCommandMessage,
   SimpleCommandOption,
-  SlashOption,
-  Slash,
   SimpleCommandOptionType,
+  Slash,
+  SlashOption,
 } from 'discordx'
 
 import fetch from 'node-fetch'
@@ -73,7 +73,7 @@ class IsThereAnyDeal {
 
   @Slash('itad', { description: 'Check isthereanydeal.com for deals' })
   private async slash(
-    @SlashOption('game', { type: 'STRING', description: 'Game to search for' })
+    @SlashOption('game', { type: ApplicationCommandOptionType.String, description: 'Game to search for' })
     game: string,
     interaction: CommandInteraction
   ) {

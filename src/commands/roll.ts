@@ -1,6 +1,6 @@
 import { DiceRoll } from '@dice-roller/rpg-dice-roller'
-import { CommandInteraction } from 'discord.js'
-import { Discord, SlashOption, Slash, SlashGroup } from 'discordx'
+import { ApplicationCommandOptionType, CommandInteraction } from 'discord.js'
+import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
 import { getRandomElement } from './RPG/util'
 
 @SlashGroup({ name: 'roll', description: 'Ask the dice for advice' })
@@ -12,8 +12,8 @@ class Roll {
 
   @Slash('dice', { description: 'Roll some dice' })
   async roll(
-    @SlashOption('dice', { type: 'STRING' })
-    @SlashOption('message', { type: 'STRING', required: false })
+    @SlashOption('dice', { type: ApplicationCommandOptionType.String })
+    @SlashOption('message', { type: ApplicationCommandOptionType.String, required: false })
     dice: string,
     message: string,
     interaction: CommandInteraction
@@ -66,8 +66,8 @@ class Roll {
 
   @Slash('choose', { description: 'Let the bot control your life from comma separated choices' })
   async choose(
-    @SlashOption('choices', { type: 'STRING' })
-    @SlashOption('message', { type: 'STRING', required: false })
+    @SlashOption('choices', { type: ApplicationCommandOptionType.String })
+    @SlashOption('message', { type: ApplicationCommandOptionType.String, required: false })
     choices: string,
     message: string,
     interaction: CommandInteraction

@@ -1,4 +1,4 @@
-import { CommandInteraction } from 'discord.js'
+import { ApplicationCommandOptionType, CommandInteraction } from 'discord.js'
 import {
   Discord,
   SimpleCommand,
@@ -32,7 +32,7 @@ class quoteCommand {
 
   @Slash('quote', { description: 'Get server quote' })
   private async quoteSlash(
-    @SlashOption('quoteid', { type: 'NUMBER', required: false })
+    @SlashOption('quoteid', { type: ApplicationCommandOptionType.Integer, required: false })
     id: number | undefined,
     interaction: CommandInteraction
   ) {
@@ -54,7 +54,7 @@ class quoteCommand {
 
   @Slash('quwuote', { description: 'Get sewvew quwuote' })
   private async quwuoteSlash(
-    @SlashOption('quwuoteid', { type: 'NUMBER', required: false })
+    @SlashOption('quwuoteid', { type: ApplicationCommandOptionType.Integer, required: false })
     id: number | undefined,
     interaction: CommandInteraction
   ) {

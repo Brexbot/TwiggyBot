@@ -1,17 +1,20 @@
 import { Character } from './Character'
-import { getRandomElement as getRandomElement, roll_dy_x_TimesPick_z, getEloRankChange } from './util'
-import { attackTexts, defenceFailureTexts, defenceSuccessTexts, victoryTexts, ladderTexts } from './Dialogue'
+import { getEloRankChange, getRandomElement as getRandomElement, roll_dy_x_TimesPick_z } from './util'
+import { attackTexts, defenceFailureTexts, defenceSuccessTexts, ladderTexts, victoryTexts } from './Dialogue'
 import { ELO_K } from './Data'
 
 import {
+  ActionRowBuilder,
+  ApplicationCommandOptionType,
+  AttachmentBuilder,
+  ButtonBuilder,
   ButtonInteraction,
+  ButtonStyle,
   CommandInteraction,
+  EmbedBuilder,
   GuildMember,
   Message,
-  MessageActionRow,
-  MessageAttachment,
-  MessageButton,
-  MessageEmbed,
+  MessageActionRowComponentBuilder,
 } from 'discord.js'
 import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
@@ -253,8 +256,8 @@ export class RPG {
 
   @Slash('character', { description: 'Show off your character sheet' })
   async character(
-    @SlashOption('silent', { type: 'BOOLEAN', required: false })
-    @SlashOption('name', { type: 'STRING', required: false })
+    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
+    @SlashOption('name', { type: ApplicationCommandOptionType.Boolean, required: false })
     silent = true,
     name: string,
     interaction: CommandInteraction
@@ -286,7 +289,7 @@ export class RPG {
 
   @Slash('stats', { description: 'Display your fight statistics' })
   async stats(
-    @SlashOption('silent', { type: 'BOOLEAN', required: false })
+    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
     silent = true,
     interaction: CommandInteraction
   ) {
@@ -296,7 +299,7 @@ export class RPG {
     if (callerMember && callerMember instanceof GuildMember) {
       const callerDBRecord = await this.getUserFromDB(callerMember.user.id)
       const eloBand = this.getBandForEloRank(callerDBRecord.eloRank)
-      const statsEmbed = new MessageEmbed()
+      const statsEmbed = new EmbedBuilder()
         .setColor('#009933') // Could dig out the user's colour?
         .setAuthor({
           iconURL: callerMember.user.avatarURL() ?? '',
@@ -320,7 +323,7 @@ export class RPG {
 
   @Slash('ladder', { description: 'Who is the strongest chatter around?' })
   async ladder(
-    @SlashOption('silent', { type: 'BOOLEAN', required: false })
+    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
     silent = true,
     interaction: CommandInteraction
   ) {
@@ -368,19 +371,21 @@ export class RPG {
     }
 
     const results = await getLadderStats()
-    const ladderEmbed = new MessageEmbed().setColor('#009933').setTitle('The State of the Ladder')
+    const ladderEmbed = new EmbedBuilder().setColor('#009933').setTitle('The State of the Ladder')
 
     if (results.top) {
-      ladderEmbed.addField('Top', processPotentiallyPluralResults(results.top, 'TOP'))
+      ladderEmbed.addFields({ name: 'Top', value: processPotentiallyPluralResults(results.top, 'TOP') })
     } else {
       interaction.reply({ content: 'The arena is clean. No violence has happened yet.', ephemeral: true })
       return
     }
     if (results.bottom) {
-      ladderEmbed.addField('Tail', processPotentiallyPluralResults(results.bottom, 'BOTTOM'))
+      ladderEmbed.addFields({ name: 'Tail', value: processPotentiallyPluralResults(results.bottom, 'BOTTOM') })
     }
-    ladderEmbed.addField('Wins', processPotentiallyPluralResults(results.wins, 'WINS'))
-    ladderEmbed.addField('Losses', processPotentiallyPluralResults(results.losses, 'LOSS'))
+    ladderEmbed.addFields(
+      { name: 'Wins', value: processPotentiallyPluralResults(results.wins, 'WINS') },
+      { name: 'Losses', value: processPotentiallyPluralResults(results.losses, 'LOSS') }
+    )
     interaction.reply({ embeds: [ladderEmbed], ephemeral: silent })
   }
 
@@ -460,29 +465,30 @@ export class RPG {
     // Disable the duel after a timeout
     this.timeout = setTimeout(async () => {
       // Disable the button
-      const button = new MessageButton()
+      const button = new ButtonBuilder()
         .setEmoji('⚔️')
-        .setStyle('PRIMARY')
+        .setStyle(ButtonStyle.Primary)
         .setCustomId('rpg-btn')
         .setLabel('Accept challenge')
         .setDisabled(true)
-      const row = new MessageActionRow().addComponents(button)
+      const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
       await interaction.editReply({
         content: `No one was brave enough to do battle with **${
           challengerUser.nickname ?? challengerUser.user.username
         }**${challengerEloBand.icon}.`,
         components: [row],
       })
+
       this.challengeInProgress = false
     }, this.timeoutDuration)
 
     // Send the challenge message
-    const button = new MessageButton()
+    const button = new ButtonBuilder()
       .setEmoji('⚔️')
-      .setStyle('PRIMARY')
+      .setStyle(ButtonStyle.Primary)
       .setCustomId('rpg-btn')
       .setLabel('Accept challenge')
-    const row = new MessageActionRow().addComponents(button)
+    const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
     const message = await interaction.reply({
       content: `**${challengerUser.nickname ?? challengerUser.user.username}**${
         challengerEloBand.icon
@@ -543,7 +549,7 @@ export class RPG {
             await collectionInteraction.followUp({
               content: 'Phew! That was a long fight! The bards had to write it to a file.',
               ephemeral: true,
-              files: [new MessageAttachment(Buffer.from(output), `results.txt`)],
+              files: [new AttachmentBuilder(Buffer.from(output)).setName('results.txt')],
             })
           }
         } else {
@@ -602,13 +608,13 @@ export class RPG {
           content: 'Someone grabbed the gauntlet before you could! (or the challenger wandered off)',
           ephemeral: true,
         })
-        const button = new MessageButton()
+        const button = new ButtonBuilder()
           .setEmoji('⚔️')
-          .setStyle('PRIMARY')
+          .setStyle(ButtonStyle.Primary)
           .setCustomId('rpg-btn')
           .setLabel('Accept challenge')
           .setDisabled(true)
-        const row = new MessageActionRow().addComponents(button)
+        const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
         await collectionInteraction.editReply({
           components: [row],
         })
@@ -630,13 +636,13 @@ export class RPG {
         }
 
         // Disable the button
-        const button = new MessageButton()
+        const button = new ButtonBuilder()
           .setEmoji('⚔️')
-          .setStyle('PRIMARY')
+          .setStyle(ButtonStyle.Primary)
           .setCustomId('rpg-btn')
           .setLabel('Accept challenge')
           .setDisabled(true)
-        const row = new MessageActionRow().addComponents(button)
+        const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
         await collectionInteraction.editReply({
           components: [row],
         })
@@ -679,13 +685,13 @@ export class RPG {
         const accepterEloBand = this.getBandForEloRank(accepterNewEloRank)
 
         // Prepare the buttons.
-        const logButton = new MessageButton()
+        const logButton = new ButtonBuilder()
           .setEmoji('📜')
           .setLabel('See fight!')
-          .setStyle('SECONDARY')
+          .setStyle(ButtonStyle.Secondary)
           .setCustomId(RPG.SUMMARY_BUTTON_ID)
         await collectionInteraction.editReply({
-          components: [new MessageActionRow().addComponents(logButton)],
+          components: [new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(logButton)],
         })
 
         // Finally, send the reply

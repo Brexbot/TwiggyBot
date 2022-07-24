@@ -1,18 +1,17 @@
 import { User } from 'discord.js'
-import { Discord, Permission, SimpleCommand, SimpleCommandMessage, SimpleCommandOption } from 'discordx'
-import { SuperUsers } from '../../guards/RoleChecks'
+import { Client, Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption } from 'discordx'
+import { IsSuperUser, memberIsSU } from '../../guards/RoleChecks'
 
 @Discord()
-@Permission(false)
-@Permission(SuperUsers)
+@Guard(IsSuperUser)
 class ReleaseTheEggplant {
   @SimpleCommand('releasetheeggplant', {
     description: 'Release the eggplant on a user of your choosing',
     argSplitter: '\n',
   })
-  simple(@SimpleCommandOption('name') name: User, command: SimpleCommandMessage) {
+  simple(@SimpleCommandOption('name') name: User, command: SimpleCommandMessage, client: Client) {
     if (!name) return command.message.reply('usage: ``>releasetheeggplant <user>``')
-    const botId = command.message.client.user?.id
+    const botId = client.user?.id
     const thisBot = command.message.guild?.members.cache.find((u) => u.id === botId)
     thisBot?.setNickname('🍆🔪')
     command.message.channel
@@ -24,14 +23,17 @@ class ReleaseTheEggplant {
   }
 
   // TODO: Lock behind mod permissions
-  // @Slash('releasetheeggplant', { description: 'Release the eggplant on a user of your choosing' })
+  // @Slash('releasetheeggplant', {
+  //   description: 'Release the eggplant on a user of your choosing',
+  //   defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
+  // })
   // async slash(
   //   @SlashOption('name')
   //   name: User,
-  //   interaction: CommandInteraction
+  //   interaction: ChatInputCommandInteraction
   // ) {
-  //   let botId = interaction.channel?.client.user?.id
-  //   let thisBot = interaction.guild?.members.cache.find((u) => u.id === botId)
+  //   const botId = interaction.channel?.client.user?.id
+  //   const thisBot = interaction.guild?.members.cache.find((u) => u.id === botId)
   //   thisBot?.setNickname('🍆🔪')
   //   interaction
   //     .reply(`I'm coming for you, ${name}!`)

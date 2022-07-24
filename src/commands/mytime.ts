@@ -1,4 +1,4 @@
-import { CommandInteraction, MessageEmbed, ColorResolvable } from 'discord.js'
+import { ApplicationCommandOptionType, ColorResolvable, CommandInteraction, EmbedBuilder } from 'discord.js'
 import {
   Discord,
   SimpleCommand,
@@ -34,7 +34,7 @@ class MyTime {
     } else {
       command.message.channel.send({
         embeds: [
-          new MessageEmbed()
+          new EmbedBuilder()
             .setAuthor({
               name: 'MyTime',
             })
@@ -48,18 +48,18 @@ class MyTime {
   @Slash('mytime', { description: 'Localised times within the provided text' })
   private async slash(
     @SlashOption('text', {
-      type: 'STRING',
+      type: ApplicationCommandOptionType.String,
       description: 'Text containing times',
     })
     text: string,
     @SlashOption('mode', {
-      type: 'STRING',
+      type: ApplicationCommandOptionType.String,
       description: 'The output mode. One of: tTdDfFR, Default: t',
       required: false,
     })
     mode: string,
     @SlashOption('raw', {
-      type: 'BOOLEAN',
+      type: ApplicationCommandOptionType.Boolean,
       description: 'Outputs the time in a copy/paste friendly format for discord ',
       required: false,
     })
@@ -73,7 +73,7 @@ class MyTime {
     } else {
       interaction.reply({
         embeds: [
-          new MessageEmbed()
+          new EmbedBuilder()
             .setAuthor({
               name: 'MyTime',
             })

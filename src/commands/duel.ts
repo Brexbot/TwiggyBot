@@ -1,12 +1,14 @@
 import {
+  ActionRowBuilder,
+  ButtonBuilder,
   ButtonInteraction,
+  ButtonStyle,
   CommandInteraction,
+  EmbedBuilder,
   Formatters,
   GuildMember,
   Message,
-  MessageActionRow,
-  MessageButton,
-  MessageEmbed,
+  MessageActionRowComponentBuilder,
 } from 'discord.js'
 import { Discord, Slash } from 'discordx'
 import { injectable } from 'tsyringe'
@@ -93,7 +95,7 @@ export class Duel {
     this.timeout = setTimeout(async () => {
       // Disable the button
       const button = this.createButton(true)
-      const row = new MessageActionRow().addComponents(button)
+      const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
       await interaction.editReply({
         content: `${challengerMember?.user} failed to find someone to duel.`,
         components: [row],
@@ -101,7 +103,7 @@ export class Duel {
       this.inProgress = false
     }, this.timeoutDuration)
 
-    const row = new MessageActionRow().addComponents(this.createButton(false))
+    const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(this.createButton(false))
     const message = await interaction.reply({
       content: `${challengerMember?.user} is looking for a duel, press the button to accept.`,
       fetchReply: true,
@@ -146,7 +148,7 @@ export class Duel {
         })
         // Disable the button
         const button = this.createButton(true)
-        const row = new MessageActionRow().addComponents(button)
+        const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
         await collectionInteraction.editReply({
           components: [row],
         })
@@ -170,7 +172,7 @@ export class Duel {
 
         // Disable the button
         const button = this.createButton(true)
-        const row = new MessageActionRow().addComponents(button)
+        const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
         await collectionInteraction.editReply({
           components: [row],
         })
@@ -246,7 +248,7 @@ export class Duel {
       const bestStreak = `Best streak: **${winStreakMax} ${this.plural(winStreakMax, 'win')}**`
       const worstStreak = `Worst streak: **${lossStreakMax} ${this.plural(lossStreakMax, 'loss')}**`
 
-      const statsEmbed = new MessageEmbed()
+      const statsEmbed = new EmbedBuilder()
         // Color is either the user or Firynth's
         .setColor(member?.displayHexColor ?? '#77618F')
         .setAuthor({
@@ -288,7 +290,7 @@ export class Duel {
       return `${stats[0][statName]} by ${statHavers.join(', ')}${extraMessage}`
     }
 
-    const statsEmbed = new MessageEmbed()
+    const statsEmbed = new EmbedBuilder()
       .setColor('#9932CC')
       .setTitle('Duel streaks and stats')
       .addFields(
@@ -376,8 +378,8 @@ export class Duel {
     return Math.floor(Math.random() * 101)
   }
 
-  private createButton(disabled: boolean): MessageButton {
-    let button = new MessageButton().setEmoji('🎲').setStyle('PRIMARY').setCustomId('duel-btn')
+  private createButton(disabled: boolean): ButtonBuilder {
+    let button = new ButtonBuilder().setEmoji('🎲').setStyle(ButtonStyle.Primary).setCustomId('duel-btn')
     if (disabled) {
       button = button.setLabel("It's over").setDisabled(true)
     } else {

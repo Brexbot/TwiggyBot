@@ -1,5 +1,6 @@
 import {
   Discord,
+  Guard,
   SimpleCommand,
   SimpleCommandMessage,
   SimpleCommandOption,
@@ -7,11 +8,18 @@ import {
   Slash,
   SlashOption,
 } from 'discordx'
-import { CommandInteraction, Formatters, Guild, GuildMember, HexColorString } from 'discord.js'
+import {
+  ApplicationCommandOptionType,
+  CommandInteraction,
+  Formatters,
+  Guild,
+  GuildMember,
+  HexColorString,
+} from 'discord.js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
-import { GuildOptions, Prisma } from '../../../prisma/generated/prisma-client-js'
-import { PermissionSuperUserOnly, superUserIds, superUserRoles } from '../../guards/RoleChecks'
+import { Prisma } from '../../../prisma/generated/prisma-client-js'
+import { IsSuperUser, superUserIds, superUserRoles } from '../../guards/RoleChecks'
 import { getCallerFromCommand, getGuildAndCallerFromCommand, getGuildFromCommand } from '../../utils/CommandUtils'
 import { Duel } from '../duel'
 import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils'
@@ -30,7 +38,7 @@ export class ColorRoles {
   public constructor(private client: ORM) {}
 
   @SimpleCommand('uncolor')
-  @PermissionSuperUserOnly
+  @Guard(IsSuperUser)
   async simpleUncolor(command: SimpleCommandMessage) {
     const guild = getGuildFromCommand(command)
     let mentionedMember: GuildMember | undefined
@@ -129,7 +137,7 @@ export class ColorRoles {
   @Slash('lazy', { description: 'Change to your favorite display color' })
   async slashLazyColor(
     @SlashOption('fav_color', {
-      type: 'STRING',
+      type: ApplicationCommandOptionType.String,
       description: 'The hex value of your favorite color',
       required: false,
     })

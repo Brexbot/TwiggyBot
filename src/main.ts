@@ -1,56 +1,65 @@
 import 'reflect-metadata'
-import { Intents, Interaction, Message } from 'discord.js'
-import { Client, DIService } from 'discordx'
+import type { Interaction, Message } from 'discord.js'
+import { GatewayIntentBits, IntentsBitField } from 'discord.js'
+import { Client, DIService, tsyringeDependencyRegistryEngine } from 'discordx'
 import { container } from 'tsyringe'
 import { importx } from '@discordx/importer'
 import { NotBot } from './guards/RoleChecks'
+
 import { NoWhitespace } from './guards/NoWhitespace'
 
-const client = new Client({
+;(BigInt.prototype as any).toJSON = function () {
+  return this.toString()
+}
+
+export const bot = new Client({
   simpleCommand: {
     prefix: '>',
   },
   intents: [
-    Intents.FLAGS.GUILDS,
-    Intents.FLAGS.GUILD_MEMBERS,
-    Intents.FLAGS.GUILD_MESSAGES,
-    Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-    Intents.FLAGS.GUILD_VOICE_STATES,
-    Intents.FLAGS.DIRECT_MESSAGES,
-    Intents.FLAGS.GUILD_PRESENCES,
+    IntentsBitField.Flags.Guilds,
+    IntentsBitField.Flags.GuildMembers,
+    IntentsBitField.Flags.GuildMessages,
+    IntentsBitField.Flags.GuildMessageReactions,
+    IntentsBitField.Flags.GuildVoiceStates,
+    IntentsBitField.Flags.DirectMessages,
+    IntentsBitField.Flags.GuildPresences,
+    GatewayIntentBits.MessageContent,
+
+    // todo: These are currently not needed but if shit breaks and you don't know why try uncommenting this first
+    // GatewayIntentBits.GuildMembers,
+    // GatewayIntentBits.GuildPresences,
   ],
-  partials: ['CHANNEL'],
   // If you only want to use global commands only, comment this line
   botGuilds: [(client) => client.guilds.cache.map((guild) => guild.id)],
   guards: [NotBot, NoWhitespace],
 })
 
-client.once('ready', async () => {
+bot.once('ready', async () => {
   // make sure all guilds are in cache
-  await client.guilds.fetch()
+  await bot.guilds.fetch()
 
   // init all application commands
-  await client.initApplicationCommands({
+  await bot.initApplicationCommands({
     guild: { log: true },
     global: { log: true },
   })
 
-  // init permissions; enabled log to see changes
-  await client.initApplicationPermissions(true)
-
-  // uncomment this line to clear all guild commands,
-  // useful when moving to global commands from guild commands
-  //  await client.clearApplicationCommands(
+  // To clear all guild commands, uncomment this line,
+  // This is useful when moving from guild commands to global commands
+  // It must only be executed once
+  //
+  //  await bot.clearApplicationCommands(
   //    ...client.guilds.cache.map((g) => g.id)
   //  );
 
   console.log('Bot started')
 })
 
-client.on('interactionCreate', (interaction: Interaction) => {
+bot.on('interactionCreate', (interaction: Interaction) => {
   // This should always be a Promise... if it isn't then something is horribly wrong, and we deserve to crash
   try {
-    ;(client.executeInteraction(interaction) as Promise<unknown>).catch((error) => {
+    ;(bot.executeInteraction(interaction) as Promise<unknown>).catch((error) => {
       console.error(`[Interaction] An unexpected error occurred: ${error}`)
     })
   } catch (error) {
@@ -58,9 +67,9 @@ client.on('interactionCreate', (interaction: Interaction) => {
   }
 })
 
-client.on('messageCreate', (message: Message) => {
+bot.on('messageCreate', (message: Message) => {
   try {
-    client.executeCommand(message).catch((error) => {
+    bot.executeCommand(message).catch((error) => {
       console.error(`[Simple] An unexpected error occurred: ${error}`)
     })
   } catch (error) {
@@ -69,10 +78,10 @@ client.on('messageCreate', (message: Message) => {
 })
 
 async function run() {
-  DIService.container = container
+  DIService.engine = tsyringeDependencyRegistryEngine.setInjector(container)
 
   await importx(`${__dirname}/{events,commands,persistence}/**/*.{ts,js}`)
-  client.login(process.env.DISCORD_TOKEN ?? '') // provide your bot token
+  bot.login(process.env.DISCORD_TOKEN ?? '') // provide your bot token
 }
 
 run()
