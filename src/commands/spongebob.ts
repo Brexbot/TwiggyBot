@@ -1,12 +1,12 @@
-import { CommandInteraction } from 'discord.js'
+import { ApplicationCommandOptionType, CommandInteraction } from 'discord.js'
 import {
   Discord,
   SimpleCommand,
   SimpleCommandMessage,
-  SlashOption,
-  Slash,
   SimpleCommandOption,
   SimpleCommandOptionType,
+  Slash,
+  SlashOption,
 } from 'discordx'
 import { spongeCase } from 'sponge-case'
 
@@ -38,7 +38,7 @@ class Spongebob {
 
   @Slash('sb', { description: 'Spongebobify text' })
   async slash(
-    @SlashOption('text', { type: 'STRING' })
+    @SlashOption('text', { type: ApplicationCommandOptionType.String })
     message: string,
     interaction: CommandInteraction
   ) {

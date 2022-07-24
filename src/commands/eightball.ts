@@ -1,5 +1,5 @@
-import { CommandInteraction } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, SlashOption, Slash } from 'discordx'
+import { ApplicationCommandOptionType, CommandInteraction } from 'discord.js'
+import { Discord, SimpleCommand, SimpleCommandMessage, Slash, SlashOption } from 'discordx'
 
 @Discord()
 class Eightball {
@@ -35,7 +35,7 @@ class Eightball {
 
   @Slash('eightball', { description: 'Eightball' })
   async slash(
-    @SlashOption('message', { type: 'STRING', required: false })
+    @SlashOption('message', { type: ApplicationCommandOptionType.String, required: false })
     message: string,
     interaction: CommandInteraction
   ) {

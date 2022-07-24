@@ -1,20 +1,11 @@
-import {
-  Discord,
-  Permission,
-  SimpleCommand,
-  SimpleCommandMessage,
-  SimpleCommandOption,
-  Slash,
-  SlashOption,
-} from 'discordx'
-import { CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
-import { SuperUsers } from '../../guards/RoleChecks'
+import {Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption} from 'discordx'
+import {ApplicationCommandOptionType, CommandInteraction, GuildMemberRoleManager, RoleManager} from 'discord.js'
+import {IsSuperUser} from '../../guards/RoleChecks'
 
 @Discord()
 class Rolesub {
   @SimpleCommand('createrole', { argSplitter: '\n' })
-  @Permission(false)
-  @Permission(SuperUsers)
+  @Guard(IsSuperUser)
   async createRole(
     @SimpleCommandOption('role_name', {
       description: 'The name of the role to be created',
@@ -46,8 +37,7 @@ class Rolesub {
   }
 
   @SimpleCommand('delrole', { argSplitter: '\n' })
-  @Permission(false)
-  @Permission(SuperUsers)
+  @Guard(IsSuperUser)
   async delRole(
     @SimpleCommandOption('role_name', {
       description: 'The name of the role to be created',
@@ -91,7 +81,7 @@ class Rolesub {
     @SlashOption('role', {
       required: false,
       description: 'Get the role list or select a role to add/remove',
-      type: 'STRING',
+      type: ApplicationCommandOptionType.String,
     })
     roleName: string,
     interaction: CommandInteraction
