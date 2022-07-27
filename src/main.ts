@@ -44,7 +44,7 @@ bot.once('ready', async () => {
     guild: { log: true },
     global: { log: true },
   })
-
+  
   // To clear all guild commands, uncomment this line,
   // This is useful when moving from guild commands to global commands
   // It must only be executed once
