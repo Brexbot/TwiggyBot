@@ -1,15 +1,20 @@
 import {
+  ActionRowBuilder,
+  ApplicationCommandOptionType,
+  ButtonBuilder,
+  ButtonStyle,
   CommandInteraction,
   Formatters,
   Guild,
   GuildMember,
   GuildMemberRoleManager,
-  MessageActionRow,
-  MessageButton,
+  MessageActionRowComponentBuilder,
+  PermissionFlagsBits,
   User,
 } from 'discord.js'
 import {
   Discord,
+  Guard,
   SimpleCommand,
   SimpleCommandMessage,
   SimpleCommandOption,
@@ -17,7 +22,7 @@ import {
   Slash,
   SlashOption,
 } from 'discordx'
-import { memberIsSU, PermissionSuperUserOnly } from '../guards/RoleChecks'
+import { IsSuperUser, memberIsSU } from '../guards/RoleChecks'
 
 @Discord()
 abstract class Timeout {
@@ -47,7 +52,7 @@ abstract class Timeout {
       userId = target.user.id
     }
 
-    const highestBotRole = guild?.me?.roles.highest
+    const highestBotRole = guild?.members?.me?.roles.highest
     const highestMemberRole = memberRoles?.highest
     if (!highestBotRole || !highestMemberRole) {
       return false
@@ -66,8 +71,12 @@ abstract class Timeout {
 
     // If the Sudoku-ee is a Super User send them a DM with a button to remove the timeout
     if (memberIsSU(member)) {
-      const jailbreaker2000 = new MessageActionRow().addComponents(
-        new MessageButton().setCustomId('pardon-btn').setLabel('Break out of Jail').setEmoji('⛏').setStyle('DANGER')
+      const jailbreaker2000 = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId('pardon-btn')
+          .setLabel('Break out of Jail')
+          .setEmoji('⛏')
+          .setStyle(ButtonStyle.Danger)
       )
       await member?.createDM().then((dm) => {
         dm.send({
@@ -106,7 +115,7 @@ abstract class Timeout {
   @Slash('sudoku', { description: 'Commit sudoku' })
   async sudokuInteraction(
     @SlashOption('message', {
-      type: 'STRING',
+      type: ApplicationCommandOptionType.String,
       description: 'Your last message before committing sudoku',
       required: false,
     })
@@ -125,7 +134,7 @@ abstract class Timeout {
   }
 
   @SimpleCommand('timeout')
-  @PermissionSuperUserOnly
+  @Guard(IsSuperUser)
   async timeoutCommand(
     @SimpleCommandOption('user', { type: SimpleCommandOptionType.User }) user: GuildMember | User | undefined,
     @SimpleCommandOption('duration', { type: SimpleCommandOptionType.Number }) duration: number | undefined,
@@ -151,11 +160,15 @@ abstract class Timeout {
     }
   }
 
-  @Slash('timeout')
-  @PermissionSuperUserOnly
+  @Slash('timeout', { defaultMemberPermissions: PermissionFlagsBits.ModerateMembers })
   async timeoutInteraction(
-    @SlashOption('user', { type: 'USER', description: 'User you want to timeout' }) user: GuildMember,
-    @SlashOption('duration', { type: 'NUMBER', description: 'Duration of the timeout in seconds' }) duration: number,
+    @SlashOption('user', { type: ApplicationCommandOptionType.User, description: 'User you want to timeout' })
+    user: GuildMember,
+    @SlashOption('duration', {
+      type: ApplicationCommandOptionType.Integer,
+      description: 'Duration of the timeout in seconds',
+    })
+    duration: number,
     interaction: CommandInteraction
   ) {
     if (!(interaction.member instanceof GuildMember) || !this.hasPermission(interaction, user)) {

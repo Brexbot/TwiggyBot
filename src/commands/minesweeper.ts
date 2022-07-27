@@ -1,4 +1,4 @@
-import { CommandInteraction, Formatters } from 'discord.js'
+import { ApplicationCommandOptionType, CommandInteraction, Formatters } from 'discord.js'
 import {
   Discord,
   SimpleCommand,
@@ -154,7 +154,10 @@ class Minesweeper {
     @SlashChoice({ name: 'Normal', value: 'normal' })
     @SlashChoice({ name: 'Hard', value: 'hard' })
     @SlashChoice({ name: 'Ultra nightmare', value: 'ultra nightmare' })
-    @SlashOption('difficulty', { description: 'Which difficulty would you like to choose?', type: 'STRING' })
+    @SlashOption('difficulty', {
+      description: 'Which difficulty would you like to choose?',
+      type: ApplicationCommandOptionType.String,
+    })
     difficulty: string | undefined,
     interaction: CommandInteraction
   ) {

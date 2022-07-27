@@ -1,9 +1,10 @@
-import { ArgsOf, GuardFunction, Permission, SimpleCommandMessage } from 'discordx'
+import { ArgsOf, GuardFunction, SimpleCommandMessage } from 'discordx'
+import { APIInteractionGuildMember, ApplicationCommandPermissionType } from 'discord-api-types/v10'
 import {
   ApplicationCommandPermissions,
   ButtonInteraction,
   CommandInteraction,
-  ContextMenuInteraction,
+  ContextMenuCommandInteraction,
   GuildMember,
   Message,
   MessageReaction,
@@ -15,32 +16,25 @@ export const superUserIds = [
   ...(process.env.DISCORD_SUPER_USER_ID ? [process.env.DISCORD_SUPER_USER_ID] : []), // Local Dev SU Role
   '89926310410850304', // BRex
   '117728334854619142', // Zuzuvelas
-].map((id): ApplicationCommandPermissions => ({ id: id, type: 'USER', permission: true }))
+].map(
+  (id): ApplicationCommandPermissions => ({ id: id, type: ApplicationCommandPermissionType.User, permission: true })
+)
 
 export const superUserRoles = [
   ...(process.env.DISCORD_SUPER_USER_ROLE ? [process.env.DISCORD_SUPER_USER_ROLE] : []), // Local Dev SU Role
   '104750975268483072', // Rexcord: Ultimate Scum
   '103679575694774272', // Rexcord: Mods
-].map((id): ApplicationCommandPermissions => ({ id: id, type: 'ROLE', permission: true }))
+].map(
+  (id): ApplicationCommandPermissions => ({ id: id, type: ApplicationCommandPermissionType.Role, permission: true })
+)
 
 export const SuperUsers = superUserIds.concat(superUserRoles)
-
-const PermissionFactory = (perm: ApplicationCommandPermissions | ApplicationCommandPermissions[]) => {
-  // Seems like this has to be `any` sadly
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (target: Record<string, any>, propertyKey?: string, descriptor?: PropertyDescriptor): void => {
-    Permission(false)(target, propertyKey, descriptor)
-    Permission(perm)(target, propertyKey, descriptor)
-  }
-}
-
-export const PermissionSuperUserOnly = PermissionFactory(SuperUsers)
 
 // From https://discord-ts.js.org/docs/decorators/general/guard/#guard-datas
 export const NotBot: GuardFunction<
   | ArgsOf<'messageCreate' | 'messageReactionAdd' | 'voiceStateUpdate'>
   | CommandInteraction
-  | ContextMenuInteraction
+  | ContextMenuCommandInteraction
   | SelectMenuInteraction
   | ButtonInteraction
   | SimpleCommandMessage
@@ -58,7 +52,7 @@ export const NotBot: GuardFunction<
       : argObj instanceof SimpleCommandMessage
       ? argObj.message.author
       : argObj instanceof CommandInteraction ||
-        argObj instanceof ContextMenuInteraction ||
+        argObj instanceof ContextMenuCommandInteraction ||
         argObj instanceof SelectMenuInteraction ||
         argObj instanceof ButtonInteraction
       ? argObj.member?.user
@@ -68,13 +62,52 @@ export const NotBot: GuardFunction<
   }
 }
 
-export function memberIsSU(member?: GuildMember | null): boolean {
+export const IsSuperUser: GuardFunction<
+  | ArgsOf<'messageCreate' | 'messageReactionAdd' | 'voiceStateUpdate'>
+  | CommandInteraction
+  | ContextMenuCommandInteraction
+  | SelectMenuInteraction
+  | ButtonInteraction
+  | SimpleCommandMessage
+> = async (arg, _, next) => {
+  const argObj = arg instanceof Array ? arg[0] : arg
+  const member =
+    argObj instanceof CommandInteraction
+      ? argObj.member
+      : argObj instanceof MessageReaction
+      ? argObj.message.member
+      : argObj instanceof VoiceState
+      ? argObj.member
+      : argObj instanceof Message
+      ? argObj.member
+      : argObj instanceof SimpleCommandMessage
+      ? argObj.message.member
+      : argObj instanceof CommandInteraction ||
+        argObj instanceof ContextMenuCommandInteraction ||
+        argObj instanceof SelectMenuInteraction ||
+        argObj instanceof ButtonInteraction
+      ? argObj.member
+      : argObj?.message?.member
+  if (memberIsSU(member)) {
+    await next()
+  }
+}
+
+export function memberIsSU(member?: GuildMember | APIInteractionGuildMember | null): boolean {
   return SuperUsers.some((permission) => {
     switch (permission.type) {
-      case 'ROLE':
-        return member?.roles.cache.has(permission.id)
-      case 'USER':
-        return member?.id === permission.id
+      case ApplicationCommandPermissionType.Role:
+        if (member instanceof GuildMember) {
+          return member.roles.cache.has(permission.id)
+        } else {
+          return member?.roles?.includes(permission.id)
+        }
+      case ApplicationCommandPermissionType.User:
+        if (member instanceof GuildMember) {
+          return member.id === permission.id
+        } else {
+          return member?.user?.id === permission.id
+        }
     }
   })
 }

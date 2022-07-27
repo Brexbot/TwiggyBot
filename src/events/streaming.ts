@@ -1,4 +1,4 @@
-import { Presence } from 'discord.js'
+import { ActivityType, Presence } from 'discord.js'
 import type { ArgsOf, IGuild } from 'discordx'
 import { Discord, On } from 'discordx'
 
@@ -9,7 +9,7 @@ export abstract class AppDiscord {
   ])
 
   private isStreaming(presence: Presence): boolean {
-    return presence.activities.some((activity) => activity.type === 'STREAMING')
+    return presence.activities.some((activity) => activity.type === ActivityType.Streaming)
   }
 
   @On('presenceUpdate')

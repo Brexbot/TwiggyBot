@@ -1,4 +1,4 @@
-import { CommandInteraction } from 'discord.js'
+import { ApplicationCommandOptionType, CommandInteraction } from 'discord.js'
 import {
   Discord,
   SimpleCommand,
@@ -57,7 +57,7 @@ class UwU {
 
   @Slash('uwu', { description: 'UwUify text' })
   private async slash(
-    @SlashOption('text', { type: 'STRING' })
+    @SlashOption('text', { type: ApplicationCommandOptionType.String })
     text: string,
     interaction: CommandInteraction
   ) {

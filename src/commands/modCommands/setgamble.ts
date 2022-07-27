@@ -1,17 +1,16 @@
-import { Discord, Permission, SimpleCommand, SimpleCommandMessage, SimpleCommandOption } from 'discordx'
+import { Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption } from 'discordx'
 import { Prisma } from '../../../prisma/generated/prisma-client-js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
-import { SuperUsers } from '../../guards/RoleChecks'
+import { IsSuperUser } from '../../guards/RoleChecks'
 
 @Discord()
 @injectable()
+@Guard(IsSuperUser)
 class SetGamble {
   public constructor(private client: ORM) {}
 
   @SimpleCommand('gamblechance')
-  @Permission(false)
-  @Permission(SuperUsers)
   async simpleGambleChance(
     @SimpleCommandOption('gamblechance')
     gambleChance: number,

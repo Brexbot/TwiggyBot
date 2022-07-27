@@ -1,7 +1,6 @@
 import { adjectives, nouns, CharacterClass, classes, CharacterSpecie, species } from './Data'
 import { getSeededRandomElement, rollSeeded_dy_x_TimesPick_z, mulberry32, cyrb53 } from './util'
-
-import { MessageEmbed, User } from 'discord.js'
+import { EmbedBuilder, User } from 'discord.js'
 
 export class Character {
   static HIT_DICE = 6
@@ -104,9 +103,10 @@ export class Character {
     return ostr
   }
 
-  public toEmbed(eloBandIcon?: string): MessageEmbed {
+  public toEmbed(eloBandIcon?: string): EmbedBuilder {
     const suffix = eloBandIcon ? ` ${eloBandIcon}` : ''
-    const out = new MessageEmbed()
+
+    return new EmbedBuilder()
       .setTitle(this.name + suffix)
       .setDescription(
         `${this.characterSpecie.name} ${this.characterClass.name}` +
@@ -124,7 +124,6 @@ export class Character {
           `\n\`\`\``
       )
       .setColor('#009933') // Seems a nice enough colour. Could match use colour if we wanted.
-    return out
   }
 
   public get_modifier(stat: string): number {

@@ -1,11 +1,13 @@
 import {
+  ActionRowBuilder,
+  ButtonBuilder,
   ButtonInteraction,
+  ButtonStyle,
   CommandInteraction,
-  EmojiIdentifierResolvable,
+  ComponentEmojiResolvable,
   GuildMember,
   Message,
-  MessageActionRow,
-  MessageButton,
+  MessageActionRowComponentBuilder,
 } from 'discord.js'
 import { Discord, Slash } from 'discordx'
 import { getCallerFromCommand } from '../utils/CommandUtils'
@@ -69,7 +71,7 @@ class RPS {
     this.inProgress = true
     this.interaction = interaction.id
     const button = this.acceptButton('Accept', '💪')
-    const row = new MessageActionRow().addComponents(button)
+    const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
     const message = await interaction.reply({
       content: `${challenger} is looking for a rock paper scissors game, press the button to accept.`,
       fetchReply: true,
@@ -117,13 +119,13 @@ class RPS {
       this.failMessage = "One or more players hasn't chosen an option fast enough."
 
       const button = this.acceptButton('In progress...', '⏳', true)
-      const row = new MessageActionRow().addComponents(button)
+      const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
       await collectionInteraction.editReply({
         content: `The rock paper scissors game between ${challenger} and ${acceptor} has started.\nChoose your weapon!`,
         components: [row],
       })
 
-      const optionsRow = new MessageActionRow().addComponents([
+      const optionsRow = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents([
         this.choiceButton('Rock', '👊'),
         this.choiceButton('Paper', '✋'),
         this.choiceButton('Scissors', '✌'),
@@ -150,21 +152,21 @@ class RPS {
     })
   }
 
-  acceptButton(label: string, emoji: EmojiIdentifierResolvable, disabled = false): MessageButton {
-    return new MessageButton()
+  acceptButton(label: string, emoji: ComponentEmojiResolvable, disabled = false): ButtonBuilder {
+    return new ButtonBuilder()
       .setCustomId('accept-btn')
       .setLabel(label)
       .setEmoji(emoji)
-      .setStyle('PRIMARY')
+      .setStyle(ButtonStyle.Primary)
       .setDisabled(disabled)
   }
 
-  choiceButton(label: string, emoji: EmojiIdentifierResolvable): MessageButton {
-    return new MessageButton()
+  choiceButton(label: string, emoji: ComponentEmojiResolvable): ButtonBuilder {
+    return new ButtonBuilder()
       .setCustomId(label.toLowerCase())
       .setLabel(label)
       .setEmoji(emoji)
-      .setStyle('PRIMARY')
+      .setStyle(ButtonStyle.Primary)
       .setDisabled(false)
   }
 
