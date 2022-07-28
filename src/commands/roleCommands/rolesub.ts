@@ -1,6 +1,6 @@
-import {Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption} from 'discordx'
-import {ApplicationCommandOptionType, CommandInteraction, GuildMemberRoleManager, RoleManager} from 'discord.js'
-import {IsSuperUser} from '../../guards/RoleChecks'
+import { Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import { ApplicationCommandOptionType, CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
+import { IsSuperUser } from '../../guards/RoleChecks'
 
 @Discord()
 class Rolesub {
