@@ -14,7 +14,8 @@ import {
   EmbedBuilder,
   GuildMember,
   Message,
-  MessageActionRowComponentBuilder, userMention,
+  MessageActionRowComponentBuilder,
+  userMention,
 } from 'discord.js'
 import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
@@ -362,9 +363,9 @@ export class RPG {
       const suffix = { TOP: 'LP', BOTTOM: 'LP', WINS: 'wins', LOSS: 'losses' }[position]
 
       if (characters.length > 1) {
-        return `${userMention(leader.id)} and ${characters.length - 1} others ${
-          getRandomElement(ladderTexts[position + '_PLURAL'])
-        } with ${score} ${suffix}.`
+        return `${userMention(leader.id)} and ${characters.length - 1} others ${getRandomElement(
+          ladderTexts[position + '_PLURAL']
+        )} with ${score} ${suffix}.`
       } else {
         return `${userMention(leader.id)} ${getRandomElement(ladderTexts[position])} with ${score} ${suffix}.`
       }
