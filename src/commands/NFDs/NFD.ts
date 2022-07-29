@@ -1,15 +1,22 @@
-import { Canvas, createCanvas, loadImage } from 'canvas'
 import { cyrb53, getRandomElement, roll_dy_x_TimesPick_z, shuffleArray } from '../../commands/RPG/util'
-import * as fs from 'fs'
+import fs from 'fs'
 import * as path from 'path'
-import { Collection, CommandInteraction, Guild, GuildMember, MessageAttachment, MessageEmbed, User } from 'discord.js'
-import { Discord, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
+import {
+  CommandInteraction,
+  GuildMember,
+  AttachmentBuilder,
+  EmbedBuilder,
+  User,
+  ApplicationCommandOptionType,
+  PermissionFlagsBits,
+} from 'discord.js'
+import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
 import { getCallerFromCommand } from '../../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
 import { NFDItem } from '../../../prisma/generated/prisma-client-js'
-import { PermissionSuperUserOnly } from '../../guards/RoleChecks'
-import { userInfo } from 'os'
+import { IsSuperUser, memberIsSU } from '../../guards/RoleChecks'
+import sharp from 'sharp'
 
 type BodyParts = {
   body: string
@@ -22,10 +29,14 @@ type BodyParts = {
 
 @Discord()
 @SlashGroup({ name: 'nfd', description: 'Take part in the non-fungible dino economy' })
-@SlashGroup({ name: 'mod', description: 'Moderator only commands', root: 'nfd' })
+// @SlashGroup({
+//   name: 'mod',
+//   description: 'Moderator only commands',
+//   root: 'nfd',
+// })
 @injectable()
 class NFD {
-  private MINT_COOLDOWN = 1000 * 60 * 60 * 23
+  private MINT_COOLDOWN = 1000 //* 60 * 60 * 23
   private GIFT_COOLDOWN = 1000 * 60 * 60
   private RENAME_COOLDOWN = 1000 * 60 * 60
 
@@ -122,9 +133,6 @@ class NFD {
 
     // mint was successful!
     this.composeNFD(parts)
-      .then((canvas) => {
-        return this.saveNFD(canvas, (parts.filePath = path.join(this.OUTPUT_PATH, parts.name + '.png')))
-      })
       .then(() => {
         return this.storeNFDinDatabase(parts, getCallerFromCommand(interaction))
       })
@@ -144,8 +152,8 @@ class NFD {
   @Slash('view', { description: 'View an existing NFD.' })
   @SlashGroup('nfd')
   async view(
-    @SlashOption('name', { type: 'STRING', required: true })
-    @SlashOption('silent', { type: 'STRING', required: false })
+    @SlashOption('name', { type: ApplicationCommandOptionType.String, required: true })
+    @SlashOption('silent', { type: ApplicationCommandOptionType.String, required: false })
     name: string,
     silent = true,
     interaction: CommandInteraction
@@ -168,11 +176,11 @@ class NFD {
   @SlashGroup('nfd')
   async colleciton(
     @SlashOption('owner', {
-      type: 'USER',
+      type: ApplicationCommandOptionType.User,
       required: false,
       description: "The person who's collection you want to see.",
     })
-    @SlashOption('silent', { type: 'BOOLEAN', required: false })
+    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
     owner: GuildMember,
     silent = true,
     interaction: CommandInteraction
@@ -270,8 +278,8 @@ class NFD {
         if (!validatedFilename) {
           return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
         }
-        const imageAttachment = new MessageAttachment(validatedFilename)
-        const embed = new MessageEmbed()
+        const imageAttachment = new AttachmentBuilder(validatedFilename)
+        const embed = new EmbedBuilder()
           .setColor(this.NFD_COLOR)
           .setAuthor({
             name: ownerName,
@@ -285,7 +293,7 @@ class NFD {
           .setDescription(ostr)
 
         if (favourite) {
-          embed.addField('Favourite:', favourite.name, true)
+          embed.addFields({ name: 'Favourite:', value: favourite.name, inline: true })
         }
 
         return interaction.reply({
@@ -302,10 +310,14 @@ class NFD {
   @Slash('gift', { description: 'Gift your NFD to another chatter. How kind.' })
   @SlashGroup('nfd')
   async gift(
-    @SlashOption('nfd', { type: 'STRING', description: 'The name of the NFD to be gifted.', required: true })
+    @SlashOption('nfd', {
+      type: ApplicationCommandOptionType.String,
+      description: 'The name of the NFD to be gifted.',
+      required: true,
+    })
     nfd: string,
     @SlashOption('recipient', {
-      type: 'USER',
+      type: ApplicationCommandOptionType.User,
       description: 'The chatter to receive the NFD.',
       required: true,
     })
@@ -382,8 +394,16 @@ class NFD {
   @Slash('rename', { description: 'Give your NFD a better name' })
   @SlashGroup('nfd')
   async rename(
-    @SlashOption('name', { type: 'STRING', required: true, description: 'The *existing* name for the NFD.' })
-    @SlashOption('replacement', { type: 'STRING', required: true, description: 'The *new* name for the NFD.' })
+    @SlashOption('name', {
+      type: ApplicationCommandOptionType.String,
+      required: true,
+      description: 'The *existing* name for the NFD.',
+    })
+    @SlashOption('replacement', {
+      type: ApplicationCommandOptionType.String,
+      required: true,
+      description: 'The *new* name for the NFD.',
+    })
     name: string,
     replacement: string,
     interaction: CommandInteraction
@@ -466,7 +486,10 @@ class NFD {
   @Slash('favourite', { description: 'Set your favourite NFD.' })
   @SlashGroup('nfd')
   async favourite(
-    @SlashOption('name', { type: 'STRING', description: 'The name of your new favourite NFD.' })
+    @SlashOption('name', {
+      type: ApplicationCommandOptionType.String,
+      description: 'The name of your new favourite NFD.',
+    })
     name: string,
     interaction: CommandInteraction
   ) {
@@ -514,20 +537,18 @@ class NFD {
   }
 
   private async composeNFD(parts: BodyParts) {
-    const canvas = createCanvas(112, 112)
-    const ctx = canvas.getContext('2d')
-
-    await loadImage(path.join(this.FRAGMENT_PATH, parts.body)).then((image) => {
-      ctx.drawImage(image, 0, 0)
-    })
-    await loadImage(path.join(this.FRAGMENT_PATH, parts.mouth)).then((image) => {
-      ctx.drawImage(image, 0, 0)
-    })
-    await loadImage(path.join(this.FRAGMENT_PATH, parts.eyes)).then((image) => {
-      ctx.drawImage(image, 0, 0)
-    })
-
-    return canvas
+    const out = sharp(path.join(this.FRAGMENT_PATH, parts.body)).composite([
+      {
+        input: path.join(this.FRAGMENT_PATH, parts.mouth),
+        blend: 'over',
+      },
+      {
+        input: path.join(this.FRAGMENT_PATH, parts.eyes),
+        blend: 'over',
+      },
+    ])
+    await out.toFile((parts.filePath = path.join(this.OUTPUT_PATH, parts.name + '.png')))
+    return Promise.resolve()
   }
 
   private async getNFDByCode(code: string) {
@@ -662,27 +683,6 @@ class NFD {
     })
   }
 
-  private async saveNFD(canvas: Canvas, fileName: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const out = fs.createWriteStream(fileName)
-      const stream = canvas.createPNGStream()
-
-      function cleanup(err: Error) {
-        // In case we fail reject the promise
-        reject(err)
-        out.end()
-      }
-
-      stream.pipe(out)
-      out
-        .on('finish', () => {
-          // Promise resolves with the fileName
-          resolve(fileName)
-        })
-        .on('error', cleanup)
-    })
-  }
-
   private codeToParts(code: string): BodyParts {
     const parts = code.split(',')
     return { body: parts[0], mouth: parts[1], eyes: parts[2], code: code }
@@ -702,7 +702,6 @@ class NFD {
     const parts = this.codeToParts(code)
 
     return await this.composeNFD(parts)
-      .then((canvas) => this.saveNFD(canvas, (parts.filePath = filePath)))
       .then(() => {
         this.client.nFDItem.update({ where: { name: name }, data: { filename: parts.filePath } })
         return Promise.resolve(parts.filePath)
@@ -725,8 +724,8 @@ class NFD {
         if (!validatedFilename) {
           return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
         }
-        const imageAttachment = new MessageAttachment(validatedFilename)
-        const embed = new MessageEmbed()
+        const imageAttachment = new AttachmentBuilder(validatedFilename)
+        const embed = new EmbedBuilder()
           .setColor(this.NFD_COLOR)
           .setAuthor({ name: author, iconURL: avatar })
           .setTitle(nfdName)
@@ -755,11 +754,14 @@ class NFD {
   // MODERATOR BASEMENT
   // ==================
 
-  @Slash('purge', { description: 'Remove an NFD from the database.' })
-  @SlashGroup('mod', 'nfd')
-  @PermissionSuperUserOnly
+  @Slash('purge', {
+    description: 'Remove an NFD from the database.',
+    defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
+  })
+  // @SlashGroup('mod', 'nfd')
+  @Guard(IsSuperUser)
   async purge(
-    @SlashOption('name', { type: 'STRING', required: true })
+    @SlashOption('name', { type: ApplicationCommandOptionType.String, required: true })
     name: string,
     interaction: CommandInteraction
   ) {
@@ -777,18 +779,21 @@ class NFD {
     return interaction.reply({ content: `${nfd.name} has been deleted from the database.` })
   }
 
-  @Slash('cooldown', { description: 'Reset mint, gift, and/or rename cooldowns.' })
-  @SlashGroup('mod', 'nfd')
-  @PermissionSuperUserOnly
+  @Slash('cooldown', {
+    description: 'Reset mint, gift, and/or rename cooldowns.',
+    defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
+  })
+  // @SlashGroup('mod', 'nfd')
+  @Guard(IsSuperUser)
   async cooldown(
     @SlashOption('chatter', {
-      type: 'USER',
+      type: ApplicationCommandOptionType.User,
       required: true,
       description: "The chatter who's cooldowns should be reset",
     })
     chatter: User | GuildMember,
     @SlashOption('cooldown', {
-      type: 'STRING',
+      type: ApplicationCommandOptionType.String,
       required: true,
       description: 'Which NFD cooldown should be cooled down.',
     })
@@ -858,13 +863,20 @@ class NFD {
     return interaction.reply({ content: `${interaction.user} reset ${cooldown} cooldown for ${chatter}.` })
   }
 
-  @Slash('reassign', { description: 'Forcibly change the owner of an NFD.' })
-  @SlashGroup('mod', 'nfd')
-  @PermissionSuperUserOnly
+  @Slash('reassign', {
+    description: 'Forcibly change the owner of an NFD.',
+    defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
+  })
+  // @SlashGroup('mod', 'nfd')
+  @Guard(IsSuperUser)
   async reassign(
-    @SlashOption('nfd', { type: 'STRING', description: 'The name of the NFD to be gifted.', required: true })
+    @SlashOption('nfd', {
+      type: ApplicationCommandOptionType.String,
+      description: 'The name of the NFD to be gifted.',
+      required: true,
+    })
     @SlashOption('recipient', {
-      type: 'USER',
+      type: ApplicationCommandOptionType.User,
       description: 'The chatter to receive the NFD.',
       required: true,
     })
