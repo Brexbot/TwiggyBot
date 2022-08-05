@@ -85,36 +85,14 @@ class NFD {
       })
     }
 
-    // Loop through, repeatedly trying to make an NFD that doesn't already exist yet
-    let i = 0
-    let parts: BodyParts
-    do {
-      parts = this.getParts()
-
-      const isDuplicate = await this.getNFDByCode(parts.code)
-      if (isDuplicate) {
-        console.log(parts.code + 'already exists in the database')
-        continue
-      }
-
-      parts.name = this.makeName(parts)
-      const isClash = await this.getNFDByName(parts.name)
-      if (isClash) {
-        console.log(parts.code + ' is unique but the name ' + parts.name + ' exists. Clash in naming detected!')
-        console.log('clashing NFD is ' + isClash.code)
-        continue
-      }
-
-      break
-    } while (i++ < this.MAXIMUM_MINT_ATTEMPTS)
+    const parts = await this.makeNFDcode()
 
     // Check to see if we failed to make a unique one
-    if (i >= this.MAXIMUM_MINT_ATTEMPTS) {
-      interaction.reply({
+    if (!parts) {
+      return interaction.reply({
         content: "I tried really hard but I wasn't able to make a unique NFD for you. Sorry... :'(",
         ephemeral: true,
       })
-      return
     }
 
     // If we got this far then we are all set to mint.
@@ -386,7 +364,7 @@ class NFD {
         content: `${interaction.user} reassigned ${nfd_item.name} to ${recipient} using their mod powers.`,
       })
     } else {
-      await this.updateDBsuccessfulGift(interaction.user.id)
+      await this.updateDBSuccessfulGift(interaction.user.id)
       return interaction.reply({ content: `${interaction.user} gifted ${nfd_item.name} to ${recipient}! How kind!` })
     }
   }
@@ -519,6 +497,96 @@ class NFD {
     })
 
     return interaction.reply({ content: nfd.name + ' has been set as your favourite NFD!', ephemeral: true })
+  }
+
+  @Slash('slurp', {
+    description: "A lotta yall still don't get it. You can slurp two NFDs to turn them into a new NFD.",
+  })
+  @SlashGroup('nfd')
+  async slurp(
+    @SlashOption('first', {
+      type: ApplicationCommandOptionType.String,
+      description: 'The first NFD to be slurped.',
+    })
+    first: string,
+    @SlashOption('second', {
+      type: ApplicationCommandOptionType.String,
+      description: 'The second NFD to be slurped.',
+    })
+    second: string,
+    interaction: CommandInteraction
+  ) {
+    const ownerMember = getCallerFromCommand(interaction)
+    if (!ownerMember) {
+      return interaction.reply({ content: 'User undefined X(', ephemeral: true })
+    }
+
+    // Check for cooldowns.
+    const ownerRecord = await this.getUserFromDB(ownerMember.id)
+    if (ownerRecord.lastSlurp.getTime() + this.MINT_COOLDOWN > Date.now()) {
+      return interaction.reply({
+        content: `Don't be greedy! You can slurp again <t:${Math.round(
+          (ownerRecord.lastMint.getTime() + this.MINT_COOLDOWN) / 1000
+        )}:R>.`,
+        ephemeral: true,
+      })
+    }
+
+    // Loop over the two NFDs, confirming that they exist and that the caller owns them
+    const nfdNames = [first, second]
+    for (let i = 0; i < 2; i++) {
+      const nfd = await this.getNFDByName(nfdNames[i])
+      // Confirm the NFD exists
+      if (!nfd) {
+        return interaction.reply({ content: `I couldn't find an NFD with the name "${nfdNames[i]}".`, ephemeral: true })
+      }
+
+      // Confirm that the caller owns the NFD
+      if (nfd.owner != interaction.user.id) {
+        return interaction.reply({
+          content: `You don't own "${nfdNames[i]}"! You can't slurp something you don't own!`,
+          ephemeral: true,
+        })
+      }
+    }
+
+    // Both NFDs are verified now. First generate a new NFD before deleting anything.
+    const parts = await this.makeNFDcode()
+
+    // Check to see if we failed to make a unique one
+    if (!parts) {
+      return interaction.reply({
+        content: "I tried really hard but I wasn't able to make a unique NFD for you. Sorry... :'(",
+        ephemeral: true,
+      })
+    }
+
+    // We have the new NFD ready to go. Delete the old two.
+    this.client.nFDItem
+      .deleteMany({
+        where: {
+          name: {
+            in: [first, second],
+          },
+        },
+      })
+      .then(() => {
+        this.composeNFD(parts)
+      })
+      .then(() => {
+        return this.storeNFDinDatabase(parts, getCallerFromCommand(interaction))
+      })
+      .then((nfd) => {
+        this.makeReply(nfd, interaction, ownerMember)
+      })
+      .then(() => {
+        this.updateDBSuccessfulSlurp(ownerMember.id)
+      })
+      .catch((err) => {
+        interaction.reply({ content: 'The dinochain broke... what a surprise', ephemeral: true }).catch((err) => {
+          console.error('Something really went wrong minting this NFD...', err)
+        })
+      })
   }
 
   private getParts(): BodyParts {
@@ -668,7 +736,7 @@ class NFD {
     })
   }
 
-  private async updateDBsuccessfulGift(userId: string) {
+  private async updateDBSuccessfulGift(userId: string) {
     return await this.client.nFDEnjoyer.upsert({
       where: {
         id: userId,
@@ -679,6 +747,21 @@ class NFD {
       create: {
         id: userId,
         lastGiftGiven: new Date(),
+      },
+    })
+  }
+
+  private async updateDBSuccessfulSlurp(userId: string) {
+    return await this.client.nFDEnjoyer.upsert({
+      where: {
+        id: userId,
+      },
+      update: {
+        lastSlurp: new Date(),
+      },
+      create: {
+        id: userId,
+        lastSlurp: new Date(),
       },
     })
   }
@@ -733,7 +816,7 @@ class NFD {
           .setFooter({
             text: `${nfd.name} is worth \$${this.getNFDPrice(nfd).toFixed(2)}!`,
           })
-          .setDescription(`**Minted:** <t:${Math.round(nfd.mintDate.getTime() / 1000)}>`)
+          .setDescription(`**Created:** <t:${Math.round(nfd.mintDate.getTime() / 1000)}>`)
         return interaction.reply({
           embeds: [embed],
           files: [imageAttachment],
@@ -748,6 +831,32 @@ class NFD {
           ephemeral: true,
         })
       })
+  }
+
+  private async makeNFDcode() {
+    // Loop through, repeatedly trying to make an NFD that doesn't already exist yet
+    let i = 0
+    let parts: BodyParts
+    do {
+      parts = this.getParts()
+
+      const isDuplicate = await this.getNFDByCode(parts.code)
+      if (isDuplicate) {
+        console.log(parts.code + 'already exists in the database')
+        continue
+      }
+
+      parts.name = this.makeName(parts)
+      const isClash = await this.getNFDByName(parts.name)
+      if (isClash) {
+        console.log(parts.code + ' is unique but the name ' + parts.name + ' exists. Clash in naming detected!')
+        console.log('clashing NFD is ' + isClash.code)
+        continue
+      }
+
+      return parts
+    } while (i++ < this.MAXIMUM_MINT_ATTEMPTS)
+    return null
   }
 
   // ==================
