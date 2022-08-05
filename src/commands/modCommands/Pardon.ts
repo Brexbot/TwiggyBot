@@ -1,4 +1,4 @@
-import { Client, Discord, Guard, SimpleCommand, SimpleCommandMessage} from 'discordx'
+import { Client, Discord, Guard, SimpleCommand, SimpleCommandMessage } from 'discordx'
 import { GuildMember } from 'discord.js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
