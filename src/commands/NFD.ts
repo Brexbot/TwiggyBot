@@ -36,7 +36,7 @@ type BodyParts = {
 // })
 @injectable()
 class NFD {
-  private MINT_COOLDOWN = 1000 //* 60 * 60 * 23
+  private MINT_COOLDOWN = 1000 * 60 * 60 * 23
   private GIFT_COOLDOWN = 1000 * 60 * 60
   private RENAME_COOLDOWN = 1000 * 60 * 60
   private SLURP_COOLDOWN = 1000 * 60 * 60
