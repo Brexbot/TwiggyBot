@@ -1,4 +1,4 @@
-import { cyrb53, getRandomElement, roll_dy_x_TimesPick_z, shuffleArray } from '../../commands/RPG/util'
+import { cyrb53, getRandomElement, roll_dy_x_TimesPick_z, shuffleArray } from '../commands/RPG/util'
 import fs from 'fs'
 import * as path from 'path'
 import {
@@ -11,11 +11,11 @@ import {
   PermissionFlagsBits,
 } from 'discord.js'
 import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
-import { getCallerFromCommand } from '../../utils/CommandUtils'
+import { getCallerFromCommand } from '../utils/CommandUtils'
 import { injectable } from 'tsyringe'
-import { ORM } from '../../persistence'
-import { NFDItem } from '../../../prisma/generated/prisma-client-js'
-import { IsSuperUser, memberIsSU } from '../../guards/RoleChecks'
+import { ORM } from '../persistence'
+import { NFDItem } from '../../prisma/generated/prisma-client-js'
+import { IsSuperUser, memberIsSU } from '../guards/RoleChecks'
 import sharp from 'sharp'
 
 type BodyParts = {
@@ -24,7 +24,7 @@ type BodyParts = {
   eyes: string
   code: string
   name?: string
-  filePath?: string
+  fileName?: string
 }
 
 @Discord()
@@ -36,7 +36,7 @@ type BodyParts = {
 // })
 @injectable()
 class NFD {
-  private MINT_COOLDOWN = 1000 * 60 * 60 * 23
+  private MINT_COOLDOWN = 1000 //* 60 * 60 * 23
   private GIFT_COOLDOWN = 1000 * 60 * 60
   private RENAME_COOLDOWN = 1000 * 60 * 60
   private SLURP_COOLDOWN = 1000 * 60 * 60
@@ -48,8 +48,8 @@ class NFD {
 
   private MAX_NFD_PRICE_EXPONENT = 30
 
-  private FRAGMENT_PATH = path.join(__dirname, '../../assets/NFD/fragments')
-  private OUTPUT_PATH = path.join(__dirname, '../../assets/NFD/images')
+  private FRAGMENT_PATH = path.join(__dirname, '../assets/NFD/fragments')
+  private OUTPUT_PATH = path.join(__dirname, '../assets/NFD/images')
 
   private MAX_NFD_LISTED = 10
 
@@ -253,11 +253,11 @@ class NFD {
     const imageNFD = favourite ?? toShow[0]
 
     this.ensureImageExists(imageNFD.filename, imageNFD.name, imageNFD.code)
-      .then((validatedFilename) => {
-        if (!validatedFilename) {
+      .then((validatedFilePath) => {
+        if (!validatedFilePath) {
           return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
         }
-        const imageAttachment = new AttachmentBuilder(validatedFilename)
+        const imageAttachment = new AttachmentBuilder(validatedFilePath)
         const embed = new EmbedBuilder()
           .setColor(this.NFD_COLOR)
           .setAuthor({
@@ -265,7 +265,7 @@ class NFD {
             iconURL: owner.user.avatarURL() ?? undefined,
           })
           .setTitle(ownerName + "'s collection")
-          .setImage(`attachment://${path.basename(validatedFilename)}`)
+          .setImage(`attachment://${path.basename(validatedFilePath)}`)
           .setFooter({
             text: `${ownerName} owns ${collection.length} NFDs worth \$${totalValue.toFixed(2)} in total. 💎🙌`,
           })
@@ -616,8 +616,11 @@ class NFD {
         blend: 'over',
       },
     ])
-    await out.toFile((parts.filePath = path.join(this.OUTPUT_PATH, parts.name + '.png')))
-    return Promise.resolve()
+    if (!parts.fileName) {
+      parts.fileName = parts.name + '.png'
+    }
+    await out.toFile(path.join(this.OUTPUT_PATH, parts.fileName))
+    return Promise.resolve(parts)
   }
 
   private async getNFDByCode(code: string) {
@@ -637,21 +640,18 @@ class NFD {
   }
 
   private async storeNFDinDatabase(parts: BodyParts, owner: GuildMember | null) {
-    if (!parts.name || !parts.filePath) {
+    if (!parts.name || !parts.fileName) {
       return Promise.reject('Name and filePath cannot be null')
     }
     if (!owner) {
       return Promise.reject('User cannot be null.')
     }
 
-    console.log('Saving as ' + parts.name)
-    console.log('Saving code ' + parts.code)
-
     const entry = await this.client.nFDItem.create({
       data: {
         name: parts.name,
         code: parts.code,
-        filename: parts.filePath,
+        filename: parts.fileName,
         owner: owner.id,
         mintDate: new Date(),
         previousOwners: `<@${owner.id}>`,
@@ -777,18 +777,21 @@ class NFD {
     return 2 ** Math.min(nfd.previousOwners.split(',').length - 1 + Math.random(), this.MAX_NFD_PRICE_EXPONENT)
   }
 
-  private async ensureImageExists(filePath: string, name: string, code: string) {
+  private async ensureImageExists(fileName: string, name: string, code: string) {
+    const fullPath = path.join(this.OUTPUT_PATH, fileName)
     // If the file exists, easy just return the name
-    if (fs.existsSync(filePath)) {
-      return Promise.resolve(filePath)
+    if (fs.existsSync(fullPath)) {
+      return Promise.resolve(fullPath)
     }
 
     const parts = this.codeToParts(code)
+    parts.fileName = fileName
+    parts.name = name
 
     return await this.composeNFD(parts)
-      .then(() => {
-        this.client.nFDItem.update({ where: { name: name }, data: { filename: parts.filePath } })
-        return Promise.resolve(parts.filePath)
+      .then((parts) => {
+        this.client.nFDItem.update({ where: { name: name }, data: { filename: parts.fileName } })
+        return Promise.resolve(fullPath)
       })
       .catch(() => {
         return Promise.reject('The required image fragments are missing.')
@@ -804,16 +807,16 @@ class NFD {
     // Check for the existence of the image in the cache, if it doesn't exist, make it.
 
     this.ensureImageExists(nfd.filename, nfd.name, nfd.code)
-      .then((validatedFilename) => {
-        if (!validatedFilename) {
+      .then((validatedFilePath) => {
+        if (!validatedFilePath) {
           return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
         }
-        const imageAttachment = new AttachmentBuilder(validatedFilename)
+        const imageAttachment = new AttachmentBuilder(validatedFilePath)
         const embed = new EmbedBuilder()
           .setColor(this.NFD_COLOR)
           .setAuthor({ name: author, iconURL: avatar })
           .setTitle(nfdName)
-          .setImage(`attachment://${path.basename(validatedFilename)}`)
+          .setImage(`attachment://${path.basename(validatedFilePath)}`)
           .setFooter({
             text: `${nfd.name} is worth \$${this.getNFDPrice(nfd).toFixed(2)}!`,
           })

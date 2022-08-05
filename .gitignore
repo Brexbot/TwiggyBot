@@ -116,4 +116,4 @@ prisma/
 !prisma/schema.prisma
 
 # Generated "NFD" images
-src/commands/NFDs/images
+src/assets/NFD/images
