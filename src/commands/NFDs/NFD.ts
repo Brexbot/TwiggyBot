@@ -36,9 +36,10 @@ type BodyParts = {
 // })
 @injectable()
 class NFD {
-  private MINT_COOLDOWN = 1000 //* 60 * 60 * 23
+  private MINT_COOLDOWN = 1000 * 60 * 60 * 23
   private GIFT_COOLDOWN = 1000 * 60 * 60
   private RENAME_COOLDOWN = 1000 * 60 * 60
+  private SLURP_COOLDOWN = 1000 * 60 * 60
 
   private MAXIMUM_MINT_ATTEMPTS = 10
 
@@ -47,8 +48,8 @@ class NFD {
 
   private MAX_NFD_PRICE_EXPONENT = 30
 
-  private FRAGMENT_PATH = path.join(__dirname, 'fragments')
-  private OUTPUT_PATH = path.join(__dirname, 'images')
+  private FRAGMENT_PATH = path.join(__dirname, '../../assets/NFD/fragments')
+  private OUTPUT_PATH = path.join(__dirname, '../../assets/NFD/images')
 
   private MAX_NFD_LISTED = 10
 
@@ -523,10 +524,10 @@ class NFD {
 
     // Check for cooldowns.
     const ownerRecord = await this.getUserFromDB(ownerMember.id)
-    if (ownerRecord.lastSlurp.getTime() + this.MINT_COOLDOWN > Date.now()) {
+    if (ownerRecord.lastSlurp.getTime() + this.SLURP_COOLDOWN > Date.now()) {
       return interaction.reply({
         content: `Don't be greedy! You can slurp again <t:${Math.round(
-          (ownerRecord.lastMint.getTime() + this.MINT_COOLDOWN) / 1000
+          (ownerRecord.lastMint.getTime() + this.SLURP_COOLDOWN) / 1000
         )}:R>.`,
         ephemeral: true,
       })
