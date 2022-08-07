@@ -601,23 +601,10 @@ export class RPG {
         })
         return
       } else if (!this.challengeInProgress) {
-        // This should be impossible. We should not get this far if something is in progress.
-        // Copying /duel, for safety...
-
-        // Check if there is no current duel
+        // If we got here, that means the duel has already started and we were too late to press the button
         await collectionInteraction.followUp({
           content: 'Someone grabbed the gauntlet before you could! (or the challenger wandered off)',
           ephemeral: true,
-        })
-        const button = new ButtonBuilder()
-          .setEmoji('⚔️')
-          .setStyle(ButtonStyle.Primary)
-          .setCustomId('rpg-btn')
-          .setLabel('Accept challenge')
-          .setDisabled(true)
-        const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
-        await collectionInteraction.editReply({
-          components: [row],
         })
         return
       } else {
