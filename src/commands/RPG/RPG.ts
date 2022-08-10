@@ -257,10 +257,10 @@ export class RPG {
 
   @Slash('character', { description: 'Show off your character sheet' })
   async character(
-    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
-    @SlashOption('name', { type: ApplicationCommandOptionType.Boolean, required: false })
-    silent = true,
+    @SlashOption('name', { type: ApplicationCommandOptionType.String, required: false })
     name: string,
+    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
+    silent = true,
     interaction: CommandInteraction
   ) {
     const callerMember = getCallerFromCommand(interaction)
