@@ -11,7 +11,7 @@ import {
   PermissionFlagsBits,
 } from 'discord.js'
 import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
-import { getCallerFromCommand } from '../utils/CommandUtils'
+import { getCallerFromCommand, getNicknameFromUser } from '../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence'
 import { NFDItem } from '../../prisma/generated/prisma-client-js'
@@ -36,10 +36,10 @@ type BodyParts = {
 // })
 @injectable()
 class NFD {
-  private MINT_COOLDOWN = 1000 * 60 * 60 * 23
-  private GIFT_COOLDOWN = 1000 * 60 * 60
-  private RENAME_COOLDOWN = 1000 * 60 * 60
-  private SLURP_COOLDOWN = 1000 * 60 * 60
+  private MINT_COOLDOWN = 1000 //* 60 * 60 * 23
+  private GIFT_COOLDOWN = 1000 //* 60 * 60
+  private RENAME_COOLDOWN = 1000 //* 60 * 60
+  private SLURP_COOLDOWN = 1000 //* 60 * 60
 
   private MAXIMUM_MINT_ATTEMPTS = 10
 
@@ -194,11 +194,11 @@ class NFD {
       where: { owner: owner.id },
     })
 
-    const ownerName = owner.nickname ?? owner.user.username
+    const ownerName = getNicknameFromUser(owner, interaction.guild)
 
     if (collection.length == 0) {
       return interaction.reply({
-        content: ownerName + " doesn't own any NFDs. 🧻🙌",
+        content: `**${ownerName}** doesn't own any NFDs. 🧻🙌`,
         ephemeral: silent,
       })
     }
@@ -303,7 +303,7 @@ class NFD {
     recipient: User | GuildMember,
     interaction: CommandInteraction
   ) {
-    return await this.performGift(nfd, recipient, false, interaction)
+    return this.performGift(nfd, recipient, false, interaction)
   }
 
   // Function that actually carries out the transaction
@@ -313,6 +313,12 @@ class NFD {
     sudo: boolean,
     interaction: CommandInteraction
   ) {
+    if (!interaction.guild) {
+      return interaction.reply({
+        content: 'The Guild is missing. No idea why, but it is.',
+        ephemeral: true,
+      })
+    }
     // Confirm the caller isn't on cooldown (sudo overrides)
     if (!sudo) {
       const caller = await this.client.nFDEnjoyer.findUnique({ where: { id: interaction.user.id } })
@@ -333,7 +339,10 @@ class NFD {
       }
       // and confirm the caller isn't gifting to themselves (sudo overrides)
       if (recipient.id == interaction.user.id) {
-        return interaction.reply({ content: "You can't gift something to yourself.", ephemeral: true })
+        return interaction.reply({
+          content: "It's cute that you tried, but you can't gift something to yourself.",
+          ephemeral: true,
+        })
       }
     }
 
@@ -360,13 +369,17 @@ class NFD {
       },
     })
 
+    const callerName = getNicknameFromUser(interaction.user, interaction.guild)
+    const receiverName = getNicknameFromUser(interaction.user, interaction.guild)
     if (sudo) {
       return interaction.reply({
-        content: `${interaction.user} reassigned ${nfd_item.name} to ${recipient} using their mod powers.`,
+        content: `**${callerName}** reassigned ${nfd_item.name} to **${receiverName}** using their mod powers.`,
       })
     } else {
       await this.updateDBSuccessfulGift(interaction.user.id)
-      return interaction.reply({ content: `${interaction.user} gifted ${nfd_item.name} to ${recipient}! How kind!` })
+      return interaction.reply({
+        content: `**${callerName}** gifted ${nfd_item.name} to **${receiverName}**! How kind!`,
+      })
     }
   }
 
@@ -387,6 +400,10 @@ class NFD {
     replacement: string,
     interaction: CommandInteraction
   ) {
+    if (!interaction.guild) {
+      return interaction.reply({ content: 'The dinochain is broken. The guild is missing :(', ephemeral: true })
+    }
+
     // Sanity check the new name. Only alphanumeric characters allowed
     if (
       replacement.length < this.MIN_NFD_NAME_LENGTH ||
@@ -459,7 +476,9 @@ class NFD {
       },
     })
 
-    return interaction.reply({ content: `${interaction.user} renamed **${name}** to **${replacement}**!` })
+    const callerName = getNicknameFromUser(interaction.user, interaction.guild)
+
+    return interaction.reply({ content: `**${callerName}** renamed **${name}** to **${replacement}**!` })
   }
 
   @Slash('favourite', { description: 'Set your favourite NFD.' })
@@ -624,7 +643,7 @@ class NFD {
   }
 
   private async getNFDByCode(code: string) {
-    return await this.client.nFDItem.findUnique({
+    return this.client.nFDItem.findUnique({
       where: {
         code: code,
       },
@@ -632,7 +651,7 @@ class NFD {
   }
 
   private async getNFDByName(name: string) {
-    return await this.client.nFDItem.findUnique({
+    return this.client.nFDItem.findUnique({
       where: {
         name: name,
       },
@@ -688,7 +707,7 @@ class NFD {
   }
 
   private async getUserFromDB(userId: string) {
-    return await this.client.nFDEnjoyer.upsert({
+    return this.client.nFDEnjoyer.upsert({
       where: {
         id: userId,
       },
@@ -700,7 +719,7 @@ class NFD {
   }
 
   private async updateDBSuccessfulMint(userId: string) {
-    return await this.client.nFDEnjoyer.upsert({
+    return this.client.nFDEnjoyer.upsert({
       where: {
         id: userId,
       },
@@ -721,7 +740,7 @@ class NFD {
   }
 
   private async updateDBfailedMint(userId: string) {
-    return await this.client.nFDEnjoyer.upsert({
+    return this.client.nFDEnjoyer.upsert({
       where: {
         id: userId,
       },
@@ -738,7 +757,7 @@ class NFD {
   }
 
   private async updateDBSuccessfulGift(userId: string) {
-    return await this.client.nFDEnjoyer.upsert({
+    return this.client.nFDEnjoyer.upsert({
       where: {
         id: userId,
       },
@@ -753,7 +772,7 @@ class NFD {
   }
 
   private async updateDBSuccessfulSlurp(userId: string) {
-    return await this.client.nFDEnjoyer.upsert({
+    return this.client.nFDEnjoyer.upsert({
       where: {
         id: userId,
       },
@@ -788,7 +807,7 @@ class NFD {
     parts.fileName = fileName
     parts.name = name
 
-    return await this.composeNFD(parts)
+    return this.composeNFD(parts)
       .then((parts) => {
         this.client.nFDItem.update({ where: { name: name }, data: { filename: parts.fileName } })
         return Promise.resolve(fullPath)
@@ -917,6 +936,10 @@ class NFD {
     cooldown: string,
     interaction: CommandInteraction
   ) {
+    if (!interaction.guild) {
+      return interaction.reply({ content: 'The dinochain is broken. The guild is missing :(', ephemeral: true })
+    }
+
     switch (cooldown) {
       case 'MINT':
         await this.client.nFDEnjoyer.upsert({
@@ -973,6 +996,9 @@ class NFD {
         })
         break
     }
+
+    const callerName = getNicknameFromUser(interaction.user, interaction.guild)
+    const targetName = getNicknameFromUser(chatter, interaction.guild)
     return interaction.reply({ content: `${interaction.user} reset ${cooldown} cooldown for ${chatter}.` })
   }
 
