@@ -133,7 +133,7 @@ class NFD {
   async view(
     @SlashOption('name', { type: ApplicationCommandOptionType.String, required: true })
     name: string,
-    @SlashOption('silent', { type: ApplicationCommandOptionType.String, required: false })
+    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
     silent = true,
     interaction: CommandInteraction
   ) {
