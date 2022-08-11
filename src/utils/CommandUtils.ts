@@ -1,4 +1,4 @@
-import { ButtonInteraction, CommandInteraction, Guild, GuildMember, User } from 'discord.js'
+import {ButtonInteraction, CommandInteraction, Guild, GuildMember, Snowflake, User} from 'discord.js'
 import { SimpleCommandMessage } from 'discordx'
 
 export function getGuildFromCommand(

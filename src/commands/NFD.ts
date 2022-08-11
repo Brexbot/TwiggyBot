@@ -11,7 +11,7 @@ import {
   PermissionFlagsBits,
 } from 'discord.js'
 import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
-import { getCallerFromCommand, getNicknameFromUser } from '../utils/CommandUtils'
+import {getCallerFromCommand, getNicknameFromUser} from '../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence'
 import { NFDItem } from '../../prisma/generated/prisma-client-js'
@@ -36,10 +36,10 @@ type BodyParts = {
 // })
 @injectable()
 class NFD {
-  private MINT_COOLDOWN = 1000 //* 60 * 60 * 23
-  private GIFT_COOLDOWN = 1000 //* 60 * 60
-  private RENAME_COOLDOWN = 1000 //* 60 * 60
-  private SLURP_COOLDOWN = 1000 //* 60 * 60
+  private MINT_COOLDOWN = 1000 * 60 * 60 * 23
+  private GIFT_COOLDOWN = 1000 * 60 * 60
+  private RENAME_COOLDOWN = 1000 * 60 * 60
+  private SLURP_COOLDOWN = 1000 * 60 * 60
 
   private MAXIMUM_MINT_ATTEMPTS = 10
 
@@ -48,8 +48,8 @@ class NFD {
 
   private MAX_NFD_PRICE_EXPONENT = 30
 
-  private FRAGMENT_PATH = path.join(__dirname, '../assets/NFD/fragments')
-  private OUTPUT_PATH = path.join(__dirname, '../assets/NFD/images')
+  private FRAGMENT_PATH = path.join(__dirname, '../../src/assets/NFD/fragments')
+  private OUTPUT_PATH = path.join(__dirname, '../../src/assets/NFD/images')
 
   private MAX_NFD_LISTED = 10
 
@@ -132,8 +132,8 @@ class NFD {
   @SlashGroup('nfd')
   async view(
     @SlashOption('name', { type: ApplicationCommandOptionType.String, required: true })
-    @SlashOption('silent', { type: ApplicationCommandOptionType.String, required: false })
     name: string,
+    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
     silent = true,
     interaction: CommandInteraction
   ) {
@@ -159,8 +159,8 @@ class NFD {
       required: false,
       description: "The person who's collection you want to see.",
     })
-    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
     owner: GuildMember,
+    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
     silent = true,
     interaction: CommandInteraction
   ) {
@@ -370,7 +370,7 @@ class NFD {
     })
 
     const callerName = getNicknameFromUser(interaction.user, interaction.guild)
-    const receiverName = getNicknameFromUser(interaction.user, interaction.guild)
+    const receiverName = getNicknameFromUser(recipient, interaction.guild)
     if (sudo) {
       return interaction.reply({
         content: `**${callerName}** reassigned ${nfd_item.name} to **${receiverName}** using their mod powers.`,
@@ -391,12 +391,12 @@ class NFD {
       required: true,
       description: 'The *existing* name for the NFD.',
     })
+    name: string,
     @SlashOption('replacement', {
       type: ApplicationCommandOptionType.String,
       required: true,
       description: 'The *new* name for the NFD.',
     })
-    name: string,
     replacement: string,
     interaction: CommandInteraction
   ) {
