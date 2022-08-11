@@ -11,7 +11,7 @@ import {
   PermissionFlagsBits,
 } from 'discord.js'
 import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
-import {getCallerFromCommand, getNicknameFromUser} from '../utils/CommandUtils'
+import { getCallerFromCommand, getNicknameFromUser } from '../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence'
 import { NFDItem } from '../../prisma/generated/prisma-client-js'
@@ -267,7 +267,9 @@ class NFD {
           .setTitle(ownerName + "'s collection")
           .setImage(`attachment://${path.basename(validatedFilePath)}`)
           .setFooter({
-            text: `${ownerName} owns ${collection.length} NFDs worth \$${totalValue.toFixed(2)} in total. 💎🙌`,
+            text: `${ownerName} owns ${collection.length} NFDs worth ${totalValue.toFixed(
+              2
+            )} Dino Bucks in total. 💎🙌`,
           })
           .setDescription(ostr)
 
@@ -837,7 +839,7 @@ class NFD {
           .setTitle(nfdName)
           .setImage(`attachment://${path.basename(validatedFilePath)}`)
           .setFooter({
-            text: `${nfd.name} is worth \$${this.getNFDPrice(nfd).toFixed(2)}!`,
+            text: `${nfd.name} is worth ${this.getNFDPrice(nfd).toFixed(2)} Dino Bucks!`,
           })
           .setDescription(`**Created:** <t:${Math.round(nfd.mintDate.getTime() / 1000)}>`)
         return interaction.reply({
