@@ -46,13 +46,3 @@ export function getNicknameFromUser(target: User | GuildMember, guild: Guild): s
     return target.username
   }
 }
-
-export function getNicknameFromId(target: Snowflake, guild: Guild): string {
-  const guildMember = guild.members.cache.get(target)
-  if (guildMember) {
-    return guildMember.nickname ?? guildMember.user.username
-  } else {
-    // Implies the user has left the server
-    return target
-  }
-}

@@ -11,7 +11,7 @@ import {
   PermissionFlagsBits,
 } from 'discord.js'
 import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
-import {getCallerFromCommand, getNicknameFromId, getNicknameFromUser} from '../utils/CommandUtils'
+import {getCallerFromCommand, getNicknameFromUser} from '../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence'
 import { NFDItem } from '../../prisma/generated/prisma-client-js'
@@ -370,7 +370,7 @@ class NFD {
     })
 
     const callerName = getNicknameFromUser(interaction.user, interaction.guild)
-    const receiverName = getNicknameFromId(recipient.id, interaction.guild)
+    const receiverName = getNicknameFromUser(recipient, interaction.guild)
     if (sudo) {
       return interaction.reply({
         content: `**${callerName}** reassigned ${nfd_item.name} to **${receiverName}** using their mod powers.`,
