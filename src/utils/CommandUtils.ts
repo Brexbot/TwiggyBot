@@ -1,4 +1,4 @@
-import { ButtonInteraction, CommandInteraction, Guild, GuildMember, User } from 'discord.js'
+import {ButtonInteraction, CommandInteraction, Guild, GuildMember, Snowflake, User} from 'discord.js'
 import { SimpleCommandMessage } from 'discordx'
 
 export function getGuildFromCommand(
@@ -44,5 +44,15 @@ export function getNicknameFromUser(target: User | GuildMember, guild: Guild): s
   } else {
     // Implies the user has left the server
     return target.username
+  }
+}
+
+export function getNicknameFromId(target: Snowflake, guild: Guild): string {
+  const guildMember = guild.members.cache.get(target)
+  if (guildMember) {
+    return guildMember.nickname ?? guildMember.user.username
+  } else {
+    // Implies the user has left the server
+    return target
   }
 }
