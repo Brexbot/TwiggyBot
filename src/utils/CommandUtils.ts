@@ -1,4 +1,4 @@
-import { ButtonInteraction, CommandInteraction, Guild, GuildMember } from 'discord.js'
+import { ButtonInteraction, CommandInteraction, Guild, GuildMember, User } from 'discord.js'
 import { SimpleCommandMessage } from 'discordx'
 
 export function getGuildFromCommand(
@@ -31,4 +31,18 @@ export function getGuildAndCallerFromCommand(
   command: CommandInteraction | ButtonInteraction | SimpleCommandMessage
 ): [Guild | undefined, GuildMember | undefined] {
   return [getGuildFromCommand(command) ?? undefined, getCallerFromCommand(command) ?? undefined]
+}
+
+export function getNicknameFromUser(target: User | GuildMember, guild: Guild): string {
+  if (target instanceof GuildMember) {
+    return target.nickname ?? target.user.username
+  }
+
+  const guildMember = guild.members.cache.get(target.id)
+  if (guildMember) {
+    return guildMember.nickname ?? guildMember.user.username
+  } else {
+    // Implies the user has left the server
+    return target.username
+  }
 }
