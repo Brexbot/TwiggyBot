@@ -596,6 +596,11 @@ class NFD {
         this.composeNFD(parts)
       })
       .then(() => {
+        // wait for image to exist on disk
+        // 50ms should be wayyyy more than we need for a < 25kb file to be written
+        new Promise((f) => setTimeout(f, 50))
+      })
+      .then(() => {
         return this.storeNFDinDatabase(parts, getCallerFromCommand(interaction))
       })
       .then((nfd) => {
