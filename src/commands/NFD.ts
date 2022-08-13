@@ -795,7 +795,9 @@ class NFD {
 
   private getNFDPrice(nfd: NFDItem): number {
     // Stupid little function to make an NFD more "valuable" the more times it has been traded, with a bit of drift
-    const exponent = Math.tanh((nfd.previousOwners.split(',').length - 1 + Math.random()) / this.MAX_NFD_PRICE_EXPONENT) * this.MAX_NFD_PRICE_EXPONENT
+    const exponent =
+      Math.tanh((nfd.previousOwners.split(',').length - 1 + Math.random()) / this.MAX_NFD_PRICE_EXPONENT) *
+      this.MAX_NFD_PRICE_EXPONENT
     return 2 ** exponent
   }
 
