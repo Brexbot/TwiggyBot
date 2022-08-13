@@ -548,7 +548,7 @@ class NFD {
     if (ownerRecord.lastSlurp.getTime() + this.SLURP_COOLDOWN > Date.now()) {
       return interaction.reply({
         content: `Don't be greedy! You can slurp again <t:${Math.round(
-          (ownerRecord.lastMint.getTime() + this.SLURP_COOLDOWN) / 1000
+          (ownerRecord.lastSlurp.getTime() + this.SLURP_COOLDOWN) / 1000
         )}:R>.`,
         ephemeral: true,
       })
@@ -937,6 +937,7 @@ class NFD {
     @SlashChoice({ name: 'Mint', value: 'MINT' })
     @SlashChoice({ name: 'Rename', value: 'RENAME' })
     @SlashChoice({ name: 'Gift', value: 'GIFT' })
+    @SlashChoice({ name: 'Slurp', value: 'SLURP' })
     @SlashChoice({ name: 'All', value: 'ALL' })
     cooldown: string,
     interaction: CommandInteraction
@@ -985,6 +986,19 @@ class NFD {
           },
         })
         break
+      case 'SLURP':
+        await this.client.nFDEnjoyer.upsert({
+          where: {
+            id: chatter.id,
+          },
+          create: {
+            id: chatter.id,
+          },
+          update: {
+            lastSlurp: new Date('0'),
+          },
+        })
+        break
       case 'ALL':
         await this.client.nFDEnjoyer.upsert({
           where: {
@@ -997,6 +1011,7 @@ class NFD {
             lastMint: new Date('0'),
             lastRename: new Date('0'),
             lastGiftGiven: new Date('0'),
+            lastSlurp: new Date('0'),
           },
         })
         break
