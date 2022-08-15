@@ -2,20 +2,20 @@ import { cyrb53, getRandomElement, roll_dy_x_TimesPick_z, shuffleArray } from '.
 import fs from 'fs'
 import * as path from 'path'
 import {
-  CommandInteraction,
-  GuildMember,
-  AttachmentBuilder,
-  EmbedBuilder,
-  User,
   ApplicationCommandOptionType,
+  AttachmentBuilder,
+  CommandInteraction,
+  EmbedBuilder,
+  GuildMember,
   PermissionFlagsBits,
+  User,
 } from 'discord.js'
 import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
 import { getCallerFromCommand, getNicknameFromUser } from '../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence'
 import { NFDItem } from '../../prisma/generated/prisma-client-js'
-import { IsSuperUser, memberIsSU } from '../guards/RoleChecks'
+import { IsSuperUser } from '../guards/RoleChecks'
 import sharp from 'sharp'
 
 type BodyParts = {
@@ -112,15 +112,9 @@ class NFD {
 
     // mint was successful!
     this.composeNFD(parts)
-      .then(() => {
-        return this.storeNFDinDatabase(parts, getCallerFromCommand(interaction))
-      })
-      .then((nfd) => {
-        this.makeReply(nfd, interaction, ownerMember)
-      })
-      .then(() => {
-        this.updateDBSuccessfulMint(ownerMember.id)
-      })
+      .then(() => this.storeNFDinDatabase(parts, getCallerFromCommand(interaction)))
+      .then((nfd) => this.makeReply(nfd, interaction, ownerMember))
+      .then(() => this.updateDBSuccessfulMint(ownerMember.id))
       .catch((err) => {
         interaction.reply({ content: 'The dinochain broke... what a surprise', ephemeral: true }).catch((err) => {
           console.error('Something really went wrong minting this NFD...', err)
@@ -592,23 +586,10 @@ class NFD {
           },
         },
       })
-      .then(() => {
-        this.composeNFD(parts)
-      })
-      .then(() => {
-        // wait for image to exist on disk
-        // 50ms should be wayyyy more than we need for a < 25kb file to be written
-        new Promise((f) => setTimeout(f, 50))
-      })
-      .then(() => {
-        return this.storeNFDinDatabase(parts, getCallerFromCommand(interaction))
-      })
-      .then((nfd) => {
-        this.makeReply(nfd, interaction, ownerMember)
-      })
-      .then(() => {
-        this.updateDBSuccessfulSlurp(ownerMember.id)
-      })
+      .then(() => this.composeNFD(parts))
+      .then(() => this.storeNFDinDatabase(parts, getCallerFromCommand(interaction)))
+      .then((nfd) => this.makeReply(nfd, interaction, ownerMember))
+      .then(() => this.updateDBSuccessfulSlurp(ownerMember.id))
       .catch((err) => {
         interaction.reply({ content: 'The dinochain broke... what a surprise', ephemeral: true }).catch((err) => {
           console.error('Something really went wrong minting this NFD...', err)
