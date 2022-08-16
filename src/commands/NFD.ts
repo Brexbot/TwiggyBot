@@ -2,12 +2,15 @@ import { cyrb53, getRandomElement, roll_dy_x_TimesPick_z, shuffleArray } from '.
 import fs from 'fs'
 import * as path from 'path'
 import {
+  ApplicationCommandOptionChoiceData,
   ApplicationCommandOptionType,
   AttachmentBuilder,
+  AutocompleteInteraction,
   CommandInteraction,
   EmbedBuilder,
   GuildMember,
   PermissionFlagsBits,
+  Snowflake,
   User,
 } from 'discord.js'
 import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
@@ -125,7 +128,13 @@ class NFD {
   @Slash('view', { description: 'View an existing NFD.' })
   @SlashGroup('nfd')
   async view(
-    @SlashOption('name', { type: ApplicationCommandOptionType.String, required: true })
+    @SlashOption('name', {
+      type: ApplicationCommandOptionType.String,
+      required: true,
+      autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
+        this.allNFDAutoComplete(interaction).then((choices) => interaction.respond(choices))
+      },
+    })
     name: string,
     @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
     silent = true,
@@ -289,6 +298,9 @@ class NFD {
       type: ApplicationCommandOptionType.String,
       description: 'The name of the NFD to be gifted.',
       required: true,
+      autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
+        this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
+      },
     })
     nfd: string,
     @SlashOption('recipient', {
@@ -386,6 +398,9 @@ class NFD {
       type: ApplicationCommandOptionType.String,
       required: true,
       description: 'The *existing* name for the NFD.',
+      autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
+        this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
+      },
     })
     name: string,
     @SlashOption('replacement', {
@@ -483,6 +498,9 @@ class NFD {
     @SlashOption('name', {
       type: ApplicationCommandOptionType.String,
       description: 'The name of your new favourite NFD.',
+      autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
+        this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
+      },
     })
     name: string,
     interaction: CommandInteraction
@@ -523,11 +541,17 @@ class NFD {
     @SlashOption('first', {
       type: ApplicationCommandOptionType.String,
       description: 'The first NFD to be slurped.',
+      autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
+        this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
+      },
     })
     first: string,
     @SlashOption('second', {
       type: ApplicationCommandOptionType.String,
       description: 'The second NFD to be slurped.',
+      autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
+        this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
+      },
     })
     second: string,
     interaction: CommandInteraction
@@ -873,6 +897,39 @@ class NFD {
     return null
   }
 
+  private async userNFDAutoComplete(userId: Snowflake, interaction: AutocompleteInteraction) {
+    return this.client.nFDItem
+      .findMany({
+        where: {
+          owner: userId,
+          name: { startsWith: interaction.options.getFocused(true).value }
+        },
+        orderBy: [{ name: 'asc' }],
+        take: 25,
+      })
+      .then((nfds) =>
+        nfds.map<ApplicationCommandOptionChoiceData>((nfd) => {
+          return { name: nfd.name, value: nfd.name }
+        })
+      )
+  }
+
+  private async allNFDAutoComplete(interaction: AutocompleteInteraction) {
+    return this.client.nFDItem
+      .findMany({
+        where: {
+          name: { startsWith: interaction.options.getFocused(true).value }
+        },
+        orderBy: [{ name: 'asc' }],
+        take: 25,
+      })
+      .then((nfds) =>
+        nfds.map<ApplicationCommandOptionChoiceData>((nfd) => {
+          return { name: nfd.name, value: nfd.name }
+        })
+      )
+  }
+
   // ==================
   // MODERATOR BASEMENT
   // ==================
@@ -884,7 +941,13 @@ class NFD {
   // @SlashGroup('mod', 'nfd')
   @Guard(IsSuperUser)
   async purge(
-    @SlashOption('name', { type: ApplicationCommandOptionType.String, required: true })
+    @SlashOption('name', {
+      type: ApplicationCommandOptionType.String,
+      required: true,
+      autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
+        this.allNFDAutoComplete(interaction).then((choices) => interaction.respond(choices))
+      },
+    })
     name: string,
     interaction: CommandInteraction
   ) {
@@ -1019,6 +1082,9 @@ class NFD {
       type: ApplicationCommandOptionType.String,
       description: 'The name of the NFD to be gifted.',
       required: true,
+      autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
+        this.allNFDAutoComplete(interaction).then((choices) => interaction.respond(choices))
+      },
     })
     @SlashOption('recipient', {
       type: ApplicationCommandOptionType.User,
