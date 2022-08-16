@@ -132,7 +132,7 @@ class NFD {
       type: ApplicationCommandOptionType.String,
       required: true,
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
-        this.nfdAutocomplete(interaction.user.id).then((choices) => interaction.respond(choices))
+        this.userNFDAutoComplete(interaction.user.id).then((choices) => interaction.respond(choices))
       },
     })
     name: string,
@@ -299,7 +299,7 @@ class NFD {
       description: 'The name of the NFD to be gifted.',
       required: true,
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
-        this.nfdAutocomplete(interaction.user.id).then((choices) => interaction.respond(choices))
+        this.userNFDAutoComplete(interaction.user.id).then((choices) => interaction.respond(choices))
       },
     })
     nfd: string,
@@ -399,7 +399,7 @@ class NFD {
       required: true,
       description: 'The *existing* name for the NFD.',
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
-        this.nfdAutocomplete(interaction.user.id).then((choices) => interaction.respond(choices))
+        this.userNFDAutoComplete(interaction.user.id).then((choices) => interaction.respond(choices))
       },
     })
     name: string,
@@ -499,7 +499,7 @@ class NFD {
       type: ApplicationCommandOptionType.String,
       description: 'The name of your new favourite NFD.',
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
-        this.nfdAutocomplete(interaction.user.id).then((choices) => interaction.respond(choices))
+        this.userNFDAutoComplete(interaction.user.id).then((choices) => interaction.respond(choices))
       },
     })
     name: string,
@@ -542,7 +542,7 @@ class NFD {
       type: ApplicationCommandOptionType.String,
       description: 'The first NFD to be slurped.',
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
-        this.nfdAutocomplete(interaction.user.id).then((choices) => interaction.respond(choices))
+        this.userNFDAutoComplete(interaction.user.id).then((choices) => interaction.respond(choices))
       },
     })
     first: string,
@@ -550,7 +550,7 @@ class NFD {
       type: ApplicationCommandOptionType.String,
       description: 'The second NFD to be slurped.',
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
-        this.nfdAutocomplete(interaction.user.id).then((choices) => interaction.respond(choices))
+        this.userNFDAutoComplete(interaction.user.id).then((choices) => interaction.respond(choices))
       },
     })
     second: string,
@@ -897,10 +897,9 @@ class NFD {
     return null
   }
 
-  private async nfdAutocomplete(userId: Snowflake) {
+  private async userNFDAutoComplete(userId: Snowflake) {
     return this.client.nFDItem
-      .findMany({ where: { owner: userId } })
-      .then((nfds) => nfds.sort((a, b) => a.name.localeCompare(b.name)))
+      .findMany({ where: { owner: userId }, orderBy: [{ name: 'asc' }], take: 25 })
       .then((nfds) =>
         nfds.map<ApplicationCommandOptionChoiceData>((nfd) => {
           return { name: nfd.name, value: nfd.name }
