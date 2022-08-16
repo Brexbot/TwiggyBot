@@ -1,6 +1,6 @@
 import 'reflect-metadata'
 import type { Interaction, Message } from 'discord.js'
-import { GatewayIntentBits, IntentsBitField } from 'discord.js'
+import { AutocompleteInteraction, GatewayIntentBits, IntentsBitField } from 'discord.js'
 import { Client, DIService, tsyringeDependencyRegistryEngine } from 'discordx'
 import { container } from 'tsyringe'
 import { importx } from '@discordx/importer'
@@ -42,8 +42,8 @@ bot.once('ready', async () => {
 
   // init all application commands
   await bot.initApplicationCommands({
-    guild: { log: true },
-    global: { log: true },
+    guild: { log: false },
+    global: { log: false },
   })
 
   // To clear all guild commands, uncomment this line,
@@ -60,9 +60,15 @@ bot.once('ready', async () => {
 bot.on('interactionCreate', (interaction: Interaction) => {
   // This should always be a Promise... if it isn't then something is horribly wrong, and we deserve to crash
   try {
-    ;(bot.executeInteraction(interaction) as Promise<unknown>).catch((error) => {
-      console.error(`[Interaction] An unexpected error occurred: ${error}`)
-    })
+    // AutocompleteInteraction doesn't appear to actually be a promise, so we can just execute it
+    // The try/catch should still catch anything horribly wrong.
+    if (interaction instanceof AutocompleteInteraction) {
+      bot.executeInteraction(interaction)
+    } else {
+      ;(bot.executeInteraction(interaction) as Promise<unknown>).catch((error) => {
+        console.error(`[Interaction] An unexpected error occurred: ${error}`)
+      })
+    }
   } catch (error) {
     console.error(error)
   }
