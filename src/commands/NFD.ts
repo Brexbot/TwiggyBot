@@ -572,6 +572,13 @@ class NFD {
       })
     }
 
+    if (first === second) {
+      return interaction.reply({
+        content: `Sorry, dino physics prevents you from slurping the same dino twice... Maybe one day we'll unlock quantum dinos :(`,
+        ephemeral: true,
+      })
+    }
+
     // Loop over the two NFDs, confirming that they exist and that the caller owns them
     const nfdNames = [first, second]
     for (let i = 0; i < 2; i++) {
@@ -902,7 +909,7 @@ class NFD {
       .findMany({
         where: {
           owner: userId,
-          name: { startsWith: interaction.options.getFocused(true).value }
+          name: { startsWith: interaction.options.getFocused(true).value },
         },
         orderBy: [{ name: 'asc' }],
         take: 25,
@@ -918,7 +925,7 @@ class NFD {
     return this.client.nFDItem
       .findMany({
         where: {
-          name: { startsWith: interaction.options.getFocused(true).value }
+          name: { startsWith: interaction.options.getFocused(true).value },
         },
         orderBy: [{ name: 'asc' }],
         take: 25,
