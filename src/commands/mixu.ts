@@ -122,18 +122,17 @@ class Mixu {
 
   @Slash('mixu', { description: 'Miku tile game' })
   async mixuSlashCommand(interaction: CommandInteraction) {
-    await interaction.deferReply()
-
     if (
       !interaction.command?.guild ||
       !interaction.channel?.id ||
       !this.isMixuChannel(interaction.channel.id) ||
       !interaction.command.client.user?.username
     ) {
-      await interaction.followUp({ content: 'This command can only be used in the #mixu channel', ephemeral: true })
+      await interaction.reply({ content: 'This command can only be used in the #mixu channel', ephemeral: true })
       return
     }
 
+    await interaction.deferReply()
     const message = await this.generateMixu(interaction.command.guild, interaction.command.client.user.username)
     await interaction.followUp(message)
   }
@@ -157,18 +156,17 @@ class Mixu {
 
   @Slash('bestmixu', { description: 'Show best mixu' })
   async bestMixuSlashCommand(interaction: CommandInteraction) {
-    await interaction.deferReply()
-
     if (
       !interaction.command?.guild ||
       !interaction.channel?.id ||
       !this.isMixuChannel(interaction.channel.id) ||
       !interaction.command.client.user?.username
     ) {
-      await interaction.followUp({ content: 'This command can only be used in the #mixu channel', ephemeral: true })
+      await interaction.reply({ content: 'This command can only be used in the #mixu channel', ephemeral: true })
       return
     }
 
+    await interaction.deferReply()
     const mixuInfo = await this.formatBestMixu(interaction.command.guild)
     if (!mixuInfo) {
       await interaction.followUp({ content: 'Unable to get current Mixu right now', ephemeral: true })
@@ -194,13 +192,12 @@ class Mixu {
 
   @Slash('mikustare', { description: 'Output correctly aligned Miku picture' })
   async mikustareSlash(interaction: CommandInteraction) {
-    await interaction.deferReply()
-
     if (!interaction.command?.guild || !interaction.channel?.id || !this.isMixuChannel(interaction.channel.id)) {
-      await interaction.followUp({ content: 'This command can only be used in the #mixu channel', ephemeral: true })
+      await interaction.reply({ content: 'This command can only be used in the #mixu channel', ephemeral: true })
       return
     }
 
+    await interaction.deferReply()
     const text = this.stringify(this.numbers, interaction.command.guild)
     await interaction.followUp(
       `:regional_indicator_m::regional_indicator_i::regional_indicator_k::regional_indicator_u:${text}`
