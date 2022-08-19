@@ -31,7 +31,7 @@ type BodyParts = {
 }
 
 @Discord()
-@SlashGroup({ name: 'nfd', description: 'Take part in the non-fungible dino economy' })
+@SlashGroup({ name: 'dino', description: 'Birth, collect, and trade adorable dinos.' })
 // @SlashGroup({
 //   name: 'mod',
 //   description: 'Moderator only commands',
@@ -70,8 +70,8 @@ class NFD {
     }
   }
 
-  @Slash('mint', { description: 'Attempt to mint a new NFD.' })
-  @SlashGroup('nfd')
+  @Slash('hatch', { description: 'Attempt to hatch a new dino.' })
+  @SlashGroup('dino')
   async mint(interaction: CommandInteraction) {
     const ownerMember = getCallerFromCommand(interaction)
     if (!ownerMember) {
@@ -82,7 +82,7 @@ class NFD {
     const ownerRecordPrev = await this.getUserFromDB(ownerMember.id)
     if (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN > Date.now()) {
       return interaction.reply({
-        content: `Don't be greedy! You can mint again <t:${Math.round(
+        content: `Don't be greedy! You can hatch again <t:${Math.round(
           (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN) / 1000
         )}:R>.`,
         ephemeral: true,
@@ -94,22 +94,22 @@ class NFD {
     // Check to see if we failed to make a unique one
     if (!parts) {
       return interaction.reply({
-        content: "I tried really hard but I wasn't able to make a unique NFD for you. Sorry... :'(",
+        content: "I tried really hard but I wasn't able to make a unique dino for you. Sorry... :'(",
         ephemeral: true,
       })
     }
 
-    // If we got this far then we are all set to mint.
-    // Roll the mint check
+    // If we got this far then we are all set to hatch.
+    // Roll the hatch check
     const res = roll_dy_x_TimesPick_z(4, 1, 1)
     if (res <= 3 - ownerRecordPrev.consecutiveFails) {
       this.updateDBfailedMint(ownerMember.id)
       const nextMint = Math.round((Date.now() + this.MINT_COOLDOWN) / 1000)
       const numbers = ['1st', '2nd', '3rd', '4th'] // Should never get to 4th
       return interaction.reply({
-        content: `You failed to mint for the ${
+        content: `You failed to hatch the egg (${
           numbers[ownerRecordPrev.consecutiveFails]
-        } time, better luck next time. You can try again <t:${nextMint}:R>`,
+        } attempt), better luck next time. You can try again <t:${nextMint}:R>`,
       })
     }
 
@@ -119,14 +119,16 @@ class NFD {
       .then((nfd) => this.makeReply(nfd, interaction, ownerMember))
       .then(() => this.updateDBSuccessfulMint(ownerMember.id))
       .catch((err) => {
-        interaction.reply({ content: 'The dinochain broke... what a surprise', ephemeral: true }).catch((err) => {
-          console.error('Something really went wrong minting this NFD...', err)
-        })
+        interaction
+          .reply({ content: 'An asteroid came and broke everything... what a surprise', ephemeral: true })
+          .catch((err) => {
+            console.error('Something really went wrong hatching this dino...', err)
+          })
       })
   }
 
-  @Slash('view', { description: 'View an existing NFD.' })
-  @SlashGroup('nfd')
+  @Slash('view', { description: 'View an existing dino.' })
+  @SlashGroup('dino')
   async view(
     @SlashOption('name', {
       type: ApplicationCommandOptionType.String,
@@ -141,12 +143,12 @@ class NFD {
     interaction: CommandInteraction
   ) {
     if (!interaction.guild) {
-      return interaction.reply({ content: 'The dinochain is broken. The guild is missing :(', ephemeral: true })
+      return interaction.reply({ content: 'The ecosystem is broken. The guild is missing :(', ephemeral: true })
     }
 
     const nfd = await this.getNFDByName(name)
     if (!nfd) {
-      return interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
+      return interaction.reply({ content: "I couldn't find an dino with that name.", ephemeral: true })
     }
 
     const owner = interaction.guild.members.cache.get(nfd.owner)
@@ -154,8 +156,8 @@ class NFD {
     return this.makeReply(nfd, interaction, owner, silent)
   }
 
-  @Slash('collection', { description: "View a fellow NFD enjoyer's collection." })
-  @SlashGroup('nfd')
+  @Slash('collection', { description: "View a fellow dino enjoyer's collection." })
+  @SlashGroup('dino')
   async colleciton(
     @SlashOption('owner', {
       type: ApplicationCommandOptionType.User,
@@ -175,7 +177,7 @@ class NFD {
     if (!owner) {
       if (!caller) {
         return interaction.reply({
-          content: 'The calling user is missing, and not alternative owner was provided. No one to look for.',
+          content: 'The calling user is missing, and no alternative owner was provided. No one to look for.',
           ephemeral: true,
         })
       }
@@ -201,7 +203,7 @@ class NFD {
 
     if (collection.length == 0) {
       return interaction.reply({
-        content: `**${ownerName}** doesn't own any NFDs. 🧻🙌`,
+        content: `**${ownerName}** doesn't own any dinos. 🧻🙌`,
         ephemeral: silent,
       })
     }
@@ -270,9 +272,9 @@ class NFD {
           .setTitle(ownerName + "'s collection")
           .setImage(`attachment://${path.basename(validatedFilePath)}`)
           .setFooter({
-            text: `${ownerName} owns ${collection.length} NFDs worth ${totalValue.toFixed(
+            text: `${ownerName} owns ${collection.length} dinos worth ${totalValue.toFixed(
               2
-            )} Dino Bucks in total. 💎🙌`,
+            )} Dino Bucks in total. 🦖🙌`,
           })
           .setDescription(ostr)
 
@@ -291,12 +293,12 @@ class NFD {
       })
   }
 
-  @Slash('gift', { description: 'Gift your NFD to another chatter. How kind.' })
-  @SlashGroup('nfd')
+  @Slash('gift', { description: 'Gift your dino to another chatter. How kind.' })
+  @SlashGroup('dino')
   async gift(
     @SlashOption('nfd', {
       type: ApplicationCommandOptionType.String,
-      description: 'The name of the NFD to be gifted.',
+      description: 'The name of the dino to be gifted.',
       required: true,
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
         this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
@@ -305,7 +307,7 @@ class NFD {
     nfd: string,
     @SlashOption('recipient', {
       type: ApplicationCommandOptionType.User,
-      description: 'The chatter to receive the NFD.',
+      description: 'The chatter to receive the dino.',
       required: true,
     })
     recipient: User | GuildMember,
@@ -332,7 +334,7 @@ class NFD {
       const caller = await this.client.nFDEnjoyer.findUnique({ where: { id: interaction.user.id } })
       if (!caller) {
         return interaction.reply({
-          content: 'The dinochain is broken. The calling user is missing :(',
+          content: 'The dinos have run amok. The calling user is missing :(',
           ephemeral: true,
         })
       }
@@ -357,7 +359,7 @@ class NFD {
     // Now confirm the NFD exists
     const nfd_item = await this.getNFDByName(nfd)
     if (!nfd_item) {
-      return interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
+      return interaction.reply({ content: "I couldn't find a dino with that name.", ephemeral: true })
     }
 
     // Confirm that the caller owns the NFD (sudo overrides)
@@ -391,13 +393,13 @@ class NFD {
     }
   }
 
-  @Slash('rename', { description: 'Give your NFD a better name' })
-  @SlashGroup('nfd')
+  @Slash('rename', { description: 'Give your dino a better name' })
+  @SlashGroup('dino')
   async rename(
     @SlashOption('name', {
       type: ApplicationCommandOptionType.String,
       required: true,
-      description: 'The *existing* name for the NFD.',
+      description: 'The *existing* name for the dino.',
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
         this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
       },
@@ -406,13 +408,13 @@ class NFD {
     @SlashOption('replacement', {
       type: ApplicationCommandOptionType.String,
       required: true,
-      description: 'The *new* name for the NFD.',
+      description: 'The *new* name for the dino.',
     })
     replacement: string,
     interaction: CommandInteraction
   ) {
     if (!interaction.guild) {
-      return interaction.reply({ content: 'The dinochain is broken. The guild is missing :(', ephemeral: true })
+      return interaction.reply({ content: 'The dinoverse is broken. The guild is missing :(', ephemeral: true })
     }
 
     // Sanity check the new name. Only alphanumeric characters allowed
@@ -447,7 +449,7 @@ class NFD {
     // Confirm the NFD exists
     const nfd = await this.getNFDByName(name)
     if (!nfd) {
-      return interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
+      return interaction.reply({ content: "I couldn't find a dino with that name.", ephemeral: true })
     }
 
     // Confirm that the caller owns the NFD
@@ -462,7 +464,7 @@ class NFD {
       },
     })
     if (existing) {
-      return interaction.reply({ content: 'An NFD already exists with that name.', ephemeral: true })
+      return interaction.reply({ content: 'A dino already exists with that name.', ephemeral: true })
     }
 
     // All checks passed, update the record and announce it.
@@ -492,12 +494,12 @@ class NFD {
     return interaction.reply({ content: `**${callerName}** renamed **${name}** to **${replacement}**!` })
   }
 
-  @Slash('favourite', { description: 'Set your favourite NFD.' })
-  @SlashGroup('nfd')
+  @Slash('favourite', { description: 'Set your favourite dino.' })
+  @SlashGroup('dino')
   async favourite(
     @SlashOption('name', {
       type: ApplicationCommandOptionType.String,
-      description: 'The name of your new favourite NFD.',
+      description: 'The name of your new favourite dino.',
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
         this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
       },
@@ -508,7 +510,7 @@ class NFD {
     // Confirm the NFD exists
     const nfd = await this.getNFDByName(name)
     if (!nfd) {
-      return interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
+      return interaction.reply({ content: "I couldn't find a dino with that name.", ephemeral: true })
     }
 
     // Confirm that the caller owns the NFD
@@ -530,17 +532,17 @@ class NFD {
       },
     })
 
-    return interaction.reply({ content: nfd.name + ' has been set as your favourite NFD!', ephemeral: true })
+    return interaction.reply({ content: nfd.name + ' has been set as your favourite dino!', ephemeral: true })
   }
 
-  @Slash('slurp', {
-    description: "A lotta yall still don't get it. You can slurp two NFDs to turn them into a new NFD.",
+  @Slash('breed', {
+    description: "A lotta yall still don't get it. You can consume two dinos to create a new dino.",
   })
-  @SlashGroup('nfd')
+  @SlashGroup('dino')
   async slurp(
     @SlashOption('first', {
       type: ApplicationCommandOptionType.String,
-      description: 'The first NFD to be slurped.',
+      description: 'The first dino to be bred.',
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
         this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
       },
@@ -548,7 +550,7 @@ class NFD {
     first: string,
     @SlashOption('second', {
       type: ApplicationCommandOptionType.String,
-      description: 'The second NFD to be slurped.',
+      description: 'The second dino to be bred.',
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
         this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
       },
@@ -565,7 +567,7 @@ class NFD {
     const ownerRecord = await this.getUserFromDB(ownerMember.id)
     if (ownerRecord.lastSlurp.getTime() + this.SLURP_COOLDOWN > Date.now()) {
       return interaction.reply({
-        content: `Don't be greedy! You can slurp again <t:${Math.round(
+        content: `Don't be greedy! You can breed again <t:${Math.round(
           (ownerRecord.lastSlurp.getTime() + this.SLURP_COOLDOWN) / 1000
         )}:R>.`,
         ephemeral: true,
@@ -574,7 +576,7 @@ class NFD {
 
     if (first === second) {
       return interaction.reply({
-        content: `Sorry, dino physics prevents you from slurping the same dino twice... Maybe one day we'll unlock quantum dinos :(`,
+        content: `While a dino *can* "breed" with itself, it doesn't make new dinos.`,
         ephemeral: true,
       })
     }
@@ -585,13 +587,13 @@ class NFD {
       const nfd = await this.getNFDByName(nfdNames[i])
       // Confirm the NFD exists
       if (!nfd) {
-        return interaction.reply({ content: `I couldn't find an NFD with the name "${nfdNames[i]}".`, ephemeral: true })
+        return interaction.reply({ content: `I couldn't find a dino with the name "${nfdNames[i]}".`, ephemeral: true })
       }
 
       // Confirm that the caller owns the NFD
       if (nfd.owner != interaction.user.id) {
         return interaction.reply({
-          content: `You don't own "${nfdNames[i]}"! You can't slurp something you don't own!`,
+          content: `You don't own "${nfdNames[i]}"! You can't breed something you don't own!`,
           ephemeral: true,
         })
       }
@@ -603,7 +605,7 @@ class NFD {
     // Check to see if we failed to make a unique one
     if (!parts) {
       return interaction.reply({
-        content: "I tried really hard but I wasn't able to make a unique NFD for you. Sorry... :'(",
+        content: "I tried really hard but I wasn't able to make a unique dino for you. Sorry... :'(",
         ephemeral: true,
       })
     }
@@ -622,8 +624,8 @@ class NFD {
       .then((nfd) => this.makeReply(nfd, interaction, ownerMember))
       .then(() => this.updateDBSuccessfulSlurp(ownerMember.id))
       .catch((err) => {
-        interaction.reply({ content: 'The dinochain broke... what a surprise', ephemeral: true }).catch((err) => {
-          console.error('Something really went wrong minting this NFD...', err)
+        interaction.reply({ content: 'The dinoverse broke... what a surprise', ephemeral: true }).catch((err) => {
+          console.error('Something really went wrong hatching this dino...', err)
         })
       })
   }
@@ -869,7 +871,7 @@ class NFD {
         })
       })
       .catch((reason) => {
-        const err = 'Something went wrong while building the NFD: ' + reason
+        const err = 'Something went wrong while building the dino: ' + reason
         console.log(err, 'filename: ', nfd.filename, 'nfd code:', nfd.code)
         return interaction.reply({
           content: err,
@@ -942,7 +944,7 @@ class NFD {
   // ==================
 
   @Slash('purge', {
-    description: 'Remove an NFD from the database.',
+    description: 'Remove a dino from the database.',
     defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
   })
   // @SlashGroup('mod', 'nfd')
@@ -960,7 +962,7 @@ class NFD {
   ) {
     const nfd = await this.getNFDByName(name)
     if (!nfd) {
-      return interaction.reply({ content: "I couldn't find an NFD with that name.", ephemeral: true })
+      return interaction.reply({ content: "I couldn't find a dino with that name.", ephemeral: true })
     }
 
     await this.client.nFDItem.delete({
@@ -973,7 +975,7 @@ class NFD {
   }
 
   @Slash('cooldown', {
-    description: 'Reset mint, gift, and/or rename cooldowns.',
+    description: 'Reset hatch, gift, and/or rename cooldowns.',
     defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
   })
   // @SlashGroup('mod', 'nfd')
@@ -988,22 +990,22 @@ class NFD {
     @SlashOption('cooldown', {
       type: ApplicationCommandOptionType.String,
       required: true,
-      description: 'Which NFD cooldown should be cooled down.',
+      description: 'Which dino cooldown should be cooled down.',
     })
-    @SlashChoice({ name: 'Mint', value: 'MINT' })
+    @SlashChoice({ name: 'Hatch', value: 'HATCH' })
     @SlashChoice({ name: 'Rename', value: 'RENAME' })
     @SlashChoice({ name: 'Gift', value: 'GIFT' })
-    @SlashChoice({ name: 'Slurp', value: 'SLURP' })
+    @SlashChoice({ name: 'Breed', value: 'BREED' })
     @SlashChoice({ name: 'All', value: 'ALL' })
     cooldown: string,
     interaction: CommandInteraction
   ) {
     if (!interaction.guild) {
-      return interaction.reply({ content: 'The dinochain is broken. The guild is missing :(', ephemeral: true })
+      return interaction.reply({ content: 'The dinoverse is broken. The guild is missing :(', ephemeral: true })
     }
 
     switch (cooldown) {
-      case 'MINT':
+      case 'HATCH':
         await this.client.nFDEnjoyer.upsert({
           where: {
             id: chatter.id,
@@ -1042,7 +1044,7 @@ class NFD {
           },
         })
         break
-      case 'SLURP':
+      case 'BREED':
         await this.client.nFDEnjoyer.upsert({
           where: {
             id: chatter.id,
@@ -1079,7 +1081,7 @@ class NFD {
   }
 
   @Slash('reassign', {
-    description: 'Forcibly change the owner of an NFD.',
+    description: "Forcibly change a dino's owner.",
     defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
   })
   // @SlashGroup('mod', 'nfd')
@@ -1087,7 +1089,7 @@ class NFD {
   async reassign(
     @SlashOption('nfd', {
       type: ApplicationCommandOptionType.String,
-      description: 'The name of the NFD to be gifted.',
+      description: 'The name of the dino to be gifted.',
       required: true,
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
         this.allNFDAutoComplete(interaction).then((choices) => interaction.respond(choices))
@@ -1095,7 +1097,7 @@ class NFD {
     })
     @SlashOption('recipient', {
       type: ApplicationCommandOptionType.User,
-      description: 'The chatter to receive the NFD.',
+      description: 'The chatter to receive the dino.',
       required: true,
     })
     nfd: string,
