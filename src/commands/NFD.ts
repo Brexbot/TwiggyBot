@@ -61,7 +61,7 @@ class NFD {
   public constructor(private client: ORM) {
     // Check for the existence of the required directories
     if (!fs.existsSync(this.FRAGMENT_PATH)) {
-      console.error(this.FRAGMENT_PATH + ' was missing, NFDs will not work!')
+      console.error(this.FRAGMENT_PATH + ' was missing, dino hatching will not work!')
     }
 
     if (!fs.existsSync(this.OUTPUT_PATH)) {
@@ -148,7 +148,7 @@ class NFD {
 
     const nfd = await this.getNFDByName(name)
     if (!nfd) {
-      return interaction.reply({ content: "I couldn't find an dino with that name.", ephemeral: true })
+      return interaction.reply({ content: "I couldn't find a dino with that name.", ephemeral: true })
     }
 
     const owner = interaction.guild.members.cache.get(nfd.owner)
@@ -203,7 +203,7 @@ class NFD {
 
     if (collection.length == 0) {
       return interaction.reply({
-        content: `**${ownerName}** doesn't own any dinos. 🧻🙌`,
+        content: `**${ownerName}** doesn't own any dinos. 🥚🙌`,
         ephemeral: silent,
       })
     }
@@ -897,7 +897,7 @@ class NFD {
       const isClash = await this.getNFDByName(parts.name)
       if (isClash) {
         console.log(parts.code + ' is unique but the name ' + parts.name + ' exists. Clash in naming detected!')
-        console.log('clashing NFD is ' + isClash.code)
+        console.log('clashing dino is ' + isClash.code)
         continue
       }
 
