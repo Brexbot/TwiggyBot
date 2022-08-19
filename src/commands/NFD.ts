@@ -14,7 +14,7 @@ import {
   User,
 } from 'discord.js'
 import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
-import { getCallerFromCommand, getNicknameFromUser } from '../utils/CommandUtils'
+import { getCallerFromCommand, getNicknameFromUser, isTwitchSub } from '../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence'
 import { NFDItem } from '../../prisma/generated/prisma-client-js'
@@ -39,10 +39,10 @@ type BodyParts = {
 // })
 @injectable()
 class NFD {
-  private MINT_COOLDOWN = 1000 * 60 * 60 * 23
-  private GIFT_COOLDOWN = 1000 * 60 * 60
-  private RENAME_COOLDOWN = 1000 * 60 * 60
-  private SLURP_COOLDOWN = 1000 * 60 * 60
+  private MINT_COOLDOWN = 1000 //* 60 * 60 * 23
+  private GIFT_COOLDOWN = 1000 //* 60 * 60
+  private RENAME_COOLDOWN = 1000 //* 60 * 60
+  private SLURP_COOLDOWN = 1000 //* 60 * 60
 
   private MAXIMUM_MINT_ATTEMPTS = 10
 
@@ -77,6 +77,10 @@ class NFD {
     if (!ownerMember) {
       return interaction.reply({ content: 'User undefined X(', ephemeral: true })
     }
+    const guild = interaction.guild
+    if (!guild) {
+      return interaction.reply({ content: 'Guild is null X(', ephemeral: true })
+    }
 
     // Check for the cooldowns
     const ownerRecordPrev = await this.getUserFromDB(ownerMember.id)
@@ -101,7 +105,13 @@ class NFD {
 
     // If we got this far then we are all set to hatch.
     // Roll the hatch check
-    const res = roll_dy_x_TimesPick_z(4, 1, 1)
+    let res = roll_dy_x_TimesPick_z(4, 1, 1)
+
+    // Twitch subs get a re-roll
+    if (isTwitchSub(ownerMember, guild)) {
+      res = Math.max(res, roll_dy_x_TimesPick_z(4, 1, 1))
+    }
+
     if (res <= 3 - ownerRecordPrev.consecutiveFails) {
       this.updateDBfailedMint(ownerMember.id)
       const nextMint = Math.round((Date.now() + this.MINT_COOLDOWN) / 1000)
