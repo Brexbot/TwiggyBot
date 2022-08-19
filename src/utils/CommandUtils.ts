@@ -46,3 +46,23 @@ export function getNicknameFromUser(target: User | GuildMember, guild: Guild): s
     return target.username
   }
 }
+
+export function isTwitchSub(user: GuildMember, guild: Guild) {
+  const PRIVILEGED_ROLES: Record<string, string[]> = {
+    '103678524375699456': ['345501570483355648'], // The Banana Hammock ['Banana Hammock']
+  }
+
+  try {
+    const roles = PRIVILEGED_ROLES[guild.id]
+    for (let i = 0; i < roles.length; i++) {
+      if (user.roles.cache.has(roles[i])) {
+        return true
+      }
+    }
+  } catch (e) {
+    console.log(`ERROR: Looking for guild: ${guild.name} [${guild.id}] and did not find list of Twitch sub roles.`)
+    return false
+  }
+  // No guild matched. So we return false.
+  return false
+}
