@@ -47,7 +47,7 @@ class NFD {
   private MAXIMUM_MINT_ATTEMPTS = 10
 
   private MIN_NFD_NAME_LENGTH = 6
-  private MAX_NFD_NAME_LENGTH = 15
+  private MAX_NFD_NAME_LENGTH = 25
 
   private MAX_NFD_PRICE_EXPONENT = 30
 
