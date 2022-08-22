@@ -306,7 +306,7 @@ class NFD {
   @Slash('gift', { description: 'Gift your dino to another chatter. How kind.' })
   @SlashGroup('dino')
   async gift(
-    @SlashOption('nfd', {
+    @SlashOption('name', {
       type: ApplicationCommandOptionType.String,
       description: 'The name of the dino to be gifted.',
       required: true,
@@ -314,7 +314,7 @@ class NFD {
         this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
       },
     })
-    nfd: string,
+    name: string,
     @SlashOption('recipient', {
       type: ApplicationCommandOptionType.User,
       description: 'The chatter to receive the dino.',
@@ -323,7 +323,7 @@ class NFD {
     recipient: User | GuildMember,
     interaction: CommandInteraction
   ) {
-    return this.performGift(nfd, recipient, false, interaction)
+    return this.performGift(name, recipient, false, interaction)
   }
 
   // Function that actually carries out the transaction
