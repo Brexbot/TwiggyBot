@@ -70,7 +70,7 @@ class NFD {
     }
   }
 
-  @Slash('hatch', { description: 'Attempt to hatch a new dino.' })
+  @Slash('hatch', { description: 'Attempt to hatch a new dino. Being a subscriber makes hatching more likely.' })
   @SlashGroup('dino')
   async mint(interaction: CommandInteraction) {
     const ownerMember = getCallerFromCommand(interaction)
