@@ -9,6 +9,7 @@ import {
   CommandInteraction,
   EmbedBuilder,
   GuildMember,
+  InteractionResponse,
   PermissionFlagsBits,
   Snowflake,
   User,
@@ -241,10 +242,6 @@ class NFD {
           favourite = collection[i]
         }
       }
-      // Remove the favourite from the collection.
-      collection.filter((x) => {
-        x.name == ownerRecord.favourite
-      })
     }
 
     let totalValue = 0
@@ -252,8 +249,11 @@ class NFD {
       totalValue += this.getNFDPrice(collection[i])
     }
 
-    // Create collage
+    // Create collage. Returns a buffer but discord wants a name attached with it
+    // So we create that from the interaction id.
     const collage = await this.makeCollage(collection, interaction)
+    const fauxFileName = `${interaction.id}.png`
+
     console.log(collage)
 
     // Truncate the output length to stop spam.
@@ -276,43 +276,40 @@ class NFD {
       ostr += '.'
     }
 
-    // The picture in the embed should either be the favourite or the first in the list
-    const imageNFD = favourite ?? toShow[0]
-
-    this.ensureImageExists(imageNFD.filename, imageNFD.name, imageNFD.code)
-      .then((validatedFilePath) => {
-        if (!validatedFilePath) {
-          return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
-        }
-        const imageAttachment = new AttachmentBuilder(validatedFilePath)
-        const embed = new EmbedBuilder()
-          .setColor(this.NFD_COLOR)
-          .setAuthor({
-            name: ownerName,
-            iconURL: owner.user.avatarURL() ?? undefined,
-          })
-          .setTitle(ownerName + "'s collection")
-          .setImage(`attachment://${path.basename(validatedFilePath)}`)
-          .setFooter({
-            text: `${ownerName} owns ${collection.length} dinos worth ${totalValue.toFixed(
-              2
-            )} Dino Bucks in total. 🦖🙌`,
-          })
-          .setDescription(ostr)
-
-        if (favourite) {
-          embed.addFields({ name: 'Favourite:', value: favourite.name, inline: true })
-        }
-
-        return interaction.reply({
-          embeds: [embed],
-          files: [imageAttachment],
-          ephemeral: silent,
-        })
+    const imageAttachment = new AttachmentBuilder(collage, { name: fauxFileName })
+    const embed = new EmbedBuilder()
+      .setColor(this.NFD_COLOR)
+      .setAuthor({
+        name: ownerName,
+        iconURL: owner.user.avatarURL() ?? undefined,
       })
-      .catch((err) => {
-        console.error('something went very wrong in making a collection', err)
+      .setTitle(ownerName + "'s collection")
+      .setImage(`attachment://${fauxFileName}`)
+      .setFooter({
+        text: `${ownerName} owns ${collection.length} dinos worth ${totalValue.toFixed(2)} Dino Bucks in total. 🦖🙌`,
       })
+      .setDescription(ostr)
+
+    if (favourite) {
+      embed.addFields({ name: 'Favourite:', value: favourite.name, inline: true })
+    }
+
+    return interaction.reply({
+      embeds: [embed],
+      files: [imageAttachment],
+      ephemeral: silent,
+    })
+  }
+
+  @Slash('test')
+  @SlashGroup('dino')
+  async test(interaction: CommandInteraction) {
+    const buffer = await sharp(path.join(this.FRAGMENT_PATH, 'monkaRax2_b.png'))
+      .composite([{ input: path.join(this.FRAGMENT_PATH, 'rexCursed_e.png') }])
+      .toBuffer()
+    const attachment = new AttachmentBuilder(buffer, { name: 'test.png' })
+    const embed = new EmbedBuilder().setImage('attachment://test.png')
+    return interaction.reply({ embeds: [embed], files: [attachment] })
   }
 
   @Slash('gift', { description: 'Gift your dino to another chatter. How kind.' })
@@ -886,32 +883,27 @@ class NFD {
       },
     })
 
-    console.log('Compositing')
-    let placed = 0
-    for (let r = 0; r < rowCount; r++) {
-      const y = r * (this.COLLAGE_ROW_MARGIN + this.NFD_HEIGHT)
-      for (let c = 0; c < columnCount; c++) {
-        const x = c * (this.COLLAGE_COLLUMN_MARGIN + this.NFD_WIDTH)
-        const validatedFilePath = await this.ensureImageExists(
-          nfdList[placed].filename,
-          nfdList[placed].name,
-          nfdList[placed].code
-        )
-        console.log(validatedFilePath)
-        out.composite([{ input: validatedFilePath, top: y, left: x, gravity: 'northwest' }])
-        console.log('added ', validatedFilePath)
-        placed++
-        if (placed == nfdList.length) {
-          break
-        }
-      }
-      if (placed == nfdList.length) {
-        break
-      }
-    }
+    console.log('Building list')
+    const compositeList: sharp.OverlayOptions[] = []
 
+    for (let i = 0; i < workingList.length; i++) {
+      const x = (i % columnCount) * (this.COLLAGE_COLLUMN_MARGIN + this.NFD_WIDTH)
+      const y = Math.floor(i / columnCount) * (this.COLLAGE_ROW_MARGIN + this.NFD_HEIGHT)
+
+      const validatedFilePath = await this.ensureImageExists(
+        workingList[i].filename,
+        workingList[i].name,
+        workingList[i].code
+      )
+      console.log(validatedFilePath)
+      compositeList.push({ input: validatedFilePath, top: y, left: x })
+      console.log('added ', validatedFilePath, 'at', x, y)
+    }
+    console.log('compositing')
+    out.composite(compositeList)
     console.log('Compositing done.')
 
+    // await out.toFile(path.join(this.OUTPUT_PATH, `${interaction.id}.png`))
     return out.toBuffer()
   }
 
