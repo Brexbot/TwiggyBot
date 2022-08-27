@@ -9,6 +9,7 @@ import {
   CommandInteraction,
   EmbedBuilder,
   GuildMember,
+  InteractionResponse,
   PermissionFlagsBits,
   Snowflake,
   User,
@@ -54,7 +55,12 @@ class NFD {
   private FRAGMENT_PATH = path.join(__dirname, '../../src/assets/NFD/fragments')
   private OUTPUT_PATH = path.join(__dirname, '../../src/assets/NFD/images')
 
-  private MAX_NFD_LISTED = 10
+  private MAX_NFD_LISTED = 25
+  private MAX_COLLAGE_ITEMS = 25
+  private NFD_WIDTH = 112 // pixels
+  private NFD_HEIGHT = 112
+  private COLLAGE_COLLUMN_MARGIN = 2 // pixels
+  private COLLAGE_ROW_MARGIN = 2
 
   private NFD_COLOR = 0xffbf00
 
@@ -168,7 +174,7 @@ class NFD {
 
   @Slash('collection', { description: "View a fellow dino enjoyer's collection." })
   @SlashGroup('dino')
-  async colleciton(
+  async collection(
     @SlashOption('owner', {
       type: ApplicationCommandOptionType.User,
       required: false,
@@ -233,10 +239,6 @@ class NFD {
           favourite = collection[i]
         }
       }
-      // Remove the favourite from the collection.
-      collection.filter((x) => {
-        x.name == ownerRecord.favourite
-      })
     }
 
     let totalValue = 0
@@ -264,43 +266,34 @@ class NFD {
       ostr += '.'
     }
 
-    // The picture in the embed should either be the favourite or the first in the list
-    const imageNFD = favourite ?? toShow[0]
+    // Create collage. Returns a buffer but discord wants a name attached with it
+    // So we create that from the interaction id.
+    const collage = await this.makeCollage(collection)
+    const fauxFileName = `${interaction.id}.png`
 
-    this.ensureImageExists(imageNFD.filename, imageNFD.name, imageNFD.code)
-      .then((validatedFilePath) => {
-        if (!validatedFilePath) {
-          return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
-        }
-        const imageAttachment = new AttachmentBuilder(validatedFilePath)
-        const embed = new EmbedBuilder()
-          .setColor(this.NFD_COLOR)
-          .setAuthor({
-            name: ownerName,
-            iconURL: owner.user.avatarURL() ?? undefined,
-          })
-          .setTitle(ownerName + "'s collection")
-          .setImage(`attachment://${path.basename(validatedFilePath)}`)
-          .setFooter({
-            text: `${ownerName} owns ${collection.length} dinos worth ${totalValue.toFixed(
-              2
-            )} Dino Bucks in total. 🦖🙌`,
-          })
-          .setDescription(ostr)
-
-        if (favourite) {
-          embed.addFields({ name: 'Favourite:', value: favourite.name, inline: true })
-        }
-
-        return interaction.reply({
-          embeds: [embed],
-          files: [imageAttachment],
-          ephemeral: silent,
-        })
+    const imageAttachment = new AttachmentBuilder(collage, { name: fauxFileName })
+    const embed = new EmbedBuilder()
+      .setColor(this.NFD_COLOR)
+      .setAuthor({
+        name: ownerName,
+        iconURL: owner.user.avatarURL() ?? undefined,
       })
-      .catch((err) => {
-        console.error('something went very wrong in making a collection', err)
+      .setTitle(ownerName + "'s collection")
+      .setImage(`attachment://${fauxFileName}`)
+      .setFooter({
+        text: `${ownerName} owns ${collection.length} dinos worth ${totalValue.toFixed(2)} Dino Bucks in total. 🦖🙌`,
       })
+      .setDescription(ostr)
+
+    if (favourite) {
+      embed.addFields({ name: 'Favourite:', value: favourite.name, inline: true })
+    }
+
+    return interaction.reply({
+      embeds: [embed],
+      files: [imageAttachment],
+      ephemeral: silent,
+    })
   }
 
   @Slash('gift', { description: 'Gift your dino to another chatter. How kind.' })
@@ -849,6 +842,37 @@ class NFD {
       .catch(() => {
         return Promise.reject('The required image fragments are missing.')
       })
+  }
+
+  private async makeCollage(nfdList: NFDItem[]) {
+    const workingList = nfdList.slice(0, Math.min(nfdList.length, this.MAX_COLLAGE_ITEMS))
+
+    const columnCount = Math.ceil(Math.sqrt(workingList.length))
+    const rowCount = Math.ceil(workingList.length / columnCount)
+
+    const collageWidth = columnCount * this.NFD_WIDTH + (columnCount - 1) * this.COLLAGE_COLLUMN_MARGIN
+    const collageHeight = rowCount * this.NFD_HEIGHT + (rowCount - 1) * this.COLLAGE_ROW_MARGIN
+
+    const compositeList = await Promise.all(
+      workingList.map(async (nfd, i) => {
+        const x = (i % columnCount) * (this.COLLAGE_COLLUMN_MARGIN + this.NFD_WIDTH)
+        const y = Math.floor(i / columnCount) * (this.COLLAGE_ROW_MARGIN + this.NFD_HEIGHT)
+
+        const validatedFilePath = await this.ensureImageExists(nfd.filename, nfd.name, nfd.code)
+        return { input: validatedFilePath, top: y, left: x }
+      })
+    )
+
+    return sharp({
+      create: {
+        width: collageWidth,
+        height: collageHeight,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      },
+    })
+      .composite(compositeList)
+      .toFormat('png')
   }
 
   private makeReply(nfd: NFDItem, interaction: CommandInteraction, owner: GuildMember | undefined, ephemeral = false) {
