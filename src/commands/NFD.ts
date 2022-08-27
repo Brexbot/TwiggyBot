@@ -249,13 +249,6 @@ class NFD {
       totalValue += this.getNFDPrice(collection[i])
     }
 
-    // Create collage. Returns a buffer but discord wants a name attached with it
-    // So we create that from the interaction id.
-    const collage = await this.makeCollage(collection, interaction)
-    const fauxFileName = `${interaction.id}.png`
-
-    console.log(collage)
-
     // Truncate the output length to stop spam.
     let toShow: NFDItem[]
     let remainder: number
@@ -275,6 +268,14 @@ class NFD {
     } else {
       ostr += '.'
     }
+
+    // Create collage. Returns a buffer but discord wants a name attached with it
+    // So we create that from the interaction id.
+    const collage = await this.makeCollage(collection)
+    const fauxFileName = `${interaction.id}.png`
+
+    console.log(collage)
+    console.log(fauxFileName)
 
     const imageAttachment = new AttachmentBuilder(collage, { name: fauxFileName })
     const embed = new EmbedBuilder()
@@ -860,7 +861,7 @@ class NFD {
       })
   }
 
-  private async makeCollage(nfdList: NFDItem[], interaction: CommandInteraction) {
+  private async makeCollage(nfdList: NFDItem[]) {
     const workingList = nfdList.slice(0, Math.min(nfdList.length, this.MAX_COLLAGE_ITEMS))
 
     const columnCount = Math.ceil(Math.sqrt(workingList.length))
@@ -870,18 +871,6 @@ class NFD {
     const collageHeight = rowCount * this.NFD_HEIGHT + (rowCount - 1) * this.COLLAGE_ROW_MARGIN
 
     console.log(`collage size: ${columnCount} x ${rowCount}`)
-
-    const fileName = `${interaction.id}.png`
-    const filePath = path.join(this.OUTPUT_PATH, fileName)
-
-    const out = sharp({
-      create: {
-        width: collageWidth,
-        height: collageHeight,
-        channels: 4,
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-      },
-    })
 
     console.log('Building list')
     const compositeList: sharp.OverlayOptions[] = []
@@ -900,11 +889,18 @@ class NFD {
       console.log('added ', validatedFilePath, 'at', x, y)
     }
     console.log('compositing')
-    out.composite(compositeList)
-    console.log('Compositing done.')
 
     // await out.toFile(path.join(this.OUTPUT_PATH, `${interaction.id}.png`))
-    return out.toBuffer()
+    return sharp({
+      create: {
+        width: collageWidth,
+        height: collageHeight,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      },
+    })
+      .composite(compositeList)
+      .toBuffer()
   }
 
   private makeReply(nfd: NFDItem, interaction: CommandInteraction, owner: GuildMember | undefined, ephemeral = false) {
