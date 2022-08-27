@@ -21,8 +21,6 @@ import { ORM } from '../persistence'
 import { NFDItem } from '../../prisma/generated/prisma-client-js'
 import { IsSuperUser } from '../guards/RoleChecks'
 import sharp from 'sharp'
-import { Buffer } from 'buffer'
-import { timeStamp } from 'console'
 
 type BodyParts = {
   body: string
@@ -176,7 +174,7 @@ class NFD {
 
   @Slash('collection', { description: "View a fellow dino enjoyer's collection." })
   @SlashGroup('dino')
-  async colleciton(
+  async collection(
     @SlashOption('owner', {
       type: ApplicationCommandOptionType.User,
       required: false,
@@ -301,7 +299,7 @@ class NFD {
   @Slash('gift', { description: 'Gift your dino to another chatter. How kind.' })
   @SlashGroup('dino')
   async gift(
-    @SlashOption('nfd', {
+    @SlashOption('name', {
       type: ApplicationCommandOptionType.String,
       description: 'The name of the dino to be gifted.',
       required: true,
@@ -309,7 +307,7 @@ class NFD {
         this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
       },
     })
-    nfd: string,
+    name: string,
     @SlashOption('recipient', {
       type: ApplicationCommandOptionType.User,
       description: 'The chatter to receive the dino.',
@@ -318,7 +316,7 @@ class NFD {
     recipient: User | GuildMember,
     interaction: CommandInteraction
   ) {
-    return this.performGift(nfd, recipient, false, interaction)
+    return this.performGift(name, recipient, false, interaction)
   }
 
   // Function that actually carries out the transaction
@@ -855,19 +853,15 @@ class NFD {
     const collageWidth = columnCount * this.NFD_WIDTH + (columnCount - 1) * this.COLLAGE_COLLUMN_MARGIN
     const collageHeight = rowCount * this.NFD_HEIGHT + (rowCount - 1) * this.COLLAGE_ROW_MARGIN
 
-    const compositeList: sharp.OverlayOptions[] = []
+    const compositeList = await Promise.all(
+      workingList.map(async (nfd, i) => {
+        const x = (i % columnCount) * (this.COLLAGE_COLLUMN_MARGIN + this.NFD_WIDTH)
+        const y = Math.floor(i / columnCount) * (this.COLLAGE_ROW_MARGIN + this.NFD_HEIGHT)
 
-    for (let i = 0; i < workingList.length; i++) {
-      const x = (i % columnCount) * (this.COLLAGE_COLLUMN_MARGIN + this.NFD_WIDTH)
-      const y = Math.floor(i / columnCount) * (this.COLLAGE_ROW_MARGIN + this.NFD_HEIGHT)
-
-      const validatedFilePath = await this.ensureImageExists(
-        workingList[i].filename,
-        workingList[i].name,
-        workingList[i].code
-      )
-      compositeList.push({ input: validatedFilePath, top: y, left: x })
-    }
+        const validatedFilePath = await this.ensureImageExists(nfd.filename, nfd.name, nfd.code)
+        return { input: validatedFilePath, top: y, left: x }
+      })
+    )
 
     return sharp({
       create: {
