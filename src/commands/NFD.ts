@@ -57,13 +57,12 @@ class NFD {
   private FRAGMENT_PATH = path.join(__dirname, '../../src/assets/NFD/fragments')
   private OUTPUT_PATH = path.join(__dirname, '../../src/assets/NFD/images')
 
-  private MAX_NFD_LISTED = 10
-
+  private MAX_NFD_LISTED = 25
   private MAX_COLLAGE_ITEMS = 25
   private NFD_WIDTH = 112 // pixels
   private NFD_HEIGHT = 112
-  private COLLAGE_COLLUMN_MARGIN = 10 // pixels
-  private COLLAGE_ROW_MARGIN = 10
+  private COLLAGE_COLLUMN_MARGIN = 2 // pixels
+  private COLLAGE_ROW_MARGIN = 2
 
   private NFD_COLOR = 0xffbf00
 
@@ -274,9 +273,6 @@ class NFD {
     const collage = await this.makeCollage(collection)
     const fauxFileName = `${interaction.id}.png`
 
-    console.log(collage)
-    console.log(fauxFileName)
-
     const imageAttachment = new AttachmentBuilder(collage, { name: fauxFileName })
     const embed = new EmbedBuilder()
       .setColor(this.NFD_COLOR)
@@ -300,17 +296,6 @@ class NFD {
       files: [imageAttachment],
       ephemeral: silent,
     })
-  }
-
-  @Slash('test')
-  @SlashGroup('dino')
-  async test(interaction: CommandInteraction) {
-    const buffer = await sharp(path.join(this.FRAGMENT_PATH, 'monkaRax2_b.png'))
-      .composite([{ input: path.join(this.FRAGMENT_PATH, 'rexCursed_e.png') }])
-      .toBuffer()
-    const attachment = new AttachmentBuilder(buffer, { name: 'test.png' })
-    const embed = new EmbedBuilder().setImage('attachment://test.png')
-    return interaction.reply({ embeds: [embed], files: [attachment] })
   }
 
   @Slash('gift', { description: 'Gift your dino to another chatter. How kind.' })
@@ -870,9 +855,6 @@ class NFD {
     const collageWidth = columnCount * this.NFD_WIDTH + (columnCount - 1) * this.COLLAGE_COLLUMN_MARGIN
     const collageHeight = rowCount * this.NFD_HEIGHT + (rowCount - 1) * this.COLLAGE_ROW_MARGIN
 
-    console.log(`collage size: ${columnCount} x ${rowCount}`)
-
-    console.log('Building list')
     const compositeList: sharp.OverlayOptions[] = []
 
     for (let i = 0; i < workingList.length; i++) {
@@ -884,13 +866,9 @@ class NFD {
         workingList[i].name,
         workingList[i].code
       )
-      console.log(validatedFilePath)
       compositeList.push({ input: validatedFilePath, top: y, left: x })
-      console.log('added ', validatedFilePath, 'at', x, y)
     }
-    console.log('compositing')
 
-    // await out.toFile(path.join(this.OUTPUT_PATH, `${interaction.id}.png`))
     return sharp({
       create: {
         width: collageWidth,
@@ -900,7 +878,7 @@ class NFD {
       },
     })
       .composite(compositeList)
-      .toBuffer()
+      .toFormat('png')
   }
 
   private makeReply(nfd: NFDItem, interaction: CommandInteraction, owner: GuildMember | undefined, ephemeral = false) {
