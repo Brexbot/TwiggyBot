@@ -20,6 +20,8 @@ import { ORM } from '../persistence'
 import { NFDItem } from '../../prisma/generated/prisma-client-js'
 import { IsSuperUser } from '../guards/RoleChecks'
 import sharp from 'sharp'
+import { Buffer } from 'buffer'
+import { timeStamp } from 'console'
 
 type BodyParts = {
   body: string
@@ -39,10 +41,10 @@ type BodyParts = {
 // })
 @injectable()
 class NFD {
-  private MINT_COOLDOWN = 1000 * 60 * 60 * 23
-  private GIFT_COOLDOWN = 1000 * 60 * 60
-  private RENAME_COOLDOWN = 1000 * 60 * 60
-  private SLURP_COOLDOWN = 1000 * 60 * 60
+  private MINT_COOLDOWN = 1000 //* 60 * 60 * 23
+  private GIFT_COOLDOWN = 1000 //* 60 * 60
+  private RENAME_COOLDOWN = 1000 //* 60 * 60
+  private SLURP_COOLDOWN = 1000 //* 60 * 60
 
   private MAXIMUM_MINT_ATTEMPTS = 10
 
@@ -55,6 +57,12 @@ class NFD {
   private OUTPUT_PATH = path.join(__dirname, '../../src/assets/NFD/images')
 
   private MAX_NFD_LISTED = 10
+
+  private MAX_COLLAGE_ITEMS = 25
+  private NFD_WIDTH = 112 // pixels
+  private NFD_HEIGHT = 112
+  private COLLAGE_COLLUMN_MARGIN = 10 // pixels
+  private COLLAGE_ROW_MARGIN = 10
 
   private NFD_COLOR = 0xffbf00
 
@@ -70,7 +78,7 @@ class NFD {
     }
   }
 
-  @Slash('hatch', { description: 'Attempt to hatch a new dino. Being a subscriber makes hatching more likely.' })
+  @Slash('hatch', { description: 'Attempt to hatch a new dino.' })
   @SlashGroup('dino')
   async mint(interaction: CommandInteraction) {
     const ownerMember = getCallerFromCommand(interaction)
@@ -244,6 +252,10 @@ class NFD {
       totalValue += this.getNFDPrice(collection[i])
     }
 
+    // Create collage
+    const collage = await this.makeCollage(collection, interaction)
+    console.log(collage)
+
     // Truncate the output length to stop spam.
     let toShow: NFDItem[]
     let remainder: number
@@ -306,7 +318,7 @@ class NFD {
   @Slash('gift', { description: 'Gift your dino to another chatter. How kind.' })
   @SlashGroup('dino')
   async gift(
-    @SlashOption('name', {
+    @SlashOption('nfd', {
       type: ApplicationCommandOptionType.String,
       description: 'The name of the dino to be gifted.',
       required: true,
@@ -314,7 +326,7 @@ class NFD {
         this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
       },
     })
-    name: string,
+    nfd: string,
     @SlashOption('recipient', {
       type: ApplicationCommandOptionType.User,
       description: 'The chatter to receive the dino.',
@@ -323,7 +335,7 @@ class NFD {
     recipient: User | GuildMember,
     interaction: CommandInteraction
   ) {
-    return this.performGift(name, recipient, false, interaction)
+    return this.performGift(nfd, recipient, false, interaction)
   }
 
   // Function that actually carries out the transaction
@@ -849,6 +861,58 @@ class NFD {
       .catch(() => {
         return Promise.reject('The required image fragments are missing.')
       })
+  }
+
+  private async makeCollage(nfdList: NFDItem[], interaction: CommandInteraction) {
+    const workingList = nfdList.slice(0, Math.min(nfdList.length, this.MAX_COLLAGE_ITEMS))
+
+    const columnCount = Math.ceil(Math.sqrt(workingList.length))
+    const rowCount = Math.ceil(workingList.length / columnCount)
+
+    const collageWidth = columnCount * this.NFD_WIDTH + (columnCount - 1) * this.COLLAGE_COLLUMN_MARGIN
+    const collageHeight = rowCount * this.NFD_HEIGHT + (rowCount - 1) * this.COLLAGE_ROW_MARGIN
+
+    console.log(`collage size: ${columnCount} x ${rowCount}`)
+
+    const fileName = `${interaction.id}.png`
+    const filePath = path.join(this.OUTPUT_PATH, fileName)
+
+    const out = sharp({
+      create: {
+        width: collageWidth,
+        height: collageHeight,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      },
+    })
+
+    console.log('Compositing')
+    let placed = 0
+    for (let r = 0; r < rowCount; r++) {
+      const y = r * (this.COLLAGE_ROW_MARGIN + this.NFD_HEIGHT)
+      for (let c = 0; c < columnCount; c++) {
+        const x = c * (this.COLLAGE_COLLUMN_MARGIN + this.NFD_WIDTH)
+        const validatedFilePath = await this.ensureImageExists(
+          nfdList[placed].filename,
+          nfdList[placed].name,
+          nfdList[placed].code
+        )
+        console.log(validatedFilePath)
+        out.composite([{ input: validatedFilePath, top: y, left: x, gravity: 'northwest' }])
+        console.log('added ', validatedFilePath)
+        placed++
+        if (placed == nfdList.length) {
+          break
+        }
+      }
+      if (placed == nfdList.length) {
+        break
+      }
+    }
+
+    console.log('Compositing done.')
+
+    return out.toBuffer()
   }
 
   private makeReply(nfd: NFDItem, interaction: CommandInteraction, owner: GuildMember | undefined, ephemeral = false) {
