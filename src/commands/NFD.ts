@@ -633,10 +633,9 @@ class NFD {
       ])
 
       await this.makeReply(nfd, interaction, ownerMember)
-    } catch {
-      interaction.reply({ content: 'The dinoverse broke... what a surprise', ephemeral: true }).catch(err => {
-        console.error('Something really went wrong hatching this dino...', err)
-      })
+    } catch (err) {
+      console.error('Something really went wrong breeding dinos...', err)
+      interaction.reply({ content: 'The dinoverse broke... what a surprise', ephemeral: true })
     }
   }
 
