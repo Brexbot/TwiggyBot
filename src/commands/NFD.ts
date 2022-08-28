@@ -617,20 +617,17 @@ class NFD {
       await this.composeNFD(parts)
 
       // We have the new NFD ready to go. Delete the old two.
-      const deleteNfds = this.client.nFDItem
-        .deleteMany({
-          where: {
-            name: {
-              in: [first, second],
-            },
+      const deleteNfds = this.client.nFDItem.deleteMany({
+        where: {
+          name: {
+            in: [first, second],
           },
-        })
+        },
+      })
       const createNfd = this.storeNFDinDatabase(parts, getCallerFromCommand(interaction))
       const successfulSlurp = this.updateDBSuccessfulSlurp(ownerMember.id)
 
-      const [_delete, nfd, _enjoyer] = await this.client.$transaction([
-        deleteNfds, createNfd, successfulSlurp
-      ])
+      const [_delete, nfd, _enjoyer] = await this.client.$transaction([deleteNfds, createNfd, successfulSlurp])
 
       await this.makeReply(nfd, interaction, ownerMember)
     } catch (err) {
