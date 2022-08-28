@@ -682,15 +682,15 @@ class NFD {
     })
   }
 
-  private async storeNFDinDatabase(parts: BodyParts, owner: GuildMember | null) {
+  private storeNFDinDatabase(parts: BodyParts, owner: GuildMember | null) {
     if (!parts.name || !parts.fileName) {
-      return Promise.reject('Name and filePath cannot be null')
+      throw Error('Name and filePath cannot be null')
     }
     if (!owner) {
-      return Promise.reject('User cannot be null.')
+      throw Error('User cannot be null.')
     }
 
-    const entry = await this.client.nFDItem.create({
+    return this.client.nFDItem.create({
       data: {
         name: parts.name,
         code: parts.code,
@@ -700,7 +700,6 @@ class NFD {
         previousOwners: `<@${owner.id}>`,
       },
     })
-    return Promise.resolve(entry)
   }
 
   private makeName(parts: BodyParts) {
@@ -795,7 +794,7 @@ class NFD {
     })
   }
 
-  private async updateDBSuccessfulSlurp(userId: string) {
+  private updateDBSuccessfulSlurp(userId: string) {
     return this.client.nFDEnjoyer.upsert({
       where: {
         id: userId,
