@@ -613,24 +613,31 @@ class NFD {
       })
     }
 
-    // We have the new NFD ready to go. Delete the old two.
-    this.client.nFDItem
-      .deleteMany({
-        where: {
-          name: {
-            in: [first, second],
+    try {
+      await this.composeNFD(parts)
+
+      // We have the new NFD ready to go. Delete the old two.
+      const deleteNfds = this.client.nFDItem
+        .deleteMany({
+          where: {
+            name: {
+              in: [first, second],
+            },
           },
-        },
-      })
-      .then(() => this.composeNFD(parts))
-      .then(() => this.storeNFDinDatabase(parts, getCallerFromCommand(interaction)))
-      .then((nfd) => this.makeReply(nfd, interaction, ownerMember))
-      .then(() => this.updateDBSuccessfulSlurp(ownerMember.id))
-      .catch((err) => {
-        interaction.reply({ content: 'The dinoverse broke... what a surprise', ephemeral: true }).catch((err) => {
-          console.error('Something really went wrong hatching this dino...', err)
         })
+      const createNfd = this.storeNFDinDatabase(parts, getCallerFromCommand(interaction))
+      const successfulSlurp = this.updateDBSuccessfulSlurp(ownerMember.id)
+
+      const [_delete, nfd, _enjoyer] = await this.client.$transaction([
+        deleteNfds, createNfd, successfulSlurp
+      ])
+
+      await this.makeReply(nfd, interaction, ownerMember)
+    } catch {
+      interaction.reply({ content: 'The dinoverse broke... what a surprise', ephemeral: true }).catch(err => {
+        console.error('Something really went wrong hatching this dino...', err)
       })
+    }
   }
 
   private getParts(): BodyParts {
