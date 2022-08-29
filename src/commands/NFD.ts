@@ -875,6 +875,7 @@ class NFD {
     })
       .composite(compositeList)
       .toFormat('png')
+      .toBuffer()
   }
 
   private makeReply(nfd: NFDItem, interaction: CommandInteraction, owner: GuildMember | undefined, ephemeral = false) {
