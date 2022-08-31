@@ -689,6 +689,7 @@ class NFD {
     })
       .composite(compositeList)
       .toFormat('png')
+      .toBuffer()
 
     const fauxFileName = `${interaction.id}.png`
     const imageAttachment = new AttachmentBuilder(buffer, { name: fauxFileName })
