@@ -614,24 +614,27 @@ class NFD {
       })
     }
 
-    // We have the new NFD ready to go. Delete the old two.
-    this.client.nFDItem
-      .deleteMany({
+    try {
+      await this.composeNFD(parts)
+
+      // We have the new NFD ready to go. Delete the old two.
+      const deleteNfds = this.client.nFDItem.deleteMany({
         where: {
           name: {
             in: [first, second],
           },
         },
       })
-      .then(() => this.composeNFD(parts))
-      .then(() => this.storeNFDinDatabase(parts, getCallerFromCommand(interaction)))
-      .then((nfd) => this.makeReply(nfd, interaction, ownerMember))
-      .then(() => this.updateDBSuccessfulSlurp(ownerMember.id))
-      .catch((err) => {
-        interaction.reply({ content: 'The dinoverse broke... what a surprise', ephemeral: true }).catch((err) => {
-          console.error('Something really went wrong hatching this dino...', err)
-        })
-      })
+      const createNfd = this.storeNFDinDatabase(parts, getCallerFromCommand(interaction))
+      const successfulSlurp = this.updateDBSuccessfulSlurp(ownerMember.id)
+
+      const [_delete, nfd, _enjoyer] = await this.client.$transaction([deleteNfds, createNfd, successfulSlurp])
+
+      await this.makeReply(nfd, interaction, ownerMember)
+    } catch (err) {
+      console.error('Something really went wrong breeding dinos...', err)
+      interaction.reply({ content: 'The dinoverse broke... what a surprise', ephemeral: true })
+    }
   }
 
   @Slash('gang', { description: 'Get the whole dino gang together for a group photo.' })
@@ -757,15 +760,15 @@ class NFD {
     })
   }
 
-  private async storeNFDinDatabase(parts: BodyParts, owner: GuildMember | null) {
+  private storeNFDinDatabase(parts: BodyParts, owner: GuildMember | null) {
     if (!parts.name || !parts.fileName) {
-      return Promise.reject('Name and filePath cannot be null')
+      throw Error('Name and filePath cannot be null')
     }
     if (!owner) {
-      return Promise.reject('User cannot be null.')
+      throw Error('User cannot be null.')
     }
 
-    const entry = await this.client.nFDItem.create({
+    return this.client.nFDItem.create({
       data: {
         name: parts.name,
         code: parts.code,
@@ -775,7 +778,6 @@ class NFD {
         previousOwners: `<@${owner.id}>`,
       },
     })
-    return Promise.resolve(entry)
   }
 
   private makeName(parts: BodyParts) {
@@ -870,7 +872,7 @@ class NFD {
     })
   }
 
-  private async updateDBSuccessfulSlurp(userId: string) {
+  private updateDBSuccessfulSlurp(userId: string) {
     return this.client.nFDEnjoyer.upsert({
       where: {
         id: userId,
@@ -948,6 +950,7 @@ class NFD {
     })
       .composite(compositeList)
       .toFormat('png')
+      .toBuffer()
   }
 
   private makeReply(nfd: NFDItem, interaction: CommandInteraction, owner: GuildMember | undefined, ephemeral = false) {
