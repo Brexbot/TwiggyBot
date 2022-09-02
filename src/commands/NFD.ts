@@ -682,7 +682,7 @@ class NFD {
     const imageWidth = Math.max(...compositeList.map((e) => e.left + this.NFD_WIDTH))
     const imageHeight = Math.max(...compositeList.map((e) => e.top + this.NFD_HEIGHT))
 
-    const buffer = await sharp({
+    const buffer = sharp({
       create: {
         width: imageWidth,
         height: imageHeight,
