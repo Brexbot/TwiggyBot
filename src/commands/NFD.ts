@@ -9,6 +9,7 @@ import {
   CommandInteraction,
   EmbedBuilder,
   GuildMember,
+  InteractionResponse,
   PermissionFlagsBits,
   Snowflake,
   User,
@@ -18,7 +19,6 @@ import { getCallerFromCommand, getNicknameFromUser, isTwitchSub } from '../utils
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence'
 import { NFDItem } from '../../prisma/generated/prisma-client-js'
-import { POISSON_POINTS, POISSON_R_FACTOR } from '../assets/NFD/poisson_points'
 import { IsSuperUser } from '../guards/RoleChecks'
 import sharp from 'sharp'
 
@@ -63,7 +63,6 @@ class NFD {
   private COLLAGE_ROW_MARGIN = 2
 
   private NFD_COLOR = 0xffbf00
-  private GANG_IMAGE_SPACING_FACTOR = 0.75
 
   public constructor(private client: ORM) {
     // Check for the existence of the required directories
@@ -635,80 +634,6 @@ class NFD {
       console.error('Something really went wrong breeding dinos...', err)
       interaction.reply({ content: 'The dinoverse broke... what a surprise', ephemeral: true })
     }
-  }
-
-  @Slash('gang', { description: 'Get the whole dino gang together for a group photo.' })
-  @SlashGroup('dino')
-  async gang(
-    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
-    silent = true,
-    interaction: CommandInteraction
-  ) {
-    // Take all the dinos we have made.
-    const dinos = await this.client.nFDItem.findMany()
-
-    // Shuffle the dinos and take as many as we have points for
-    const nDinos = Math.min(dinos.length, POISSON_POINTS.length)
-    const collection = shuffleArray(dinos).slice(0, nDinos)
-
-    const spacingFactor =
-      (this.GANG_IMAGE_SPACING_FACTOR * Math.max(this.NFD_WIDTH, this.NFD_HEIGHT)) / POISSON_R_FACTOR
-
-    const compositeList = await Promise.all(
-      collection.map(async (nfd, i) => {
-        const x = Math.ceil(POISSON_POINTS[i][0] * spacingFactor)
-        const y = Math.ceil(POISSON_POINTS[i][1] * spacingFactor)
-
-        const validatedFilePath = await this.ensureImageExists(nfd.filename, nfd.name, nfd.code)
-        return { input: validatedFilePath, top: y, left: x }
-      })
-    )
-
-    // Order back to front
-    compositeList.sort((a, b) => {
-      return a.top - b.top
-    })
-
-    // Work out the minimum bounds of the image
-    const minX = Math.min(...compositeList.map((e) => e.left))
-    const minY = Math.min(...compositeList.map((e) => e.top))
-
-    // Now shift them so that the origin is 0, 0
-    for (let i = 0; i < compositeList.length; i++) {
-      compositeList[i].left -= minX
-      compositeList[i].top -= minY
-    }
-
-    const imageWidth = Math.max(...compositeList.map((e) => e.left + this.NFD_WIDTH))
-    const imageHeight = Math.max(...compositeList.map((e) => e.top + this.NFD_HEIGHT))
-
-    const buffer = await sharp({
-      create: {
-        width: imageWidth,
-        height: imageHeight,
-        channels: 4,
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-      },
-    })
-      .composite(compositeList)
-      .toFormat('png')
-      .toBuffer()
-
-    const fauxFileName = `${interaction.id}.png`
-    const imageAttachment = new AttachmentBuilder(buffer, { name: fauxFileName })
-    const embed = new EmbedBuilder()
-      .setColor(this.NFD_COLOR)
-      .setTitle('The Dino Gang')
-      .setImage(`attachment://${fauxFileName}`)
-      .setFooter({
-        text: `There are ${compositeList.length} dinos.`,
-      })
-
-    return interaction.reply({
-      embeds: [embed],
-      files: [imageAttachment],
-      ephemeral: silent,
-    })
   }
 
   private getParts(): BodyParts {
