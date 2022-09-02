@@ -9,11 +9,16 @@
 * owp (eyepatch)
 * rax2Cool
 * raxAnime2
+* raxAww
 * raxAyayai
 * raxBlind
 * raxD
 * raxFeels
+* raxGrr
+* raxHmpf
+* raxK
 * raxK2
+* raxLost
 * raxNTL
 * raxOig
 * raxOow
@@ -27,7 +32,7 @@
 * raxSmug2
 * raxThink
 * raxThink1
-* rex
+* rex_owp (double eyepatch)
 * rexAnime
 * rexAww
 * rexAyaya
@@ -46,6 +51,7 @@
 * rexCursed
 * rexDentist
 * rexFeels
+* rexGimp
 * rexGrr
 * rexHappy
 * rexHi
@@ -55,12 +61,16 @@
 * rexKXmas
 * rexKnoir
 * rexKoffee
+* rexKReff
+* rexKSuit
 * rexLove
 * rexMEGAConcern
 * rexMemeHype
 * rexMoM
 * rexNoir
+* rexNotK
 * rexNut
+* rexOK
 * rexOkO3
 * rexOm
 * rexOvvO
@@ -92,7 +102,6 @@
 * rexVnV
 * rexW
 * rexWTF
-* rexWTF.png
 * rexWat
 * rexWizard
 * rexWot
