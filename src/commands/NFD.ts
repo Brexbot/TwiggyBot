@@ -736,7 +736,7 @@ class NFD {
     }
     const bestImageAttachment = new AttachmentBuilder(bestImageValidated)
     const bestEmbed = new EmbedBuilder()
-      .setColor(this.NFD_COLOR)
+      .setColor('#33cc33')
       .setTitle('Best Dino')
       .setDescription(`**${bestDino.name}**`)
       .setImage(`attachment://${path.basename(bestImageValidated)}`)
@@ -752,7 +752,7 @@ class NFD {
     const cursedImageAttachment = new AttachmentBuilder(cursedImageValidated)
     const cursedOwner = getNicknameFromUser(interaction.user, guild)
     const cursedEmbed = new EmbedBuilder()
-      .setColor(this.NFD_COLOR)
+      .setColor('#cc0000')
       .setTitle('Cursed Dino')
       .setDescription(`**${cursedDino.name}**`)
       .setImage(`attachment://${path.basename(cursedImageValidated)}`)
