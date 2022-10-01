@@ -68,6 +68,7 @@ model NFDItem {
   previousOwners  String    @default("")
   coveters        String    @default("")
   shunners        String    @default("")
+  hotness         Int     @default(0)
 }
 
 model NFDEnjoyer {

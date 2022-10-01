@@ -19,6 +19,7 @@ import {
   PermissionFlagsBits,
   Snowflake,
   User,
+  userMention,
 } from 'discord.js'
 import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
 import { getCallerFromCommand, getNicknameFromUser, isTwitchSub } from '../utils/CommandUtils'
@@ -27,6 +28,7 @@ import { ORM } from '../persistence'
 import { NFDItem } from '../../prisma/generated/prisma-client-js'
 import { IsSuperUser } from '../guards/RoleChecks'
 import sharp from 'sharp'
+import { resourceLimits } from 'worker_threads'
 
 type BodyParts = {
   body: string
@@ -37,9 +39,9 @@ type BodyParts = {
   fileName?: string
 }
 
-type DinoMessageCache = {
-  messageId: string
-  dinoName: string
+type DinoStats = {
+  best: NFDItem[]
+  cursed: NFDItem[]
 }
 
 @Discord()
@@ -654,6 +656,117 @@ class NFD {
     }
   }
 
+  @Slash('rate', {
+    description: 'Make your approval or disapproval of a dino known.',
+  })
+  @SlashGroup('dino')
+  async covet(
+    @SlashOption('name', {
+      type: ApplicationCommandOptionType.String,
+      description: 'The lucky dino.',
+      autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
+        this.allNFDAutoComplete(interaction).then((choices) => interaction.respond(choices))
+      },
+    })
+    name: string,
+    @SlashOption('action', {
+      type: ApplicationCommandOptionType.String,
+      required: true,
+      description: 'Covet or Shun the dino?',
+    })
+    @SlashChoice({ name: 'Covet', value: 'COVET' })
+    @SlashChoice({ name: 'Shun', value: 'SHUN' })
+    choice: string,
+    interaction: CommandInteraction
+  ) {
+    const user = interaction.user
+    if (!user) {
+      console.log('ERROR: null user in rate command')
+      return interaction.reply({ content: 'User is null in rate command. :(', ephemeral: true })
+    }
+
+    const guild = interaction.guild
+    if (!guild) {
+      console.log('ERROR: null guild in rate command')
+      return interaction.reply({ content: 'Guild is null in rate command. :(', ephemeral: true })
+    }
+    const result = await this.covetOrShunDino(choice == 'COVET' ? 'COVET' : 'SHUN', name, user, guild, interaction)
+    if (result) {
+      return interaction.reply({
+        content:
+          `Your ${choice == 'COVET' ? 'coveting' : 'shunning'} has been noted.` +
+          ` **${name}** now stands at ${this.calculateHotnessScore(result).toFixed(3)}`,
+        ephemeral: true,
+      })
+    } else {
+      return
+    }
+  }
+
+  @Slash('vids', { description: 'Which dino is best dino? Which is most cursed?' })
+  @SlashGroup('dino')
+  async vids(
+    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
+    silent = true,
+    interaction: CommandInteraction
+  ) {
+    const guild = interaction.guild
+    if (!guild) {
+      console.log('ERROR: null guild in VID command')
+      return interaction.reply({ content: 'Guild is null in VID command. :(', ephemeral: true })
+    }
+
+    const getDinoStats = async (): Promise<DinoStats> => {
+      const best = await this.client.$queryRawUnsafe<NFDItem[]>(
+        `SELECT * FROM NFDItem WHERE hotness=(SELECT MAX(hotness) FROM NFDItem)`
+      )
+      const cursed = await this.client.$queryRawUnsafe<NFDItem[]>(
+        `SELECT * FROM NFDItem WHERE hotness=(SELECT MIN(hotness) FROM NFDItem)`
+      )
+      return { best: best, cursed: cursed }
+    }
+
+    const results = await getDinoStats()
+    const bestDino = getRandomElement(results.best)
+    const cursedDino = getRandomElement(results.cursed)
+
+    const bestImageValidated = await this.ensureImageExists(bestDino.filename, bestDino.name, bestDino.code)
+    if (!bestImageValidated) {
+      return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
+    }
+    const bestImageAttachment = new AttachmentBuilder(bestImageValidated)
+    const bestEmbed = new EmbedBuilder()
+      .setColor(this.NFD_COLOR)
+      .setTitle('Best Dino')
+      .setDescription(`**${bestDino.name}**`)
+      .setImage(`attachment://${path.basename(bestImageValidated)}`)
+      .addFields({ name: 'Owner', value: userMention(bestDino.owner), inline: true })
+      .setFooter({
+        text: `Hotness Rating: ${this.calculateHotnessScore(bestDino.hotness).toFixed(3)}`,
+      })
+
+    const cursedImageValidated = await this.ensureImageExists(cursedDino.filename, cursedDino.name, cursedDino.code)
+    if (!cursedImageValidated) {
+      return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
+    }
+    const cursedImageAttachment = new AttachmentBuilder(cursedImageValidated)
+    const cursedOwner = getNicknameFromUser(interaction.user, guild)
+    const cursedEmbed = new EmbedBuilder()
+      .setColor(this.NFD_COLOR)
+      .setTitle('Cursed Dino')
+      .setDescription(`**${cursedDino.name}**`)
+      .setImage(`attachment://${path.basename(cursedImageValidated)}`)
+      .addFields({ name: 'Owner', value: userMention(cursedDino.owner), inline: true })
+      .setFooter({
+        text: `Hotness Rating: ${this.calculateHotnessScore(cursedDino.hotness).toFixed(3)}`,
+      })
+    return interaction.reply({
+      embeds: [bestEmbed, cursedEmbed],
+      ephemeral: silent,
+      files: [bestImageAttachment, cursedImageAttachment],
+    })
+  }
+
   private getParts(): BodyParts {
     const imageList = fs.readdirSync(this.FRAGMENT_PATH)
     const bodyList = imageList.filter((filename) => filename.includes('_b.png'))
@@ -928,113 +1041,128 @@ class NFD {
           .setEmoji('1025015013959807096')
         const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents([covetButton, shunButton])
 
+        const hotnessScore = this.getHotnessScoreForNFD(nfd)
+
         const embed = new EmbedBuilder()
           .setColor(this.NFD_COLOR)
           .setAuthor({ name: author, iconURL: avatar })
           .setTitle(nfdName)
           .setImage(`attachment://${path.basename(validatedFilePath)}`)
           .setFooter({
-            text: `${nfd.name} is worth ${this.getNFDPrice(nfd).toFixed(2)} Dino Bucks!\nHotness Rating: 0.000.`,
+            text:
+              `${nfd.name} is worth ${this.getNFDPrice(nfd).toFixed(2)} Dino Bucks!` +
+              `\nHotness Rating: ${hotnessScore.toFixed(3)}.`,
           })
           .setDescription(`**Created:** <t:${Math.round(nfd.mintDate.getTime() / 1000)}>`)
 
-        const message = await interaction.reply({
-          embeds: [embed],
-          files: [imageAttachment],
-          ephemeral: ephemeral,
-          components: [row],
-          fetchReply: true,
-        })
-
-        if (!(message instanceof Message)) {
-          // Something has gone very wrong.
-          return interaction.followUp({
-            content: "`message` isn't a `Message`. Foul play is afoot...",
+        // Ephemeral messages don't seem to take button reponses well
+        // So don't add them for an ephemeral view
+        if (ephemeral) {
+          console.log('Ephemeral Reply')
+          return interaction.reply({
+            embeds: [embed],
+            files: [imageAttachment],
+            ephemeral: ephemeral,
           })
-        }
+        } else {
+          const message = await interaction.reply({
+            embeds: [embed],
+            files: [imageAttachment],
+            ephemeral: ephemeral,
+            components: [row],
+            fetchReply: true,
+          })
 
-        // Add it to the name cache
-        this.dinoMessageCache[message.id] = nfd.name
-
-        // Handle button Presses
-        const collector = message.createMessageComponentCollector()
-        collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
-          // await collectionInteraction.deferUpdate()
-          const messageId = collectionInteraction.message.id
-          const guild = collectionInteraction.guild
-
-          if (!guild) {
-            console.log(`ERROR: Guild is null in dino hatch response for message ${messageId}`)
-            collectionInteraction.reply({
-              content: `Something went wrong and the guild was null for your dino hatch response.`,
-              ephemeral: true,
+          if (!(message instanceof Message)) {
+            // Something has gone very wrong.
+            return interaction.followUp({
+              content: "`message` isn't a `Message`. Foul play is afoot...",
             })
-            return
-          } else {
-            // Check the messageId is in the cache
-            if (!this.dinoMessageCache[messageId]) {
-              console.log('ERROR: Message id missing from dino message cache')
-              console.log(messageId, typeof messageId)
-              console.log('Cache:', Object.keys(this.dinoMessageCache))
-              collectionInteraction.reply({
-                content: `Sorry, I don't remember the details of the message you're responding to. Try viewing the dino or covet/shun it directly.`,
-                ephemeral: true,
-              })
-            }
+          }
 
-            const dinoName = this.dinoMessageCache[messageId]
-            let covetShunDifference: null | number = null
-            if (collectionInteraction.customId == this.COVET_BUTTON_ID) {
-              covetShunDifference = await this.covetOrShunDino(
-                'COVET',
-                dinoName,
-                collectionInteraction.user,
-                guild,
-                collectionInteraction
-              )
-            } else if (collectionInteraction.customId == this.SHUN_BUTTON_ID) {
-              covetShunDifference = await this.covetOrShunDino(
-                'SHUN',
-                dinoName,
-                collectionInteraction.user,
-                guild,
-                collectionInteraction
-              )
-            } else {
-              console.log(
-                `ERROR: Interaction id ${collectionInteraction.customId} is unknown for dino hatch message ${messageId}`
-              )
+          // Add it to the name cache
+          this.dinoMessageCache[message.id] = nfd.name
+
+          // Handle button Presses
+          const collector = message.createMessageComponentCollector()
+          collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
+            // await collectionInteraction.deferUpdate()
+            const messageId = collectionInteraction.message.id
+            const guild = collectionInteraction.guild
+
+            if (!guild) {
+              console.log(`ERROR: Guild is null in dino hatch response for message ${messageId}`)
               collectionInteraction.reply({
-                content: `Something went wrong and the type was unknown for your dino hatch response.`,
+                content: `Something went wrong and the guild was null for your dino hatch response.`,
                 ephemeral: true,
               })
               return
+            } else {
+              // Check the messageId is in the cache
+              if (!this.dinoMessageCache[messageId]) {
+                console.log('ERROR: Message id missing from dino message cache')
+                console.log(messageId, typeof messageId)
+                console.log('Cache:', Object.keys(this.dinoMessageCache))
+                collectionInteraction.reply({
+                  content: `Sorry, I don't remember the details of the message you're responding to. Try viewing the dino or covet/shun it directly.`,
+                  ephemeral: true,
+                })
+              }
+
+              const dinoName = this.dinoMessageCache[messageId]
+              let covetShunDifference: null | number = null
+              if (collectionInteraction.customId == this.COVET_BUTTON_ID) {
+                covetShunDifference = await this.covetOrShunDino(
+                  'COVET',
+                  dinoName,
+                  collectionInteraction.user,
+                  guild,
+                  collectionInteraction
+                )
+              } else if (collectionInteraction.customId == this.SHUN_BUTTON_ID) {
+                covetShunDifference = await this.covetOrShunDino(
+                  'SHUN',
+                  dinoName,
+                  collectionInteraction.user,
+                  guild,
+                  collectionInteraction
+                )
+              } else {
+                console.log(
+                  `ERROR: Interaction id ${collectionInteraction.customId} is unknown for dino hatch message ${messageId}`
+                )
+                collectionInteraction.reply({
+                  content: `Something went wrong and the type was unknown for your dino hatch response.`,
+                  ephemeral: true,
+                })
+                return
+              }
+              if (covetShunDifference !== null) {
+                const newHotnessScore = this.calculateHotnessScore(covetShunDifference)
+
+                const previousEmbed = message.embeds[0]
+                const editedEmbed = EmbedBuilder.from(previousEmbed).setFooter({
+                  text:
+                    `${nfd.name} is worth ${this.getNFDPrice(nfd).toFixed(2)} Dino Bucks!` +
+                    `\nHotness Rating: ${newHotnessScore.toFixed(3)}.`,
+                })
+
+                // It seems like removing the attachements first is necessary to stop the image being duplicated
+                // Kinda ugly.
+                await message.removeAttachments()
+                message.edit({ embeds: [editedEmbed] })
+                collectionInteraction.reply({
+                  content: `Your ${
+                    collectionInteraction.customId == this.COVET_BUTTON_ID ? 'coveting' : 'shunning'
+                  } has been noted...`,
+                  ephemeral: true,
+                })
+              }
             }
-            if (covetShunDifference !== null) {
-              const newHotnessScore = this.calculateHotnessScore(covetShunDifference)
+          })
 
-              const previousEmbed = message.embeds[0]
-              const editedEmbed = EmbedBuilder.from(previousEmbed).setFooter({
-                text:
-                  `${nfd.name} is worth ${this.getNFDPrice(nfd).toFixed(2)} Dino Bucks!` +
-                  `\nHotness Rating: ${newHotnessScore.toFixed(3)}.`,
-              })
-
-              // It seems like removing the attachements first is necessary to stop the image being duplicated
-              // Kinda ugly.
-              await message.removeAttachments()
-              message.edit({ embeds: [editedEmbed] })
-              collectionInteraction.reply({
-                content: `Your ${
-                  collectionInteraction.customId == this.COVET_BUTTON_ID ? 'coveting' : 'shunning'
-                } has been noted...`,
-                ephemeral: true,
-              })
-            }
-          }
-        })
-
-        return message
+          return message
+        }
       })
       .catch((reason) => {
         const err = 'Something went wrong while building the dino: ' + reason
@@ -1110,12 +1238,11 @@ class NFD {
     dinoName: string,
     user: User,
     guild: Guild,
-    interaction: ButtonInteraction
+    collectionInteraction: ButtonInteraction | CommandInteraction
   ): Promise<number | null> {
-    console.log(getNicknameFromUser(user, guild), 'covets', dinoName)
     const nfd = await this.getNFDByName(dinoName)
     if (!nfd) {
-      interaction.reply({
+      collectionInteraction.reply({
         content: `I couldn't find that dino. Last I knew it was called ${dinoName} but maybe its name was changed or it got to breed (lucky!).`,
         ephemeral: true,
       })
@@ -1137,11 +1264,13 @@ class NFD {
       if (action == 'COVET') {
         // First check if the user already covets the dino
         if (newCoveters.includes(user.id)) {
-          interaction.reply({
+          collectionInteraction.reply({
             content: `I understand you love **${dinoName}** very much, but I'm not counting you twice.`,
             ephemeral: true,
           })
+          return null
         } else {
+          newCoveters.push(user.id)
           // Remove the user from the shun list if they are there.
           newShunners = newShunners.filter((id) => {
             return id != user.id
@@ -1150,10 +1279,11 @@ class NFD {
       } else {
         // First check if the user already shuns the dino
         if (newShunners.includes(user.id)) {
-          interaction.reply({
+          collectionInteraction.reply({
             content: `You hate **${dinoName}**. We get it. Don't be a bully.`,
             ephemeral: true,
           })
+          return null
         } else {
           newShunners.push(user.id)
           // Remove the user from the covet list if they are there.
@@ -1163,6 +1293,8 @@ class NFD {
         }
       }
 
+      const difference = newCoveters.length - newShunners.length
+
       // commit the change
       await this.client.nFDItem.update({
         where: {
@@ -1171,15 +1303,20 @@ class NFD {
         data: {
           coveters: newCoveters.join(','),
           shunners: newShunners.join(','),
+          hotness: difference,
         },
       })
 
-      return newCoveters.length - newShunners.length
+      return difference
     }
   }
 
   private calculateHotnessScore(covetShunDifference: number) {
     return Math.tanh(covetShunDifference * this.DINO_HOTNESS_SCALING)
+  }
+
+  private getHotnessScoreForNFD(nfd: NFDItem) {
+    return this.calculateHotnessScore(nfd.hotness)
   }
 
   // ==================
