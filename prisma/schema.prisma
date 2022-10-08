@@ -66,6 +66,9 @@ model NFDItem {
   owner           String
   mintDate        DateTime  @default(dbgenerated("0"))
   previousOwners  String    @default("")
+  coveters        String    @default("")
+  shunners        String    @default("")
+  hotness         Int     @default(0)
 }
 
 model NFDEnjoyer {
