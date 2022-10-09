@@ -64,6 +64,7 @@ model NFDItem {
   code            String    @unique
   filename        String    @unique
   owner           String
+  discordUrl      String    @default("")
   mintDate        DateTime  @default(dbgenerated("0"))
   previousOwners  String    @default("")
   coveters        String    @default("")
