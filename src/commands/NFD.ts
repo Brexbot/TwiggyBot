@@ -1046,7 +1046,10 @@ class NFD {
           .setColor(this.NFD_COLOR)
           .setAuthor({ name: author, iconURL: avatar })
           .setTitle(nfdName)
-          .setImage(`attachment://${path.basename(validatedFilePath)}`)
+          // We choose not to set the image. This way the image is
+          // outside the embed frame, but it plays nicer with updating
+          // the embed maybe.
+          // .setImage(`attachment://${path.basename(validatedFilePath)}`)
           .setFooter({
             text:
               `${nfd.name} is worth ${this.getNFDPrice(nfd).toFixed(2)} Dino Bucks!` +
@@ -1146,6 +1149,7 @@ class NFD {
                 } else {
                   previousURL = null
                 }
+
                 const editedEmbed = EmbedBuilder.from(previousEmbed)
                   .setFooter({
                     text:
@@ -1154,9 +1158,6 @@ class NFD {
                   })
                   .setImage(previousURL)
 
-                // It seems like removing the attachements first is necessary to stop the image being duplicated
-                // Kinda ugly.
-                await message.removeAttachments()
                 message.edit({ embeds: [editedEmbed] })
                 collectionInteraction.reply({
                   content: `Your ${
