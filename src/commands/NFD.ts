@@ -53,7 +53,7 @@ type DinoStats = {
 // })
 @injectable()
 class NFD {
-  private MINT_COOLDOWN = 1000 * 60 * 60 * 23
+  private MINT_COOLDOWN = 1000 //* 60 * 60 * 23
   private GIFT_COOLDOWN = 1000 * 60 * 60
   private RENAME_COOLDOWN = 1000 * 60 * 60
   private SLURP_COOLDOWN = 1000 * 60 * 60
@@ -1141,11 +1141,19 @@ class NFD {
                 const newHotnessScore = this.calculateHotnessScore(covetShunDifference)
 
                 const previousEmbed = message.embeds[0]
-                const editedEmbed = EmbedBuilder.from(previousEmbed).setFooter({
-                  text:
-                    `${nfd.name} is worth ${this.getNFDPrice(nfd).toFixed(2)} Dino Bucks!` +
-                    `\nHotness Rating: ${newHotnessScore.toFixed(3)}.`,
-                })
+                let previousURL: string | null
+                if (previousEmbed.image) {
+                  previousURL = previousEmbed.image.url
+                } else {
+                  previousURL = null
+                }
+                const editedEmbed = EmbedBuilder.from(previousEmbed)
+                  .setFooter({
+                    text:
+                      `${nfd.name} is worth ${this.getNFDPrice(nfd).toFixed(2)} Dino Bucks!` +
+                      `\nHotness Rating: ${newHotnessScore.toFixed(3)}.`,
+                  })
+                  .setImage(previousURL)
 
                 // It seems like removing the attachements first is necessary to stop the image being duplicated
                 // Kinda ugly.
