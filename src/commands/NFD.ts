@@ -1158,11 +1158,6 @@ class NFD {
 
               // Clear out attachments if we had to generate one
               await interaction.editReply({ embeds: [editedEmbed] })
-              await collectionInteraction.editReply({
-                content: `Your ${
-                  collectionInteraction.customId == this.COVET_BUTTON_ID ? 'coveting' : 'shunning'
-                } has been noted...`,
-              })
             }
           }
         })
@@ -1245,13 +1240,20 @@ class NFD {
     guild: Guild,
     collectionInteraction: ButtonInteraction | CommandInteraction
   ): Promise<number | null> {
-    await collectionInteraction.deferReply({ ephemeral: true })
+    if (collectionInteraction instanceof CommandInteraction) {
+      await collectionInteraction.deferReply({ ephemeral: true })
+    } else {
+      await collectionInteraction.deferUpdate()
+    }
 
     const nfd = await this.getNFDByName(dinoName)
     if (!nfd) {
-      await collectionInteraction.editReply({
-        content: `I couldn't find that dino. Last I knew it was called ${dinoName} but maybe its name was changed or it got to breed (lucky!).`,
-      })
+      const errMsg = `I couldn't find that dino. Last I knew it was called ${dinoName} but maybe its name was changed or it got to breed (lucky!).`
+      if (collectionInteraction instanceof CommandInteraction) {
+        await collectionInteraction.editReply({ content: errMsg })
+      } else {
+        await collectionInteraction.followUp({ content: errMsg, ephemeral: true })
+      }
       return null
     } else {
       let newShunners: string[]
@@ -1270,9 +1272,12 @@ class NFD {
       if (action == 'COVET') {
         // First check if the user already covets the dino
         if (newCoveters.includes(user.id)) {
-          await collectionInteraction.editReply({
-            content: `I understand you love **${dinoName}** very much, but I'm not counting you twice.`,
-          })
+          const errMsg = `I understand you love **${dinoName}** very much, but I'm not counting you twice.`
+          if (collectionInteraction instanceof CommandInteraction) {
+            await collectionInteraction.editReply({ content: errMsg })
+          } else {
+            await collectionInteraction.followUp({ content: errMsg, ephemeral: true })
+          }
           return null
         } else {
           newCoveters.push(user.id)
@@ -1284,9 +1289,12 @@ class NFD {
       } else {
         // First check if the user already shuns the dino
         if (newShunners.includes(user.id)) {
-          await collectionInteraction.editReply({
-            content: `You hate **${dinoName}**. We get it. Don't be a bully.`,
-          })
+          const errMsg = `You hate **${dinoName}**. We get it. Don't be a bully.`
+          if (collectionInteraction instanceof CommandInteraction) {
+            await collectionInteraction.editReply({ content: errMsg })
+          } else {
+            await collectionInteraction.followUp({ content: errMsg, ephemeral: true })
+          }
           return null
         } else {
           newShunners.push(user.id)
