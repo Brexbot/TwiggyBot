@@ -1030,9 +1030,6 @@ class NFD {
           return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
         }
 
-        let covetRow: ActionRowBuilder<MessageActionRowComponentBuilder>[] | undefined = undefined
-        let imageAttachment: AttachmentBuilder[] | undefined = undefined
-
         const covetButton = new ButtonBuilder()
           .setStyle(ButtonStyle.Success)
           .setCustomId(this.COVET_BUTTON_ID)
@@ -1046,13 +1043,17 @@ class NFD {
 
         const hotnessScore = this.getHotnessScoreForNFD(nfd)
 
+        let imageAttachment: AttachmentBuilder | undefined = undefined
         let imageUrl = nfd.discordUrl
         if (!imageUrl) {
-          imageAttachment = [new AttachmentBuilder(validatedFilePath)]
+          imageAttachment = new AttachmentBuilder(validatedFilePath)
           imageUrl = `attachment://${path.basename(validatedFilePath)}`
-        } else {
-          covetRow = [new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents([covetButton, shunButton])]
         }
+
+        const covetRow = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents([
+          covetButton,
+          shunButton,
+        ])
 
         const embed = new EmbedBuilder()
           .setColor(this.NFD_COLOR)
@@ -1068,9 +1069,9 @@ class NFD {
 
         const message = await interaction.reply({
           embeds: [embed],
-          files: imageAttachment,
+          files: imageAttachment ? [imageAttachment] : [],
           ephemeral: ephemeral,
-          components: covetRow,
+          components: [covetRow],
           fetchReply: true,
         })
 
@@ -1150,11 +1151,14 @@ class NFD {
             if (covetShunDifference !== null) {
               const newHotnessScore = this.calculateHotnessScore(covetShunDifference)
 
-              const editedEmbed = EmbedBuilder.from(message.embeds[0]).setFooter({
-                text:
-                  `${nfd.name} is worth ${this.getNFDPrice(nfd).toFixed(2)} Dino Bucks!` +
-                  `\nHotness Rating: ${newHotnessScore.toFixed(3)}.`,
-              })
+              const editedEmbed = EmbedBuilder.from(message.embeds[0])
+                .setFooter({
+                  text:
+                    `${nfd.name} is worth ${this.getNFDPrice(nfd).toFixed(2)} Dino Bucks!` +
+                    `\nHotness Rating: ${newHotnessScore.toFixed(3)}.`,
+                })
+                // THIS IS NEEDED TO PREVENT THE DINO CONTAINMENT BREACH...
+                .setImage(imageUrl)
 
               // Clear out attachments if we had to generate one
               await interaction.editReply({ embeds: [editedEmbed] })
