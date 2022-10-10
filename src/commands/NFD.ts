@@ -1030,12 +1030,8 @@ class NFD {
           return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
         }
 
+        let covetRow: ActionRowBuilder<MessageActionRowComponentBuilder>[] | undefined = undefined
         let imageAttachment: AttachmentBuilder[] | undefined = undefined
-        let imageUrl = nfd.discordUrl
-        if (!imageUrl) {
-          imageAttachment = [new AttachmentBuilder(validatedFilePath)]
-          imageUrl = `attachment://${path.basename(validatedFilePath)}`
-        }
 
         const covetButton = new ButtonBuilder()
           .setStyle(ButtonStyle.Success)
@@ -1047,9 +1043,16 @@ class NFD {
           .setCustomId(this.SHUN_BUTTON_ID)
           .setLabel('Shun')
           .setEmoji('1025015013959807096')
-        const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents([covetButton, shunButton])
 
         const hotnessScore = this.getHotnessScoreForNFD(nfd)
+
+        let imageUrl = nfd.discordUrl
+        if (!imageUrl) {
+          imageAttachment = [new AttachmentBuilder(validatedFilePath)]
+          imageUrl = `attachment://${path.basename(validatedFilePath)}`
+        } else {
+          covetRow = [new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents([covetButton, shunButton])]
+        }
 
         const embed = new EmbedBuilder()
           .setColor(this.NFD_COLOR)
@@ -1067,7 +1070,7 @@ class NFD {
           embeds: [embed],
           files: imageAttachment,
           ephemeral: ephemeral,
-          components: [row],
+          components: covetRow,
           fetchReply: true,
         })
 
