@@ -1150,26 +1150,14 @@ class NFD {
             if (covetShunDifference !== null) {
               const newHotnessScore = this.calculateHotnessScore(covetShunDifference)
 
-              // Could fully prevent image flickering if we host the image elsewhere instead of attaching it to
-              // the message. For now, we will only get flickers on the first covet/shun of a newly hatched dino
-              // ...or the first covet/shun of any dino created before this change.
-              const previousEmbed = message.embeds[0]
-              let previousURL: string | null
-              if (previousEmbed.image) {
-                previousURL = previousEmbed.image.url
-              } else {
-                previousURL = null
-              }
-              const editedEmbed = EmbedBuilder.from(previousEmbed)
-                .setFooter({
-                  text:
-                    `${nfd.name} is worth ${this.getNFDPrice(nfd).toFixed(2)} Dino Bucks!` +
-                    `\nHotness Rating: ${newHotnessScore.toFixed(3)}.`,
-                })
-                .setImage(previousURL)
+              const editedEmbed = EmbedBuilder.from(message.embeds[0]).setFooter({
+                text:
+                  `${nfd.name} is worth ${this.getNFDPrice(nfd).toFixed(2)} Dino Bucks!` +
+                  `\nHotness Rating: ${newHotnessScore.toFixed(3)}.`,
+              })
 
               // Clear out attachments if we had to generate one
-              await interaction.editReply({ embeds: [editedEmbed], attachments: [] })
+              await interaction.editReply({ embeds: [editedEmbed] })
               await collectionInteraction.editReply({
                 content: `Your ${
                   collectionInteraction.customId == this.COVET_BUTTON_ID ? 'coveting' : 'shunning'
