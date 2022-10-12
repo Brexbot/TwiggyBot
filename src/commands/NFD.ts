@@ -57,6 +57,8 @@ class NFD {
   private RENAME_COOLDOWN = 1000 * 60 * 60
   private SLURP_COOLDOWN = 1000 * 60 * 60
 
+  private COVET_TIMEOUT = 1000 * 60 * 10
+
   private MAXIMUM_MINT_ATTEMPTS = 10
 
   private MIN_NFD_NAME_LENGTH = 6
@@ -1074,6 +1076,15 @@ class NFD {
           components: [covetRow],
           fetchReply: true,
         })
+
+        setTimeout(async () => {
+          const editedEmbed = EmbedBuilder.from(message.embeds[0])
+            // THIS IS NEEDED TO PREVENT THE DINO CONTAINMENT BREACH...
+            .setImage(imageUrl)
+
+          // Remove the covet/shun button row
+          await interaction.editReply({ embeds: [editedEmbed], components: [] })
+        }, this.COVET_TIMEOUT)
 
         if (!(message instanceof Message)) {
           // Something has gone very wrong.
