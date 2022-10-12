@@ -1082,7 +1082,7 @@ class NFD {
             // THIS IS NEEDED TO PREVENT THE DINO CONTAINMENT BREACH...
             .setImage(imageUrl)
 
-          // Clear out attachments if we had to generate one
+          // Remove the covet/shun button row
           await interaction.editReply({ embeds: [editedEmbed], components: [] })
         }, this.COVET_TIMEOUT)
 

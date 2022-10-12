@@ -1,6 +1,6 @@
 import 'reflect-metadata'
 import type { Interaction, Message } from 'discord.js'
-import { AutocompleteInteraction, GatewayIntentBits, IntentsBitField } from 'discord.js'
+import { GatewayIntentBits, IntentsBitField } from 'discord.js'
 import { Client, DIService, tsyringeDependencyRegistryEngine } from 'discordx'
 import { container } from 'tsyringe'
 import { importx } from '@discordx/importer'
@@ -57,21 +57,17 @@ bot.once('ready', async () => {
   console.log('Bot started')
 })
 
+bot.on('error', (error) => {
+  console.error(`Uncaught exception (discord-js)`, error)
+})
+
+// Handle any errors not caught by us or the discord-js framework
+process.on('unhandledRejection', (error) => {
+  console.error(`Uncaught exception`, error)
+})
+
 bot.on('interactionCreate', (interaction: Interaction) => {
-  // This should always be a Promise... if it isn't then something is horribly wrong, and we deserve to crash
-  try {
-    // AutocompleteInteraction doesn't appear to actually be a promise, so we can just execute it
-    // The try/catch should still catch anything horribly wrong.
-    if (interaction instanceof AutocompleteInteraction) {
-      bot.executeInteraction(interaction)
-    } else {
-      ;(bot.executeInteraction(interaction) as Promise<unknown>).catch((error) => {
-        console.error(`[Interaction] An unexpected error occurred: ${error}`)
-      })
-    }
-  } catch (error) {
-    console.error(error)
-  }
+  bot.executeInteraction(interaction)
 })
 
 bot.on('messageCreate', (message: Message) => {
