@@ -8,6 +8,8 @@ import { NotBot } from './guards/RoleChecks'
 
 import { NoWhitespace } from './guards/NoWhitespace'
 
+import { isPromise } from 'util/types'
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ;(BigInt.prototype as any).toJSON = function () {
   return this.toString()
@@ -58,25 +60,34 @@ bot.once('ready', async () => {
 })
 
 bot.on('error', (error) => {
-  console.error(`Uncaught exception (discord-js)`, error)
+  console.error('[Discord JS] An unexpected error occurred', error)
 })
 
 // Handle any errors not caught by us or the discord-js framework
 process.on('unhandledRejection', (error) => {
-  console.error(`Uncaught exception`, error)
+  console.error('[Process] An unhandled rejection occurred', error)
 })
 
 bot.on('interactionCreate', (interaction: Interaction) => {
-  bot.executeInteraction(interaction)
+  try {
+    const i = bot.executeInteraction(interaction)
+    if (isPromise(i)) {
+      i.catch((error) => {
+        console.error('[Interaction] An unhandled rejection occurred', error)
+      })
+    }
+  } catch (error) {
+    console.error('[Interaction] An unexpected error occurred', error)
+  }
 })
 
 bot.on('messageCreate', (message: Message) => {
   try {
     bot.executeCommand(message).catch((error) => {
-      console.error(`[Simple] An unexpected error occurred: ${error}`)
+      console.error('[Simple] An unhandled rejection occurred', error)
     })
   } catch (error) {
-    console.error(error)
+    console.error('[Simple] An unexpected error occurred', error)
   }
 })
 
