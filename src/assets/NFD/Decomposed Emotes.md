@@ -1,3 +1,4 @@
+* cirBox
 * migrror
 * miku
 * monkaRax1
@@ -19,6 +20,7 @@
 * raxK
 * raxK2
 * raxLost
+* raxLove
 * raxNTL
 * raxOig
 * raxOow
@@ -81,6 +83,7 @@
 * rexPartyHat
 * rexPickle
 * rexPls
+* rexPog
 * rexPraiseTheDino
 * rexQQ
 * rexQQnoir
@@ -97,6 +100,7 @@
 * rexTeeth
 * rexThink
 * rexThinknt
+* rexTuturu
 * rexUwU
 * rexVeryCool
 * rexVnV
