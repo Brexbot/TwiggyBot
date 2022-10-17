@@ -1078,7 +1078,8 @@ class NFD {
         })
 
         setTimeout(async () => {
-          const editedEmbed = EmbedBuilder.from(message.embeds[0])
+          const reply = await interaction.fetchReply()
+          const editedEmbed = EmbedBuilder.from(reply.embeds[0])
             // THIS IS NEEDED TO PREVENT THE DINO CONTAINMENT BREACH...
             .setImage(imageUrl)
 
