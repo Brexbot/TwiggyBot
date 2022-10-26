@@ -9,7 +9,7 @@ function calculateEloDecay(eloRank: number): number {
   return Math.round(working)
 }
 
-async function main() {
+export async function decayElo() {
   console.log(`\nElo Decay running at ${new Date()}`)
   const client = new PrismaClient()
 
@@ -72,5 +72,3 @@ async function main() {
   }
   console.log(`Mean Elo now ${tally / postFixAllEntries.length}`)
 }
-
-main()

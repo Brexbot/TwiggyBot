@@ -9,6 +9,7 @@ import { NoWhitespace } from './guards/NoWhitespace'
 import { isPromise } from 'util/types'
 import { CronJob } from 'cron'
 import { clearOrphanedRoles } from './standalones/clearOrphanedRoles'
+import { decayElo } from './standalones/eloDecay'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ;(BigInt.prototype as any).toJSON = function () {
@@ -65,6 +66,16 @@ bot.once('ready', async () => {
       bot.guilds.cache.forEach((guild) => {
         clearOrphanedRoles(guild)
       })
+    },
+    null,
+    true
+  )
+
+  // Elo Decay cron job
+  new CronJob(
+    '00 15 02 * * *',
+    () => {
+      decayElo()
     },
     null,
     true
