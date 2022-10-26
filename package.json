@@ -24,6 +24,7 @@
   "homepage": "https://github.com/Brexbot/DiscordBot#readme",
   "type": "commonjs",
   "devDependencies": {
+    "@types/cron": "^2.0.0",
     "@types/node": "^18.0.0",
     "@types/node-fetch": "^2.5.12",
     "@typescript-eslint/eslint-plugin": "^5.9.0",

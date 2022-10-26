@@ -5,13 +5,15 @@ import { Client, DIService, tsyringeDependencyRegistryEngine } from 'discordx'
 import { container } from 'tsyringe'
 import { importx } from '@discordx/importer'
 import { NotBot } from './guards/RoleChecks'
-
 import { NoWhitespace } from './guards/NoWhitespace'
-
 import { isPromise } from 'util/types'
+import { CronJob } from 'cron'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-;(BigInt.prototype as any).toJSON = function () {
+;
+import {clearOrphanedRoles} from "./standalones/clearOrphanedRoles";
+
+(BigInt.prototype as any).toJSON = function () {
   return this.toString()
 }
 
@@ -57,6 +59,13 @@ bot.once('ready', async () => {
   //  );
 
   console.log('Bot started')
+
+  // Auto starting cron job to clear orphaned roles at midnight, bot time
+  new CronJob('00 00 00 * * *', () => {
+    bot.guilds.cache.forEach(guild => {
+      clearOrphanedRoles(guild)
+    })
+  }, null, true)
 })
 
 bot.on('error', (error) => {
