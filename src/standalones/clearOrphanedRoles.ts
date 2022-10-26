@@ -9,9 +9,7 @@ export async function clearOrphanedRoles(guild: Guild) {
     .filter((role) => role.members.size <= 0)
     .forEach((role) => {
       rolesDeleted++
-      role
-        .delete()
-        .catch((_) => console.error(`Error deleting orphaned role: ${role.name}`))
+      role.delete().catch((_) => console.error(`Error deleting orphaned role: ${role.name}`))
     })
   console.log(`Deleted ${rolesDeleted} orphan roles`)
 }
