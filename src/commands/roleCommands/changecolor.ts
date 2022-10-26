@@ -315,13 +315,9 @@ export class ColorRoles {
       if (existingRole.members.size === 1) {
         // User is the only one with this role so add to the new role if it exists or update the current role
         if (existingNewRole) {
-          await member.roles
-            .add(existingNewRole)
-            .then(() => guild.roles.delete(existingRole))
-            .catch(console.error)
+          await Promise.all([member.roles.add(existingNewRole), guild.roles.delete(existingRole)]).catch(console.error)
         } else {
-          await existingRole.setName(color).catch(console.error)
-          await existingRole.setColor(color).catch(console.error)
+          await Promise.all([existingRole.setName(color), existingRole.setColor(color)]).catch(console.error)
         }
       } else {
         // Either the role somehow didn't exist or other members had the role
@@ -335,10 +331,7 @@ export class ColorRoles {
             position: rolePosition,
             mentionable: false,
           }))
-        await member.roles
-          .add(colorRole)
-          .then(() => member.roles.remove(existingRole))
-          .catch(console.error)
+        await Promise.all([member.roles.add(colorRole), member.roles.remove(existingRole)]).catch(console.error)
       }
     } else {
       // If uncoloring and the member is the only person in it, delete it
