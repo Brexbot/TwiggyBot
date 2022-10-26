@@ -85,9 +85,10 @@ export class ColorRoles {
     isFavorite: boolean,
     interaction: CommandInteraction
   ) {
+    await interaction.deferReply()
     this.changeUserColor(color, isFavorite ?? false, interaction)
       .then(async (reply) => {
-        await interaction.reply(reply)
+        await interaction.editReply(reply)
       })
       .catch(console.error)
   }
@@ -103,9 +104,11 @@ export class ColorRoles {
 
   @Slash('random', { description: 'Change to a random display color' })
   async slashRandomColor(interaction: CommandInteraction) {
+    await interaction.deferReply()
+
     this.changeUserColor('RANDOM', false, interaction)
       .then(async (reply) => {
-        await interaction.reply(reply)
+        await interaction.editReply(reply)
       })
       .catch(console.error)
   }
@@ -144,17 +147,19 @@ export class ColorRoles {
     color: string | undefined,
     interaction: CommandInteraction
   ) {
+    await interaction.deferReply({ ephemeral: true })
+
     if (color) {
       const member = getCallerFromCommand(interaction)
       this.setFavorite(color, member)
         .then(async (reply) => {
-          await interaction.reply(reply)
+          await interaction.editReply(reply)
         })
         .catch(console.error)
     } else {
       this.changeUserColor('LAZY', false, interaction)
         .then(async (reply) => {
-          await interaction.reply(reply)
+          await interaction.editReply(reply)
         })
         .catch(console.error)
     }
@@ -171,9 +176,11 @@ export class ColorRoles {
 
   @Slash('gamble', { description: 'Tempt The Wheel of Fate for a new color... or not!' })
   async slashGamble(interaction: CommandInteraction) {
+    await interaction.deferReply({ ephemeral: true })
+
     this.changeUserColor('GAMBLE', false, interaction)
       .then(async (reply) => {
-        return await interaction.reply(reply)
+        return await interaction.editReply(reply)
       })
       .catch(console.error)
   }
