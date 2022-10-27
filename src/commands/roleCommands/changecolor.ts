@@ -312,23 +312,10 @@ export class ColorRoles {
     // Get any existing color role before we add/remove
     const existingRole = member.roles.cache.find((role) => ColorRoles.hexExp.test(role.name))
     const existingNewRole = guild.roles.cache.find((role) => role.name === color)
+
     if (!existingRole) {
-      return Promise.reject('Unable to locate the members color role')
-    }
-
-    if (color !== 'uncolor') {
-      color = color.toUpperCase() as HexColorString
-
-      if (existingRole.members.size === 1) {
-        // User is the only one with this role so add to the new role if it exists or update the current role
-        if (existingNewRole) {
-          await Promise.all([member.roles.add(existingNewRole), guild.roles.delete(existingRole)]).catch(console.error)
-        } else {
-          await Promise.all([existingRole.setName(color), existingRole.setColor(color)]).catch(console.error)
-        }
-      } else {
-        // Either the role somehow didn't exist or other members had the role
-        // Find/create the new role
+      if (color !== 'uncolor') {
+        color = color.toUpperCase() as HexColorString
         const colorRole =
           existingNewRole ??
           (await guild.roles.create({
@@ -338,14 +325,42 @@ export class ColorRoles {
             position: rolePosition,
             mentionable: false,
           }))
-        await Promise.all([member.roles.add(colorRole), member.roles.remove(existingRole)]).catch(console.error)
+        await member.roles.add(colorRole)
       }
     } else {
-      // If uncoloring and the member is the only person in it, delete it
-      if (existingRole.members.size === 1) {
-        await guild.roles.delete(existingRole)
+      if (color !== 'uncolor') {
+        color = color.toUpperCase() as HexColorString
+
+        if (existingRole.members.size === 1) {
+          // User is the only one with this role so add to the new role if it exists or update the current role
+          if (existingNewRole) {
+            await Promise.all([member.roles.add(existingNewRole), guild.roles.delete(existingRole)]).catch(
+              console.error
+            )
+          } else {
+            await Promise.all([existingRole.setName(color), existingRole.setColor(color)]).catch(console.error)
+          }
+        } else {
+          // Either the role somehow didn't exist or other members had the role
+          // Find/create the new role
+          const colorRole =
+            existingNewRole ??
+            (await guild.roles.create({
+              name: color,
+              color: color,
+              permissions: [],
+              position: rolePosition,
+              mentionable: false,
+            }))
+          await Promise.all([member.roles.add(colorRole), member.roles.remove(existingRole)]).catch(console.error)
+        }
       } else {
-        await member.roles.remove(existingRole)
+        // If uncoloring and the member is the only person in it, delete it
+        if (existingRole.members.size === 1) {
+          await guild.roles.delete(existingRole)
+        } else {
+          await member.roles.remove(existingRole)
+        }
       }
     }
 
