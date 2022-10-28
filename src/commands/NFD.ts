@@ -876,7 +876,12 @@ class NFD {
   }
 
   private async updateDBDiscordUrl(nfd: NFDItem, url: string) {
-    return this.client.nFDItem.update({ where: { name: nfd.name }, data: { discordUrl: url } })
+    // Ephemeral attachments do eventually go *poof* :(
+    if (url.includes('ephemeral-attachments')) {
+      return nfd
+    } else {
+      return this.client.nFDItem.update({ where: { name: nfd.name }, data: { discordUrl: url } })
+    }
   }
 
   private async updateDBSuccessfulMint(userId: string) {
