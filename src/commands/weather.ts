@@ -317,13 +317,8 @@ class Weather {
       searchLocation = 'Stephenville, CA'
     }
 
-    let output: weatherResponse
-    try {
-      const weather = await this.fetchWeather(searchLocation)
-      output = this.formatWeather(weather)
-    } catch (error) {
-      output = this.formatError(error)
-    }
-    return output
+    return await this.fetchWeather(searchLocation)
+      .then((weather) => this.formatWeather(weather))
+      .catch((error) => this.formatError(error))
   }
 }

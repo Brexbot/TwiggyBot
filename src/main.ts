@@ -96,21 +96,21 @@ bot.on('interactionCreate', (interaction: Interaction) => {
     const i = bot.executeInteraction(interaction)
     if (isPromise(i)) {
       i.catch((error) => {
-        console.error('[Interaction] An unhandled rejection occurred', error)
+        console.error(`[Interaction] An unhandled rejection occurred (${interaction.toString()})`, error)
       })
     }
   } catch (error) {
-    console.error('[Interaction] An unexpected error occurred', error)
+    console.error(`[Interaction] An unexpected error occurred (${interaction.toString()})`, error)
   }
 })
 
 bot.on('messageCreate', (message: Message) => {
   try {
     bot.executeCommand(message).catch((error) => {
-      console.error('[Simple] An unhandled rejection occurred', error)
+      console.error(`[Simple] An unhandled rejection occurred (${message.toString()})`, error)
     })
   } catch (error) {
-    console.error('[Simple] An unexpected error occurred', error)
+    console.error(`[Simple] An unexpected error occurred (${message.toString()})`, error)
   }
 })
 
