@@ -182,7 +182,7 @@ class Weather {
     const dateObj = new Date(timestamp === 0 ? timezoneOffset * 1000 + Date.now() : (timezoneOffset + timestamp) * 1000)
 
     let hours = dateObj.getUTCHours()
-    const amPM = hours > 12 ? 'PM' : 'AM'
+    const amPM = hours > 11 ? 'PM' : 'AM'
     hours %= 12
 
     if (hours === 0) {
