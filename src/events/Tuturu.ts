@@ -8,7 +8,7 @@ import * as path from 'path'
 
 @Discord()
 abstract class Tuturu {
-  private imagePath = path.join(__dirname, '../assets/Tuturu.png')
+  private imagePath = path.join(__dirname, '../../src/assets/Tuturu.png')
   private cooldown = 60 // 1 minute
   private lastToot = 0 // Initializes most recent time tuturu was tooted
 
