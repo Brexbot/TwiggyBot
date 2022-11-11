@@ -1,4 +1,4 @@
-import { AttachmentBuilder, EmbedBuilder } from 'discord.js'
+import { AttachmentBuilder } from 'discord.js'
 import type { ArgsOf } from 'discordx'
 import { Discord, On } from 'discordx'
 import * as path from 'path'
@@ -19,7 +19,14 @@ abstract class Tuturu {
   private calls: CallResponse[] = [
     {
       call: 'tuturu',
-      responseAttachment: path.join(__dirname, '../assets/Tuturu.png'),
+      responseAttachment: path.join(__dirname, '../../assets/Tuturu.png'),
+      cooldown: 60,
+      lastUse: 0,
+      caseSensitive: false,
+    },
+    {
+      call: 'zuzuru',
+      responseAttachment: path.join(__dirname, '../../assets/Zuzuru.png'),
       cooldown: 60,
       lastUse: 0,
       caseSensitive: false,
