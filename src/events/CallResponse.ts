@@ -41,7 +41,7 @@ abstract class CallAndResponder {
   private onMessage([message]: ArgsOf<'messageCreate'>) {
     const prompt = message.content
     const lcPrompt = prompt.toLowerCase()
-    this.calls.forEach((call) => {
+    for (const call of this.calls) {
       if (
         // Check timeout first
         Math.floor(Date.now()) - call.lastUse > call.cooldown * 1000 &&
@@ -63,6 +63,6 @@ abstract class CallAndResponder {
         // Don't trigger more replies if multiple triggers are present.
         return
       }
-    })
+    }
   }
 }
