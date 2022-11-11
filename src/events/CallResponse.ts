@@ -37,8 +37,7 @@ abstract class CallAndResponder {
   private onMessage([message]: ArgsOf<'messageCreate'>) {
     const prompt = message.content
     const lcPrompt = prompt.toLowerCase()
-    for (let i = 0; i < this.calls.length; i++) {
-      const call = this.calls[i]
+    this.calls.forEach((call) => {
       if (
         // Check timeout first
         Math.floor(Date.now()) - call.lastUse > call.cooldown * 1000 &&
@@ -58,6 +57,6 @@ abstract class CallAndResponder {
 
         message.channel.send({ files: imageAttachment, content: call.response })
       }
-    }
+    })
   }
 }
