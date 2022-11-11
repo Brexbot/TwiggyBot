@@ -15,7 +15,7 @@ type CallResponse = {
 }
 
 @Discord()
-abstract class Tuturu {
+abstract class CallAndResponder {
   private calls: CallResponse[] = [
     {
       call: 'tuturu',
