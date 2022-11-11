@@ -16,17 +16,21 @@ type CallResponse = {
 
 @Discord()
 abstract class CallAndResponder {
+  // Array of call/response conditions.
+  // Note that the order in the array reflects priority.
+  // Bot will only respond to one trigger, and that will be the first in the array.
+  // Not the first in the message.
   private calls: CallResponse[] = [
     {
       call: 'tuturu',
-      responseAttachment: path.join(__dirname, '../../assets/Tuturu.png'),
+      responseAttachment: path.join(__dirname, '../../src/assets/Tuturu.png'),
       cooldown: 60,
       lastUse: 0,
       caseSensitive: false,
     },
     {
       call: 'zuzuru',
-      responseAttachment: path.join(__dirname, '../../assets/Zuzuru.png'),
+      responseAttachment: path.join(__dirname, '../../src/assets/Zuzuru.png'),
       cooldown: 60,
       lastUse: 0,
       caseSensitive: false,
@@ -56,6 +60,8 @@ abstract class CallAndResponder {
         }
 
         message.channel.send({ files: imageAttachment, content: call.response })
+        // Don't trigger more replies if multiple triggers are present.
+        return
       }
     })
   }
