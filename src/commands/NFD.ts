@@ -205,6 +205,11 @@ class NFD {
     owner: GuildMember,
     @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
     silent = true,
+    @SlashOption('type', { type: ApplicationCommandOptionType.String, required: false })
+    @SlashChoice({ name: 'Favorites', value: 'FAVORITES' })
+    @SlashChoice({ name: 'Trash', value: 'TRASH' })
+    @SlashChoice({ name: 'All', value: 'ALL' })
+    type: 'ALL' | 'FAVORITES' | 'TRASH' = 'ALL',
     interaction: CommandInteraction
   ) {
     if (!interaction.guild) {
@@ -244,6 +249,32 @@ class NFD {
         content: `**${ownerName}** doesn't own any dinos. 🥚🙌`,
         ephemeral: silent,
       })
+    }
+
+    // Filter down the list to only include the requested type
+    const favorties = ownerRecord.favorites.split(',')
+    if (type == 'FAVORITES') {
+      collection = collection.filter((entry) => {
+        return favorties.includes(entry.id.toString())
+      })
+
+      if (collection.length == 0) {
+        return interaction.reply({
+          content: `All of **${ownerName}**'s dinos are trash. 🗑️`,
+          ephemeral: silent,
+        })
+      }
+    } else if (type == 'TRASH') {
+      collection = collection.filter((entry) => {
+        return !favorties.includes(entry.id.toString())
+      })
+
+      if (collection.length == 0) {
+        return interaction.reply({
+          content: `**${ownerName}** doesn't have any trash. All their dinos are perfect. 😌`,
+          ephemeral: silent,
+        })
+      }
     }
 
     collection = shuffleArray(collection)
