@@ -52,7 +52,9 @@ type DinoStats = {
 // })
 @injectable()
 class NFD {
+  private MINT_COOLDOWN_METHOD: 'DAILY' | '23HOUR' = 'DAILY'
   private MINT_COOLDOWN = 1000 //* 60 * 60 * 23
+  private MILISECONDS_IN_DAY = 86400000
   private GIFT_COOLDOWN = 1000 * 60 * 60
   private RENAME_COOLDOWN = 1000 * 60 * 60
   private SLURP_COOLDOWN = 1000 * 60 * 60
@@ -116,13 +118,30 @@ class NFD {
 
     // Check for the cooldowns
     const ownerRecordPrev = await this.getUserFromDB(ownerMember.id)
-    if (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN > Date.now()) {
-      return interaction.reply({
-        content: `Don't be greedy! You can hatch again <t:${Math.round(
-          (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN) / 1000
-        )}:R>.`,
-        ephemeral: true,
-      })
+    if (this.MINT_COOLDOWN_METHOD == 'DAILY') {
+      // If we are on a global daily cooldown then round the times to the previous UTC day then compare
+      const lastDay =
+        ownerRecordPrev.lastMint.getTime() - (ownerRecordPrev.lastMint.getTime() % this.MILISECONDS_IN_DAY)
+      const nowtime = Date.now()
+      const thisDay = nowtime - (nowtime % this.MILISECONDS_IN_DAY)
+      if (thisDay <= lastDay) {
+        return interaction.reply({
+          content: `Don't be greedy! You can hatch again <t:${Math.round(
+            (lastDay + this.MILISECONDS_IN_DAY) / 1000
+          )}:R>.`,
+          ephemeral: true,
+        })
+      }
+    } else {
+      // Simple 23 hour cooldown just checks that the cooldown has elapsed from the last time the user ran it.
+      if (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN > Date.now()) {
+        return interaction.reply({
+          content: `Don't be greedy! You can hatch again <t:${Math.round(
+            (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN) / 1000
+          )}:R>.`,
+          ephemeral: true,
+        })
+      }
     }
 
     // If we got this far then we are all set to hatch.
