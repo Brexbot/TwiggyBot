@@ -60,7 +60,8 @@ model RPGCharacter {
 }
 
 model NFDItem {
-  name            String    @id @unique
+  id              Int       @id @default(autoincrement())
+  name            String    @unique
   code            String    @unique
   filename        String    @unique
   owner           String
@@ -69,7 +70,7 @@ model NFDItem {
   previousOwners  String    @default("")
   coveters        String    @default("")
   shunners        String    @default("")
-  hotness         Int     @default(0)
+  hotness         Int       @default(0)
 }
 
 model NFDEnjoyer {
@@ -82,5 +83,5 @@ model NFDEnjoyer {
   consecutiveFails  Int       @default(4)
   successfulMints   Int       @default(0)
   failedMints       Int       @default(0)
-  favourite         String    @default("")
+  favorites        String    @default("")
 }
