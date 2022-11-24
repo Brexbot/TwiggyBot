@@ -120,16 +120,6 @@ class NFD {
       })
     }
 
-    const parts = await this.makeNFDcode()
-
-    // Check to see if we failed to make a unique one
-    if (!parts) {
-      return interaction.reply({
-        content: "I tried really hard but I wasn't able to make a unique dino for you. Sorry... :'(",
-        ephemeral: true,
-      })
-    }
-
     // If we got this far then we are all set to hatch.
     // Roll the hatch check
     let res = roll_dy_x_TimesPick_z(4, 1, 1)
@@ -147,6 +137,16 @@ class NFD {
         content: `You failed to hatch the egg (${
           numbers[ownerRecordPrev.consecutiveFails]
         } attempt), better luck next time. You can try again <t:${nextMint}:R>`,
+      })
+    }
+
+    const parts = await this.makeNFDcode()
+
+    // Check to see if we failed to make a unique one
+    if (!parts) {
+      return interaction.reply({
+        content: "I tried really hard but I wasn't able to make a unique dino for you. Sorry... :'(",
+        ephemeral: true,
       })
     }
 
