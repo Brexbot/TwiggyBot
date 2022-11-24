@@ -25,7 +25,7 @@ import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'dis
 import { getCallerFromCommand, getNicknameFromUser, isTwitchSub } from '../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence'
-import { NFDItem } from '../../prisma/generated/prisma-client-js'
+import { NFDEnjoyer, NFDItem } from '../../prisma/generated/prisma-client-js'
 import { IsSuperUser } from '../guards/RoleChecks'
 import sharp from 'sharp'
 
@@ -61,6 +61,8 @@ class NFD {
 
   private MAXIMUM_MINT_ATTEMPTS = 10
 
+  private MAXIMUM_ORGY_ATTENDEES = 50
+
   private MIN_NFD_NAME_LENGTH = 6
   private MAX_NFD_NAME_LENGTH = 25
 
@@ -77,6 +79,7 @@ class NFD {
   private COLLAGE_ROW_MARGIN = 2
 
   private NFD_COLOR = 0xffbf00
+  private ORGY_COLOR = 0xff66ff
 
   private COVET_BUTTON_ID = 'nfd-covet'
   private SHUN_BUTTON_ID = 'nfd-shun'
@@ -632,6 +635,7 @@ class NFD {
 
     // Loop over the two NFDs, confirming that they exist and that the caller owns them
     const nfdNames = [first, second]
+    const breeders: NFDItem[] = []
     for (let i = 0; i < 2; i++) {
       const nfd = await this.getNFDByName(nfdNames[i])
       // Confirm the NFD exists
@@ -646,40 +650,151 @@ class NFD {
           ephemeral: true,
         })
       }
+
+      breeders.push(nfd)
     }
 
-    // Both NFDs are verified now. First generate a new NFD before deleting anything.
-    const parts = await this.makeNFDcode()
+    const newNFD = await this.commenceBreeding_OwO(breeders[0], breeders[1], ownerMember)
 
-    // Check to see if we failed to make a unique one
-    if (!parts) {
+    if (!newNFD) {
       return interaction.reply({
         content: "I tried really hard but I wasn't able to make a unique dino for you. Sorry... :'(",
         ephemeral: true,
       })
     }
 
-    try {
-      await this.composeNFD(parts)
+    await this.makeReply(newNFD, interaction, ownerMember)
+  }
 
-      // We have the new NFD ready to go. Delete the old two.
-      const deleteNfds = this.client.nFDItem.deleteMany({
-        where: {
-          name: {
-            in: [first, second],
-          },
-        },
+  @Slash('orgy', {
+    description: 'Throw a trashy dino orgy.',
+  })
+  @SlashGroup('dino')
+  async orgy(
+    @SlashOption('confirm', {
+      type: ApplicationCommandOptionType.Boolean,
+      description: 'Please confirm you are ok with your non-favorite dinos being destroyed.',
+      required: false,
+    })
+    confirm = false,
+    interaction: CommandInteraction
+  ) {
+    // First performs basic setup and checks, then defers the reply if all is looking good as creating
+    // 25 new NFDs can be slow.
+
+    if (!confirm) {
+      return interaction.reply({
+        content:
+          '⚠WARNING⚠\nThis command will breed ***all*** of your non-favorite marked dinos and they will be gone forever. Please check that you have set all the dinos you want to keep as favorites, then set the `confirm` option in the command to `True` and try again.',
+        ephemeral: true,
       })
-      const createNfd = this.storeNFDinDatabase(parts, getCallerFromCommand(interaction))
-      const successfulSlurp = this.updateDBSuccessfulSlurp(ownerMember.id)
-
-      const [_delete, nfd, _enjoyer] = await this.client.$transaction([deleteNfds, createNfd, successfulSlurp])
-
-      await this.makeReply(nfd, interaction, ownerMember)
-    } catch (err) {
-      console.error('Something really went wrong breeding dinos...', err)
-      interaction.reply({ content: 'The dinoverse broke... what a surprise', ephemeral: true })
     }
+
+    const owner = getCallerFromCommand(interaction)
+    if (!owner) {
+      return interaction.reply({ content: "User undefined. We can't throw an orgy without a host :(", ephemeral: true })
+    }
+    const guild = interaction.guild
+    if (!guild) {
+      return interaction.reply({
+        content: "Guild undefined. We can't throw an orgy without a venue :(",
+        ephemeral: true,
+      })
+    }
+    const ownerName = getNicknameFromUser(owner, guild)
+
+    // Get (or create) the owner of the collection from the database
+    const ownerRecord = await this.client.nFDEnjoyer.upsert({
+      where: {
+        id: owner.id,
+      },
+      create: {
+        id: owner.id,
+      },
+      update: {},
+    })
+
+    // Check for cooldowns.
+    if (ownerRecord.lastSlurp.getTime() + this.SLURP_COOLDOWN > Date.now()) {
+      return interaction.reply({
+        content: `We're still cleaning up after the last breeding session! You can go again <t:${Math.round(
+          (ownerRecord.lastSlurp.getTime() + this.SLURP_COOLDOWN) / 1000
+        )}:R>.`,
+        ephemeral: true,
+      })
+    }
+
+    const favorites = ownerRecord.favorites.split(',')
+    const collection = await this.client.nFDItem.findMany({
+      where: { owner: owner.id },
+    })
+
+    let nonFavorites = collection.filter((entry) => {
+      return entry && !favorites.includes(entry.id.toString())
+    })
+
+    // Got to have an even number of dinos
+    if (nonFavorites.length % 2 == 1) {
+      nonFavorites.pop()
+    }
+
+    // Maximum of in an orgy so we can display the results
+    if (nonFavorites.length > this.MAXIMUM_ORGY_ATTENDEES) {
+      nonFavorites = nonFavorites.slice(0, this.MAXIMUM_ORGY_ATTENDEES)
+    }
+
+    if (nonFavorites.length < 4) {
+      return interaction.reply({
+        content:
+          'You need at least 4 non-favorite dinos to throw an orgy. I know 4 is a bit of a lame orgy, but it is *technically* the minimum.',
+        ephemeral: true,
+      })
+    }
+
+    // This could be a slow, so we need the defer now
+    await interaction.deferReply()
+
+    const newNFDs: NFDItem[] = []
+    for (let i = 0; i < nonFavorites.length; i += 2) {
+      const newNFD = await this.commenceBreeding_OwO(nonFavorites[i], nonFavorites[i + 1], owner)
+
+      if (!newNFD) {
+        // Something went bad, but we can continue with the new NFDs we have
+        return interaction.followUp({
+          content: `Something went wrong between **${nonFavorites[i].name}** and **${
+            nonFavorites[i + 1]
+          }** during the orgy. I'm stopping it now but ${newNFDs.length} successful pairs were made.`,
+        })
+      } else {
+        // Everything went well :)
+        newNFDs.push(newNFD)
+      }
+    }
+
+    // Create collage. Returns a buffer but discord wants a name attached with it
+    // So we create that from the interaction id.
+    const collage = await this.makeCollage(newNFDs)
+    const fauxFileName = `${interaction.id}.png`
+
+    const imageAttachment = new AttachmentBuilder(collage, { name: fauxFileName })
+    const embed = new EmbedBuilder()
+      .setColor(this.ORGY_COLOR)
+      .setAuthor({
+        name: ownerName,
+        iconURL: owner.user.avatarURL() ?? undefined,
+      })
+      .setTitle(ownerName + "'s orgy babies")
+      .setImage(`attachment://${fauxFileName}`)
+      .setDescription(
+        `${ownerName} threw an orgy with ${nonFavorites.length} dinos and birthed: ` +
+          newNFDs.map((x) => x.name).join(', ') +
+          '.'
+      )
+
+    return interaction.followUp({
+      embeds: [embed],
+      files: [imageAttachment],
+    })
   }
 
   @Slash('rate', {
@@ -1290,6 +1405,38 @@ class NFD {
       return parts
     } while (i++ < this.MAXIMUM_MINT_ATTEMPTS)
     return null
+  }
+
+  private async commenceBreeding_OwO(firstNFD: NFDItem, secondNFD: NFDItem, user: GuildMember) {
+    // Both NFDs are verified now. First generate a new NFD before deleting anything.
+    const parts = await this.makeNFDcode()
+
+    // Check to see if we failed to make a unique one
+    if (!parts) {
+      return null
+    }
+
+    try {
+      await this.composeNFD(parts)
+
+      // We have the new NFD ready to go. Delete the old two.
+      const deleteNfds = this.client.nFDItem.deleteMany({
+        where: {
+          id: {
+            in: [firstNFD.id, secondNFD.id],
+          },
+        },
+      })
+      const createNfd = this.storeNFDinDatabase(parts, user)
+      const successfulSlurp = this.updateDBSuccessfulSlurp(user.id)
+
+      const [_delete, nfd, _enjoyer] = await this.client.$transaction([deleteNfds, createNfd, successfulSlurp])
+
+      return nfd
+    } catch (err) {
+      console.error(`Something really went wrong breeding dinos ${firstNFD.id} X ${secondNFD.id} ...`, err)
+      return null
+    }
   }
 
   private async userNFDAutoComplete(userId: Snowflake, interaction: AutocompleteInteraction) {
