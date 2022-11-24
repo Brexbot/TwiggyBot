@@ -52,8 +52,8 @@ type DinoStats = {
 // })
 @injectable()
 class NFD {
-  private MINT_COOLDOWN_METHOD: 'DAILY' | '23HOUR' = 'DAILY'
-  private MINT_COOLDOWN = 1000 //* 60 * 60 * 23
+  private MINT_COOLDOWN_METHOD: 'DAILY' | 'PERSONAL' = 'DAILY'
+  private MINT_COOLDOWN = 1000 * 60 * 60 * 23
   private MILISECONDS_IN_DAY = 86400000
   private GIFT_COOLDOWN = 1000 * 60 * 60
   private RENAME_COOLDOWN = 1000 * 60 * 60
