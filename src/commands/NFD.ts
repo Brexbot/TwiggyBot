@@ -80,6 +80,7 @@ class NFD {
 
   private NFD_COLOR = 0xffbf00
   private ORGY_COLOR = 0xff66ff
+  private HATCH_COLOR = 0x66ff99
 
   private COVET_BUTTON_ID = 'nfd-covet'
   private SHUN_BUTTON_ID = 'nfd-shun'
@@ -157,7 +158,7 @@ class NFD {
     // mint was successful!
     this.composeNFD(parts)
       .then(() => this.storeNFDinDatabase(parts, getCallerFromCommand(interaction)))
-      .then((nfd) => this.makeReply(nfd, interaction, ownerMember))
+      .then((nfd) => this.makeReply(nfd, interaction, ownerMember, true))
       .then(() => this.updateDBSuccessfulMint(ownerMember.id))
       .catch((err) => {
         interaction
@@ -194,7 +195,7 @@ class NFD {
 
     const owner = interaction.guild.members.cache.get(nfd.owner)
 
-    return this.makeReply(nfd, interaction, owner, silent)
+    return this.makeReply(nfd, interaction, owner, false, silent)
   }
 
   @Slash('collection', { description: "View a fellow dino enjoyer's collection." })
@@ -550,18 +551,15 @@ class NFD {
       })
 
       if (favorites.includes(nfdId)) {
-        console.log('removing')
         favorites = favorites.filter((entry) => {
           return entry != nfdId
         })
         wasAdded = false
       } else {
-        console.log('adding')
         favorites.push(nfdId)
         wasAdded = true
       }
 
-      console.log('updated to', favorites)
       await this.client.nFDEnjoyer.update({
         where: {
           id: userEntry.id,
@@ -571,7 +569,6 @@ class NFD {
         },
       })
     } else {
-      console.log('new as', nfdId)
       await this.client.nFDEnjoyer.create({
         data: {
           id: interaction.user.id,
@@ -663,7 +660,7 @@ class NFD {
       })
     }
 
-    await this.makeReply(newNFD, interaction, ownerMember)
+    await this.makeReply(newNFD, interaction, ownerMember, true)
   }
 
   @Slash('orgy', {
@@ -1177,6 +1174,7 @@ class NFD {
     nfd: NFDItem,
     interaction: CommandInteraction,
     owner: GuildMember | undefined,
+    newNFD: boolean,
     ephemeral = false
   ) {
     const nfdName = nfd.name
@@ -1224,7 +1222,7 @@ class NFD {
         ])
 
         const embed = new EmbedBuilder()
-          .setColor(this.NFD_COLOR)
+          .setColor(newNFD ? this.HATCH_COLOR : this.NFD_COLOR)
           .setAuthor({ name: author, iconURL: avatar })
           .setTitle(nfdName)
           .setImage(imageUrl)
@@ -1559,15 +1557,11 @@ class NFD {
       return true
     }
 
-    console.log('raw string', userEntry.favorites)
-
     let favorites = userEntry.favorites.split(',').filter((entry) => {
       return entry.length > 0
     }) // Remove the empty string that is created by default
 
     favorites = [...new Set(favorites)] // While developing, check for duplicates. TODO: remove for release
-
-    console.log('Favourites before', favorites)
 
     const nfdId = nfd.id.toString()
 
@@ -1582,8 +1576,6 @@ class NFD {
       favorites.push(nfdId)
       added = true
     }
-
-    console.log('Favoreites after', favorites)
 
     await this.client.nFDEnjoyer.update({ where: { id: user.id }, data: { favorites: favorites.join(',') } })
 
