@@ -85,7 +85,7 @@ class Mixu {
   }
 
   private async generateMixu(guild: Guild, username: string): Promise<string> {
-    const tiles = shuffleArray(this.numbers)
+    const tiles = shuffleArray([...this.numbers])
     const score = this.score(tiles)
 
     if (score > (await this.getBestMixu()).score) {
