@@ -3,6 +3,7 @@ import { Discord, SimpleCommand, SimpleCommandMessage, Slash } from 'discordx'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence'
 import { BestMixu } from '../../prisma/generated/prisma-client-js'
+import { shuffleArray } from '../utils/Helpers'
 
 @Discord()
 @injectable()
@@ -41,10 +42,6 @@ class Mixu {
         data: mixu,
       })
       .catch(console.error)
-  }
-
-  private shuffle(): number[] {
-    return [...this.numbers].sort(() => 0.5 - Math.random())
   }
 
   private score(tiles: number[]): number {
@@ -88,7 +85,7 @@ class Mixu {
   }
 
   private async generateMixu(guild: Guild, username: string): Promise<string> {
-    const tiles = this.shuffle()
+    const tiles = shuffleArray(this.numbers)
     const score = this.score(tiles)
 
     if (score > (await this.getBestMixu()).score) {
