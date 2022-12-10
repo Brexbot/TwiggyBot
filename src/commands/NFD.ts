@@ -61,6 +61,7 @@ class NFD {
 
   private COVET_TIMEOUT = 1000 * 60 * 10
 
+  private MAXIMUM_FAILED_HATCHES = 3
   private MAXIMUM_MINT_ATTEMPTS = 10
 
   private MAXIMUM_ORGY_ATTENDEES = 50
@@ -153,7 +154,7 @@ class NFD {
       res = Math.max(res, roll_dy_x_TimesPick_z(4, 1, 1))
     }
 
-    if (res <= 3 - ownerRecordPrev.consecutiveFails) {
+    if (res <= this.MAXIMUM_FAILED_HATCHES - ownerRecordPrev.consecutiveFails) {
       this.updateDBfailedMint(ownerMember.id)
       const nextMint = Math.round((Date.now() + this.MINT_COOLDOWN) / 1000)
       const numbers = ['1st', '2nd', '3rd', '4th'] // Should never get to 4th
