@@ -25,7 +25,7 @@ import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'dis
 import { getCallerFromCommand, getNicknameFromUser, isTwitchSub } from '../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence'
-import { NFDEnjoyer, NFDItem } from '../../prisma/generated/prisma-client-js'
+import { NFDItem } from '../../prisma/generated/prisma-client-js'
 import { IsSuperUser } from '../guards/RoleChecks'
 import sharp from 'sharp'
 
@@ -262,42 +262,53 @@ class NFD {
     })
 
     let collection = await this.client.nFDItem.findMany({
-      where: { owner: owner.id },
+      where: {
+        owner: owner.id,
+        ...(type == 'FAVORITES'
+          ? {
+              enthusiasts: {
+                some: {
+                  enjoyerId: owner.id,
+                },
+              },
+            }
+          : {}),
+        ...(type == 'TRASH'
+          ? {
+              enthusiasts: {
+                none: {
+                  enjoyerId: owner.id,
+                },
+              },
+            }
+          : {}),
+      },
     })
 
     const ownerName = getNicknameFromUser(owner, interaction.guild)
 
     if (collection.length == 0) {
+      let noDinoResponse: string
+
+      switch (type) {
+        case 'FAVORITES': {
+          noDinoResponse = `All of **${ownerName}**'s dinos are trash. 🗑️`
+          break
+        }
+        case 'TRASH': {
+          noDinoResponse = `**${ownerName}** doesn't have any trash. All their dinos are perfect. 😌`
+          break
+        }
+        default: {
+          noDinoResponse = `**${ownerName}** doesn't own any dinos. 🥚🙌`
+          break
+        }
+      }
+
       return interaction.reply({
-        content: `**${ownerName}** doesn't own any dinos. 🥚🙌`,
+        content: noDinoResponse,
         ephemeral: silent,
       })
-    }
-
-    // Filter down the list to only include the requested type
-    const favorties = ownerRecord.favorites.split(',')
-    if (type == 'FAVORITES') {
-      collection = collection.filter((entry) => {
-        return favorties.includes(entry.id.toString())
-      })
-
-      if (collection.length == 0) {
-        return interaction.reply({
-          content: `All of **${ownerName}**'s dinos are trash. 🗑️`,
-          ephemeral: silent,
-        })
-      }
-    } else if (type == 'TRASH') {
-      collection = collection.filter((entry) => {
-        return !favorties.includes(entry.id.toString())
-      })
-
-      if (collection.length == 0) {
-        return interaction.reply({
-          content: `**${ownerName}** doesn't have any trash. All their dinos are perfect. 😌`,
-          ephemeral: silent,
-        })
-      }
     }
 
     collection = shuffleArray(collection)
@@ -542,7 +553,7 @@ class NFD {
     return interaction.reply({ content: `**${callerName}** renamed **${name}** to **${replacement}**!` })
   }
 
-  @Slash('favourite', { description: 'Toggle a dino as a favorite.' })
+  @Slash('favorite', { description: 'Toggle a dino as a favorite.' })
   @SlashGroup('dino')
   async favourite(
     @SlashOption('name', {
@@ -560,42 +571,8 @@ class NFD {
     if (!nfd) {
       return interaction.reply({ content: "I couldn't find a dino with that name.", ephemeral: true })
     }
-    const nfdId = nfd.id.toString()
 
-    const userEntry = await this.client.nFDEnjoyer.findUnique({ where: { id: interaction.user.id } })
-    let wasAdded: boolean
-    if (userEntry) {
-      let favorites = userEntry.favorites.split(',').filter((entry) => {
-        return entry.length > 0
-      })
-
-      if (favorites.includes(nfdId)) {
-        favorites = favorites.filter((entry) => {
-          return entry != nfdId
-        })
-        wasAdded = false
-      } else {
-        favorites.push(nfdId)
-        wasAdded = true
-      }
-
-      await this.client.nFDEnjoyer.update({
-        where: {
-          id: userEntry.id,
-        },
-        data: {
-          favorites: favorites.join(','),
-        },
-      })
-    } else {
-      await this.client.nFDEnjoyer.create({
-        data: {
-          id: interaction.user.id,
-          favorites: nfdId,
-        },
-      })
-      wasAdded = true
-    }
+    const wasAdded = await this.toggleDinoFavorite(interaction.user, nfd)
 
     return interaction.reply({
       content: `**${nfd.name}** has been ${wasAdded ? 'added to' : 'removed from'} your favorite dinos!`,
@@ -728,6 +705,9 @@ class NFD {
         id: owner.id,
       },
       update: {},
+      include: {
+        favorites: true,
+      },
     })
 
     // Check for cooldowns.
@@ -740,13 +720,15 @@ class NFD {
       })
     }
 
-    const favorites = ownerRecord.favorites.split(',')
-    const collection = await this.client.nFDItem.findMany({
-      where: { owner: owner.id },
-    })
-
-    let nonFavorites = collection.filter((entry) => {
-      return entry && !favorites.includes(entry.id.toString())
+    let nonFavorites = await this.client.nFDItem.findMany({
+      where: {
+        owner: owner.id,
+        enthusiasts: {
+          none: {
+            enjoyerId: owner.id,
+          },
+        },
+      },
     })
 
     // Got to have an even number of dinos
@@ -1569,36 +1551,59 @@ class NFD {
   }
 
   private async toggleDinoFavorite(user: User, nfd: NFDItem) {
-    const userEntry = await this.client.nFDEnjoyer.findUnique({ where: { id: user.id } })
+    const userEntry = await this.client.nFDEnjoyer.findUnique({
+      where: { id: user.id },
+      include: { favorites: true },
+    })
+
+    const enthusiastConnection = {
+      dinoId: nfd.id,
+      enjoyerId: user.id,
+    }
 
     if (!userEntry) {
-      await this.client.nFDEnjoyer.create({ data: { id: user.id, favorites: nfd.id.toString() } })
+      // Create the enjoyer and add a new favorite
+      await this.client.nFDEnjoyer.create({
+        data: {
+          id: user.id,
+          favorites: {
+            create: { dinoId: nfd.id },
+          },
+        },
+      })
       return true
     }
 
-    let favorites = userEntry.favorites.split(',').filter((entry) => {
-      return entry.length > 0
-    }) // Remove the empty string that is created by default
-
-    favorites = [...new Set(favorites)] // While developing, check for duplicates. TODO: remove for release
-
-    const nfdId = nfd.id.toString()
-
-    let added: boolean
-
-    if (favorites.includes(nfdId)) {
-      favorites = favorites.filter((item: string) => {
-        return item != nfdId
+    if (
+      userEntry.favorites.find((dino) => {
+        return dino.dinoId === nfd.id
       })
-      added = false
+    ) {
+      // Removes the favorite
+      await this.client.nFDEnjoyer.update({
+        where: { id: user.id },
+        data: {
+          favorites: {
+            delete: {
+              dinoId_enjoyerId: enthusiastConnection,
+            },
+          },
+        },
+      })
+
+      return false
     } else {
-      favorites.push(nfdId)
-      added = true
+      // creates the favorite
+      await this.client.nFDEnjoyer.update({
+        where: { id: user.id },
+        data: {
+          favorites: {
+            create: { dinoId: nfd.id },
+          },
+        },
+      })
+      return true
     }
-
-    await this.client.nFDEnjoyer.update({ where: { id: user.id }, data: { favorites: favorites.join(',') } })
-
-    return added
   }
 
   private calculateHotnessScore(covetShunDifference: number) {

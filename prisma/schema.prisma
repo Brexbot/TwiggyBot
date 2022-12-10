@@ -70,6 +70,7 @@ model NFDItem {
   previousOwners  String    @default("")
   coveters        String    @default("")
   shunners        String    @default("")
+  enthusiasts     NFDEnthusiasts[]
   hotness         Int       @default(0)
 }
 
@@ -83,5 +84,18 @@ model NFDEnjoyer {
   consecutiveFails  Int       @default(4)
   successfulMints   Int       @default(0)
   failedMints       Int       @default(0)
-  favorites        String    @default("")
+  favorites         NFDEnthusiasts[]
+}
+
+// Opting to not use prisma's implicit many-to-many
+// I'm doing this so it's clear *what* is happening and also for future proofing should we wanat to add fields
+// to this relation
+model NFDEnthusiasts {
+  dino          NFDItem    @relation(fields: [dinoId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  dinoId        Int
+
+  enjoyer       NFDEnjoyer @relation(fields: [enjoyerId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  enjoyerId     String
+
+  @@id([dinoId, enjoyerId])
 }
