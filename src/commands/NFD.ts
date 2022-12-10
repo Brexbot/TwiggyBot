@@ -705,9 +705,6 @@ class NFD {
         id: owner.id,
       },
       update: {},
-      include: {
-        favorites: true,
-      },
     })
 
     // Check for cooldowns.
