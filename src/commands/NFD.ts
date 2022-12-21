@@ -52,14 +52,19 @@ type DinoStats = {
 // })
 @injectable()
 class NFD {
+  private MINT_COOLDOWN_METHOD: 'DAILY' | 'PERSONAL' = 'DAILY'
   private MINT_COOLDOWN = 1000 * 60 * 60 * 23
+  private MILISECONDS_IN_DAY = 86400000
   private GIFT_COOLDOWN = 1000 * 60 * 60
   private RENAME_COOLDOWN = 1000 * 60 * 60
   private SLURP_COOLDOWN = 1000 * 60 * 60
 
   private COVET_TIMEOUT = 1000 * 60 * 10
 
+  private MAXIMUM_FAILED_HATCHES = 3
   private MAXIMUM_MINT_ATTEMPTS = 10
+
+  private MAXIMUM_ORGY_ATTENDEES = 50
 
   private MIN_NFD_NAME_LENGTH = 6
   private MAX_NFD_NAME_LENGTH = 25
@@ -77,11 +82,14 @@ class NFD {
   private COLLAGE_ROW_MARGIN = 2
 
   private NFD_COLOR = 0xffbf00
+  private ORGY_COLOR = 0xff66ff
+  private HATCH_COLOR = 0x66ff99
 
   private COVET_BUTTON_ID = 'nfd-covet'
   private SHUN_BUTTON_ID = 'nfd-shun'
+  private FAVORITE_BUTTON_ID = 'nfd-favorite'
 
-  private dinoMessageCache: Record<string, string> = {}
+  private dinoMessageCache: Record<string, number> = {}
 
   private DINO_HOTNESS_SCALING = 0.1
 
@@ -111,12 +119,49 @@ class NFD {
 
     // Check for the cooldowns
     const ownerRecordPrev = await this.getUserFromDB(ownerMember.id)
-    if (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN > Date.now()) {
+    if (this.MINT_COOLDOWN_METHOD == 'DAILY') {
+      // If we are on a global daily cooldown then round the times to the previous UTC day then compare
+      const lastDay =
+        ownerRecordPrev.lastMint.getTime() - (ownerRecordPrev.lastMint.getTime() % this.MILISECONDS_IN_DAY)
+      const nowtime = Date.now()
+      const thisDay = nowtime - (nowtime % this.MILISECONDS_IN_DAY)
+      if (thisDay <= lastDay) {
+        return interaction.reply({
+          content: `Don't be greedy! You can hatch again <t:${Math.round(
+            (lastDay + this.MILISECONDS_IN_DAY) / 1000
+          )}:R>.`,
+          ephemeral: true,
+        })
+      }
+    } else {
+      // Simple 23 hour cooldown just checks that the cooldown has elapsed from the last time the user ran it.
+      if (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN > Date.now()) {
+        return interaction.reply({
+          content: `Don't be greedy! You can hatch again <t:${Math.round(
+            (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN) / 1000
+          )}:R>.`,
+          ephemeral: true,
+        })
+      }
+    }
+
+    // If we got this far then we are all set to hatch.
+    // Roll the hatch check
+    let res = roll_dy_x_TimesPick_z(4, 1, 1)
+
+    // Twitch subs get a re-roll
+    if (isTwitchSub(ownerMember, guild)) {
+      res = Math.max(res, roll_dy_x_TimesPick_z(4, 1, 1))
+    }
+
+    if (res <= this.MAXIMUM_FAILED_HATCHES - ownerRecordPrev.consecutiveFails) {
+      this.updateDBfailedMint(ownerMember.id)
+      const nextMint = Math.round((Date.now() + this.MINT_COOLDOWN) / 1000)
+      const numbers = ['1st', '2nd', '3rd', '4th'] // Should never get to 4th
       return interaction.reply({
-        content: `Don't be greedy! You can hatch again <t:${Math.round(
-          (ownerRecordPrev.lastMint.getTime() + this.MINT_COOLDOWN) / 1000
-        )}:R>.`,
-        ephemeral: true,
+        content: `You failed to hatch the egg (${
+          numbers[ownerRecordPrev.consecutiveFails]
+        } attempt), better luck next time. You can try again <t:${nextMint}:R>`,
       })
     }
 
@@ -130,30 +175,10 @@ class NFD {
       })
     }
 
-    // If we got this far then we are all set to hatch.
-    // Roll the hatch check
-    let res = roll_dy_x_TimesPick_z(4, 1, 1)
-
-    // Twitch subs get a re-roll
-    if (isTwitchSub(ownerMember, guild)) {
-      res = Math.max(res, roll_dy_x_TimesPick_z(4, 1, 1))
-    }
-
-    if (res <= 3 - ownerRecordPrev.consecutiveFails) {
-      this.updateDBfailedMint(ownerMember.id)
-      const nextMint = Math.round((Date.now() + this.MINT_COOLDOWN) / 1000)
-      const numbers = ['1st', '2nd', '3rd', '4th'] // Should never get to 4th
-      return interaction.reply({
-        content: `You failed to hatch the egg (${
-          numbers[ownerRecordPrev.consecutiveFails]
-        } attempt), better luck next time. You can try again <t:${nextMint}:R>`,
-      })
-    }
-
     // mint was successful!
     this.composeNFD(parts)
       .then(() => this.storeNFDinDatabase(parts, getCallerFromCommand(interaction)))
-      .then((nfd) => this.makeReply(nfd, interaction, ownerMember))
+      .then((nfd) => this.makeReply(nfd, interaction, ownerMember, true))
       .then(() => this.updateDBSuccessfulMint(ownerMember.id))
       .catch((err) => {
         interaction
@@ -190,7 +215,7 @@ class NFD {
 
     const owner = interaction.guild.members.cache.get(nfd.owner)
 
-    return this.makeReply(nfd, interaction, owner, silent)
+    return this.makeReply(nfd, interaction, owner, false, silent)
   }
 
   @Slash('collection', { description: "View a fellow dino enjoyer's collection." })
@@ -204,6 +229,11 @@ class NFD {
     owner: GuildMember,
     @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
     silent = true,
+    @SlashOption('type', { type: ApplicationCommandOptionType.String, required: false })
+    @SlashChoice({ name: 'Favorites', value: 'FAVORITES' })
+    @SlashChoice({ name: 'Trash', value: 'TRASH' })
+    @SlashChoice({ name: 'All', value: 'ALL' })
+    type: 'ALL' | 'FAVORITES' | 'TRASH' = 'ALL',
     interaction: CommandInteraction
   ) {
     if (!interaction.guild) {
@@ -233,34 +263,56 @@ class NFD {
     })
 
     let collection = await this.client.nFDItem.findMany({
-      where: { owner: owner.id },
+      where: {
+        owner: owner.id,
+        ...(type == 'FAVORITES'
+          ? {
+              enthusiasts: {
+                some: {
+                  enjoyerId: owner.id,
+                },
+              },
+            }
+          : {}),
+        ...(type == 'TRASH'
+          ? {
+              enthusiasts: {
+                none: {
+                  enjoyerId: owner.id,
+                },
+              },
+            }
+          : {}),
+      },
     })
 
     const ownerName = getNicknameFromUser(owner, interaction.guild)
 
     if (collection.length == 0) {
+      let noDinoResponse: string
+
+      switch (type) {
+        case 'FAVORITES': {
+          noDinoResponse = `All of **${ownerName}**'s dinos are trash. 🗑️`
+          break
+        }
+        case 'TRASH': {
+          noDinoResponse = `**${ownerName}** doesn't have any trash. All their dinos are perfect. 😌`
+          break
+        }
+        default: {
+          noDinoResponse = `**${ownerName}** doesn't own any dinos. 🥚🙌`
+          break
+        }
+      }
+
       return interaction.reply({
-        content: `**${ownerName}** doesn't own any dinos. 🥚🙌`,
+        content: noDinoResponse,
         ephemeral: silent,
       })
     }
 
     collection = shuffleArray(collection)
-
-    // We want the user's favourite NFD to take pride of place in the collection
-    // so try to find it and remove it from the masses.
-
-    let favourite: NFDItem | undefined
-
-    if (ownerRecord.favourite) {
-      // Pick the user's favourite out of their collection.
-      // Remains undefined if missing
-      for (let i = 0; i < collection.length; i++) {
-        if (collection[i].name == ownerRecord.favourite) {
-          favourite = collection[i]
-        }
-      }
-    }
 
     let totalValue = 0
     for (let i = 0; i < collection.length; i++) {
@@ -305,10 +357,6 @@ class NFD {
         text: `${ownerName} owns ${collection.length} dinos worth ${totalValue.toFixed(2)} Dino Bucks in total. 🦖🙌`,
       })
       .setDescription(ostr)
-
-    if (favourite) {
-      embed.addFields({ name: 'Favourite:', value: favourite.name, inline: true })
-    }
 
     return interaction.reply({
       embeds: [embed],
@@ -501,31 +549,19 @@ class NFD {
       },
     })
 
-    // If this was the user's favourite NFD, update the record to the new name
-    const favourite = user.favourite == nfd.name ? replacement : user.favourite
-    await this.client.nFDEnjoyer.update({
-      where: {
-        id: user.id,
-      },
-      data: {
-        lastRename: new Date(),
-        favourite: favourite,
-      },
-    })
-
     const callerName = getNicknameFromUser(interaction.user, interaction.guild)
 
     return interaction.reply({ content: `**${callerName}** renamed **${name}** to **${replacement}**!` })
   }
 
-  @Slash('favourite', { description: 'Set your favourite dino.' })
+  @Slash('favorite', { description: 'Toggle a dino as a favorite.' })
   @SlashGroup('dino')
   async favourite(
     @SlashOption('name', {
       type: ApplicationCommandOptionType.String,
-      description: 'The name of your new favourite dino.',
+      description: 'The name of the dino.',
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
-        this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
+        this.allNFDAutoComplete(interaction).then((choices) => interaction.respond(choices))
       },
     })
     name: string,
@@ -537,26 +573,12 @@ class NFD {
       return interaction.reply({ content: "I couldn't find a dino with that name.", ephemeral: true })
     }
 
-    // Confirm that the caller owns the NFD
-    if (nfd.owner != interaction.user.id) {
-      return interaction.reply({ content: "You can't favourite something you don't own!", ephemeral: true })
-    }
+    const wasAdded = await this.toggleDinoFavorite(interaction.user, nfd)
 
-    // upsert should never create, because a user that doesn't exist doesn't own anything.
-    await this.client.nFDEnjoyer.upsert({
-      where: {
-        id: interaction.user.id,
-      },
-      create: {
-        id: interaction.user.id,
-        favourite: nfd.name,
-      },
-      update: {
-        favourite: nfd.name,
-      },
+    return interaction.reply({
+      content: `**${nfd.name}** has been ${wasAdded ? 'added to' : 'removed from'} your favorite dinos!`,
+      ephemeral: true,
     })
-
-    return interaction.reply({ content: nfd.name + ' has been set as your favourite dino!', ephemeral: true })
   }
 
   @Slash('breed', {
@@ -607,6 +629,7 @@ class NFD {
 
     // Loop over the two NFDs, confirming that they exist and that the caller owns them
     const nfdNames = [first, second]
+    const breeders: NFDItem[] = []
     for (let i = 0; i < 2; i++) {
       const nfd = await this.getNFDByName(nfdNames[i])
       // Confirm the NFD exists
@@ -621,40 +644,153 @@ class NFD {
           ephemeral: true,
         })
       }
+
+      breeders.push(nfd)
     }
 
-    // Both NFDs are verified now. First generate a new NFD before deleting anything.
-    const parts = await this.makeNFDcode()
+    const newNFD = await this.commenceBreeding_OwO(breeders[0], breeders[1], ownerMember)
 
-    // Check to see if we failed to make a unique one
-    if (!parts) {
+    if (!newNFD) {
       return interaction.reply({
         content: "I tried really hard but I wasn't able to make a unique dino for you. Sorry... :'(",
         ephemeral: true,
       })
     }
 
-    try {
-      await this.composeNFD(parts)
+    await this.makeReply(newNFD, interaction, ownerMember, true)
+  }
 
-      // We have the new NFD ready to go. Delete the old two.
-      const deleteNfds = this.client.nFDItem.deleteMany({
-        where: {
-          name: {
-            in: [first, second],
+  @Slash('orgy', {
+    description: 'Throw a trashy dino orgy.',
+  })
+  @SlashGroup('dino')
+  async orgy(
+    @SlashOption('confirm', {
+      type: ApplicationCommandOptionType.Boolean,
+      description: 'Please confirm you are ok with your non-favorite dinos being destroyed.',
+      required: false,
+    })
+    confirm = false,
+    interaction: CommandInteraction
+  ) {
+    // First performs basic setup and checks, then defers the reply if all is looking good as creating
+    // 25 new NFDs can be slow.
+
+    if (!confirm) {
+      return interaction.reply({
+        content:
+          '⚠WARNING⚠\nThis command will breed ***all*** of your non-favorite marked dinos and they will be gone forever. Please check that you have set all the dinos you want to keep as favorites, then set the `confirm` option in the command to `True` and try again.',
+        ephemeral: true,
+      })
+    }
+
+    const owner = getCallerFromCommand(interaction)
+    if (!owner) {
+      return interaction.reply({ content: "User undefined. We can't throw an orgy without a host :(", ephemeral: true })
+    }
+    const guild = interaction.guild
+    if (!guild) {
+      return interaction.reply({
+        content: "Guild undefined. We can't throw an orgy without a venue :(",
+        ephemeral: true,
+      })
+    }
+    const ownerName = getNicknameFromUser(owner, guild)
+
+    // Get (or create) the owner of the collection from the database
+    const ownerRecord = await this.client.nFDEnjoyer.upsert({
+      where: {
+        id: owner.id,
+      },
+      create: {
+        id: owner.id,
+      },
+      update: {},
+    })
+
+    // Check for cooldowns.
+    if (ownerRecord.lastSlurp.getTime() + this.SLURP_COOLDOWN > Date.now()) {
+      return interaction.reply({
+        content: `We're still cleaning up after the last breeding session! You can go again <t:${Math.round(
+          (ownerRecord.lastSlurp.getTime() + this.SLURP_COOLDOWN) / 1000
+        )}:R>.`,
+        ephemeral: true,
+      })
+    }
+
+    let nonFavorites = await this.client.nFDItem.findMany({
+      where: {
+        owner: owner.id,
+        enthusiasts: {
+          none: {
+            enjoyerId: owner.id,
           },
         },
-      })
-      const createNfd = this.storeNFDinDatabase(parts, getCallerFromCommand(interaction))
-      const successfulSlurp = this.updateDBSuccessfulSlurp(ownerMember.id)
+      },
+    })
 
-      const [_delete, nfd, _enjoyer] = await this.client.$transaction([deleteNfds, createNfd, successfulSlurp])
-
-      await this.makeReply(nfd, interaction, ownerMember)
-    } catch (err) {
-      console.error('Something really went wrong breeding dinos...', err)
-      interaction.reply({ content: 'The dinoverse broke... what a surprise', ephemeral: true })
+    // Got to have an even number of dinos
+    if (nonFavorites.length % 2 == 1) {
+      nonFavorites.pop()
     }
+
+    // Maximum of in an orgy so we can display the results
+    if (nonFavorites.length > this.MAXIMUM_ORGY_ATTENDEES) {
+      nonFavorites = nonFavorites.slice(0, this.MAXIMUM_ORGY_ATTENDEES)
+    }
+
+    if (nonFavorites.length < 4) {
+      return interaction.reply({
+        content:
+          'You need at least 4 non-favorite dinos to throw an orgy. I know 4 is a bit of a lame orgy, but it is *technically* the minimum.',
+        ephemeral: true,
+      })
+    }
+
+    // This could be a slow, so we need the defer now
+    await interaction.deferReply()
+
+    const newNFDs: NFDItem[] = []
+    for (let i = 0; i < nonFavorites.length; i += 2) {
+      const newNFD = await this.commenceBreeding_OwO(nonFavorites[i], nonFavorites[i + 1], owner)
+
+      if (!newNFD) {
+        // Something went bad, but we can continue with the new NFDs we have
+        return interaction.followUp({
+          content: `Something went wrong between **${nonFavorites[i].name}** and **${
+            nonFavorites[i + 1]
+          }** during the orgy. I'm stopping it now but ${newNFDs.length} successful pairs were made.`,
+        })
+      } else {
+        // Everything went well :)
+        newNFDs.push(newNFD)
+      }
+    }
+
+    // Create collage. Returns a buffer but discord wants a name attached with it
+    // So we create that from the interaction id.
+    const collage = await this.makeCollage(newNFDs)
+    const fauxFileName = `${interaction.id}.png`
+
+    const imageAttachment = new AttachmentBuilder(collage, { name: fauxFileName })
+    const embed = new EmbedBuilder()
+      .setColor(this.ORGY_COLOR)
+      .setAuthor({
+        name: ownerName,
+        iconURL: owner.user.avatarURL() ?? undefined,
+      })
+      .setTitle(ownerName + "'s orgy babies")
+      .setImage(`attachment://${fauxFileName}`)
+      .setDescription(
+        `${ownerName} threw an orgy with ${nonFavorites.length} dinos and birthed: ` +
+          newNFDs.map((x) => x.name).join(', ') +
+          '.'
+      )
+
+    return interaction.followUp({
+      embeds: [embed],
+      files: [imageAttachment],
+    })
   }
 
   @Slash('rate', {
@@ -691,7 +827,14 @@ class NFD {
       console.log('ERROR: null guild in rate command')
       return interaction.reply({ content: 'Guild is null in rate command. :(', ephemeral: true })
     }
-    const result = await this.covetOrShunDino(choice == 'COVET' ? 'COVET' : 'SHUN', name, user, guild, interaction)
+
+    const nfdItem = await this.client.nFDItem.findUnique({ where: { name: name } })
+    if (!nfdItem) {
+      const errMsg = `I couldn't find that dino, sorry! Maybe it got to breed?`
+      return interaction.reply({ content: errMsg, ephemeral: true })
+    }
+
+    const result = await this.covetOrShunDino(choice == 'COVET' ? 'COVET' : 'SHUN', nfdItem, user, guild, interaction)
     if (result) {
       return interaction.editReply({
         content:
@@ -798,6 +941,14 @@ class NFD {
     }
     await out.toFile(path.join(this.OUTPUT_PATH, parts.fileName))
     return Promise.resolve(parts)
+  }
+
+  private async getNFDById(id: number) {
+    return this.client.nFDItem.findUnique({
+      where: {
+        id: id,
+      },
+    })
   }
 
   private async getNFDByCode(code: string) {
@@ -1022,6 +1173,7 @@ class NFD {
     nfd: NFDItem,
     interaction: CommandInteraction,
     owner: GuildMember | undefined,
+    newNFD: boolean,
     ephemeral = false
   ) {
     const nfdName = nfd.name
@@ -1047,6 +1199,11 @@ class NFD {
           .setCustomId(this.SHUN_BUTTON_ID)
           .setLabel('Shun')
           .setEmoji('1025015013959807096')
+        const favoriteButton = new ButtonBuilder()
+          .setStyle(ButtonStyle.Secondary)
+          .setCustomId(this.FAVORITE_BUTTON_ID)
+          .setLabel('Favorite')
+          .setEmoji('🫶') // Heart-hand emoji
 
         const hotnessScore = this.getHotnessScoreForNFD(nfd)
 
@@ -1060,10 +1217,11 @@ class NFD {
         const covetRow = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents([
           covetButton,
           shunButton,
+          favoriteButton,
         ])
 
         const embed = new EmbedBuilder()
-          .setColor(this.NFD_COLOR)
+          .setColor(newNFD ? this.HATCH_COLOR : this.NFD_COLOR)
           .setAuthor({ name: author, iconURL: avatar })
           .setTitle(nfdName)
           .setImage(imageUrl)
@@ -1108,7 +1266,7 @@ class NFD {
         }
 
         // Add it to the name cache
-        this.dinoMessageCache[message.id] = nfd.name
+        this.dinoMessageCache[message.id] = nfd.id
 
         // Handle button Presses
         const collector = message.createMessageComponentCollector()
@@ -1137,12 +1295,22 @@ class NFD {
               return
             }
 
-            const dinoName = this.dinoMessageCache[messageId]
+            const dinoId = this.dinoMessageCache[messageId]
+
+            const nfd = await this.getNFDById(dinoId)
+            if (!nfd) {
+              await collectionInteraction.reply({
+                content: `Sorry, that dino has gone missing :'(`,
+                ephemeral: true,
+              })
+              return
+            }
+
             let covetShunDifference: null | number = null
             if (collectionInteraction.customId == this.COVET_BUTTON_ID) {
               covetShunDifference = await this.covetOrShunDino(
                 'COVET',
-                dinoName,
+                nfd,
                 collectionInteraction.user,
                 guild,
                 collectionInteraction
@@ -1150,11 +1318,25 @@ class NFD {
             } else if (collectionInteraction.customId == this.SHUN_BUTTON_ID) {
               covetShunDifference = await this.covetOrShunDino(
                 'SHUN',
-                dinoName,
+                nfd,
                 collectionInteraction.user,
                 guild,
                 collectionInteraction
               )
+            } else if (collectionInteraction.customId == this.FAVORITE_BUTTON_ID) {
+              const wasAdded = await this.toggleDinoFavorite(collectionInteraction.user, nfd)
+              if (wasAdded) {
+                await collectionInteraction.reply({
+                  content: `Added **${nfd.name}** to your list of favorites.`,
+                  ephemeral: true,
+                })
+              } else {
+                await collectionInteraction.reply({
+                  content: `Removed **${nfd.name}** from your list of favorites.`,
+                  ephemeral: true,
+                })
+              }
+              return
             } else {
               console.log(
                 `ERROR: Interaction id ${collectionInteraction.customId} is unknown for dino hatch message ${messageId}`
@@ -1165,6 +1347,7 @@ class NFD {
               })
               return
             }
+
             if (covetShunDifference !== null) {
               const newHotnessScore = this.calculateHotnessScore(covetShunDifference)
 
@@ -1221,6 +1404,38 @@ class NFD {
     return null
   }
 
+  private async commenceBreeding_OwO(firstNFD: NFDItem, secondNFD: NFDItem, user: GuildMember) {
+    // Both NFDs are verified now. First generate a new NFD before deleting anything.
+    const parts = await this.makeNFDcode()
+
+    // Check to see if we failed to make a unique one
+    if (!parts) {
+      return null
+    }
+
+    try {
+      await this.composeNFD(parts)
+
+      // We have the new NFD ready to go. Delete the old two.
+      const deleteNfds = this.client.nFDItem.deleteMany({
+        where: {
+          id: {
+            in: [firstNFD.id, secondNFD.id],
+          },
+        },
+      })
+      const createNfd = this.storeNFDinDatabase(parts, user)
+      const successfulSlurp = this.updateDBSuccessfulSlurp(user.id)
+
+      const [_delete, nfd, _enjoyer] = await this.client.$transaction([deleteNfds, createNfd, successfulSlurp])
+
+      return nfd
+    } catch (err) {
+      console.error(`Something really went wrong breeding dinos ${firstNFD.id} X ${secondNFD.id} ...`, err)
+      return null
+    }
+  }
+
   private async userNFDAutoComplete(userId: Snowflake, interaction: AutocompleteInteraction) {
     return this.client.nFDItem
       .findMany({
@@ -1256,7 +1471,7 @@ class NFD {
 
   private async covetOrShunDino(
     action: 'COVET' | 'SHUN',
-    dinoName: string,
+    nfd: NFDItem,
     user: User,
     guild: Guild,
     collectionInteraction: ButtonInteraction | CommandInteraction
@@ -1267,80 +1482,125 @@ class NFD {
       await collectionInteraction.deferUpdate()
     }
 
-    const nfd = await this.getNFDByName(dinoName)
-    if (!nfd) {
-      const errMsg = `I couldn't find that dino. Last I knew it was called ${dinoName} but maybe its name was changed or it got to breed (lucky!).`
-      if (collectionInteraction instanceof CommandInteraction) {
-        await collectionInteraction.editReply({ content: errMsg })
-      } else {
-        await collectionInteraction.followUp({ content: errMsg, ephemeral: true })
-      }
-      return null
+    let newShunners: string[]
+    if (nfd.shunners.length == 0) {
+      newShunners = []
     } else {
-      let newShunners: string[]
-      if (nfd.shunners.length == 0) {
-        newShunners = []
-      } else {
-        newShunners = nfd.shunners.split(',')
-      }
-      let newCoveters: string[]
-      if (nfd.coveters.length == 0) {
-        newCoveters = []
-      } else {
-        newCoveters = nfd.coveters.split(',')
-      }
+      newShunners = nfd.shunners.split(',')
+    }
+    let newCoveters: string[]
+    if (nfd.coveters.length == 0) {
+      newCoveters = []
+    } else {
+      newCoveters = nfd.coveters.split(',')
+    }
 
-      if (action == 'COVET') {
-        // First check if the user already covets the dino
-        if (newCoveters.includes(user.id)) {
-          const errMsg = `I understand you love **${dinoName}** very much, but I'm not counting you twice.`
-          if (collectionInteraction instanceof CommandInteraction) {
-            await collectionInteraction.editReply({ content: errMsg })
-          } else {
-            await collectionInteraction.followUp({ content: errMsg, ephemeral: true })
-          }
-          return null
+    if (action == 'COVET') {
+      // First check if the user already covets the dino
+      if (newCoveters.includes(user.id)) {
+        const errMsg = `I understand you love **${nfd.name}** very much, but I'm not counting you twice.`
+        if (collectionInteraction instanceof CommandInteraction) {
+          await collectionInteraction.editReply({ content: errMsg })
         } else {
-          newCoveters.push(user.id)
-          // Remove the user from the shun list if they are there.
-          newShunners = newShunners.filter((id) => {
-            return id != user.id
-          })
+          await collectionInteraction.followUp({ content: errMsg, ephemeral: true })
         }
+        return null
       } else {
-        // First check if the user already shuns the dino
-        if (newShunners.includes(user.id)) {
-          const errMsg = `You hate **${dinoName}**. We get it. Don't be a bully.`
-          if (collectionInteraction instanceof CommandInteraction) {
-            await collectionInteraction.editReply({ content: errMsg })
-          } else {
-            await collectionInteraction.followUp({ content: errMsg, ephemeral: true })
-          }
-          return null
-        } else {
-          newShunners.push(user.id)
-          // Remove the user from the covet list if they are there.
-          newCoveters = newCoveters.filter((id) => {
-            return id != user.id
-          })
-        }
+        newCoveters.push(user.id)
+        // Remove the user from the shun list if they are there.
+        newShunners = newShunners.filter((id) => {
+          return id != user.id
+        })
       }
+    } else {
+      // First check if the user already shuns the dino
+      if (newShunners.includes(user.id)) {
+        const errMsg = `You hate **${nfd.name}**. We get it. Don't be a bully.`
+        if (collectionInteraction instanceof CommandInteraction) {
+          await collectionInteraction.editReply({ content: errMsg })
+        } else {
+          await collectionInteraction.followUp({ content: errMsg, ephemeral: true })
+        }
+        return null
+      } else {
+        newShunners.push(user.id)
+        // Remove the user from the covet list if they are there.
+        newCoveters = newCoveters.filter((id) => {
+          return id != user.id
+        })
+      }
+    }
 
-      const difference = newCoveters.length - newShunners.length
+    const difference = newCoveters.length - newShunners.length
 
-      // commit the change
-      await this.client.nFDItem.update({
-        where: {
-          name: nfd.name,
-        },
+    // commit the change
+    await this.client.nFDItem.update({
+      where: {
+        name: nfd.name,
+      },
+      data: {
+        coveters: newCoveters.join(','),
+        shunners: newShunners.join(','),
+        hotness: difference,
+      },
+    })
+
+    return difference
+  }
+
+  private async toggleDinoFavorite(user: User, nfd: NFDItem) {
+    const userEntry = await this.client.nFDEnjoyer.findUnique({
+      where: { id: user.id },
+      include: { favorites: true },
+    })
+
+    const enthusiastConnection = {
+      dinoId: nfd.id,
+      enjoyerId: user.id,
+    }
+
+    if (!userEntry) {
+      // Create the enjoyer and add a new favorite
+      await this.client.nFDEnjoyer.create({
         data: {
-          coveters: newCoveters.join(','),
-          shunners: newShunners.join(','),
-          hotness: difference,
+          id: user.id,
+          favorites: {
+            create: { dinoId: nfd.id },
+          },
+        },
+      })
+      return true
+    }
+
+    if (
+      userEntry.favorites.find((dino) => {
+        return dino.dinoId === nfd.id
+      })
+    ) {
+      // Removes the favorite
+      await this.client.nFDEnjoyer.update({
+        where: { id: user.id },
+        data: {
+          favorites: {
+            delete: {
+              dinoId_enjoyerId: enthusiastConnection,
+            },
+          },
         },
       })
 
-      return difference
+      return false
+    } else {
+      // creates the favorite
+      await this.client.nFDEnjoyer.update({
+        where: { id: user.id },
+        data: {
+          favorites: {
+            create: { dinoId: nfd.id },
+          },
+        },
+      })
+      return true
     }
   }
 
