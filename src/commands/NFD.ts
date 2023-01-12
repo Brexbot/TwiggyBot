@@ -156,12 +156,17 @@ class NFD {
 
     if (res <= this.MAXIMUM_FAILED_HATCHES - ownerRecordPrev.consecutiveFails) {
       this.updateDBfailedMint(ownerMember.id)
-      const nextMint = Math.round((Date.now() + this.MINT_COOLDOWN) / 1000)
+      const nowtime = Date.now()
+      const nextMint =
+        this.MINT_COOLDOWN_METHOD == 'DAILY'
+          ? (nowtime - (nowtime % this.MILISECONDS_IN_DAY) + this.MILISECONDS_IN_DAY) / 1000
+          : (nowtime + this.MINT_COOLDOWN) / 1000
+
       const numbers = ['1st', '2nd', '3rd', '4th'] // Should never get to 4th
       return interaction.reply({
         content: `You failed to hatch the egg (${
           numbers[ownerRecordPrev.consecutiveFails]
-        } attempt), better luck next time. You can try again <t:${nextMint}:R>`,
+        } attempt), better luck next time. You can try again <t:${Math.round(nextMint)}:R>`,
       })
     }
 
