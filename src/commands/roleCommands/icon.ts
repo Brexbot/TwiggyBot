@@ -113,6 +113,7 @@ class Icon {
         allowedMentions: {
           repliedUser: false,
         },
+        ephemeral: true,
       })
       .catch(console.error)
   }

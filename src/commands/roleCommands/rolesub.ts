@@ -98,6 +98,7 @@ class Rolesub {
         allowedMentions: {
           repliedUser: false,
         },
+        ephemeral: true,
       })
       .catch(console.error)
   }
