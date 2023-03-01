@@ -49,6 +49,7 @@
 * rexCitedXmas
 * rexComfy2
 * rexConcern
+* rexCuteGasp
 * rexCopium
 * rexCursed
 * rexDentist
@@ -85,6 +86,7 @@
 * rexPls
 * rexPog
 * rexPraiseTheDino
+* rexPrototype
 * rexQQ
 * rexQQnoir
 * rexRowobin
