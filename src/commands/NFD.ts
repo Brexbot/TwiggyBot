@@ -1728,6 +1728,7 @@ class NFD {
         })
         break
       default:
+        console.log(`Unexpected cooldown type: ${cooldown}`)
         break
     }
 
