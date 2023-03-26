@@ -80,7 +80,6 @@ model NFDEnjoyer {
   lastMint          DateTime  @default(dbgenerated("0"))
   lastGiftGiven     DateTime  @default(dbgenerated("0"))
   lastSlurp         DateTime  @default(dbgenerated("0"))
-  lastRename        DateTime  @default(dbgenerated("0"))
   consecutiveFails  Int       @default(4)
   successfulMints   Int       @default(0)
   failedMints       Int       @default(0)

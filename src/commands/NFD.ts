@@ -56,7 +56,6 @@ class NFD {
   private MINT_COOLDOWN = 1000 * 60 * 60 * 23
   private MILISECONDS_IN_DAY = 86400000
   private GIFT_COOLDOWN = 1000 * 60 * 60
-  private RENAME_COOLDOWN = 1000 * 60 * 60
   private SLURP_COOLDOWN = 1000 * 60 * 60
 
   private COVET_TIMEOUT = 1000 * 60 * 10
@@ -511,14 +510,6 @@ class NFD {
     if (!user) {
       return interaction.reply({
         content: "It seems you don't exist in the database. Try minting something first!",
-        ephemeral: true,
-      })
-    }
-    if (user.lastRename.getTime() + this.RENAME_COOLDOWN > Date.now()) {
-      return interaction.reply({
-        content: `Please wait. You can rename again <t:${Math.round(
-          (user.lastRename.getTime() + this.RENAME_COOLDOWN) / 1000
-        )}:R>.`,
         ephemeral: true,
       })
     }
@@ -1653,7 +1644,7 @@ class NFD {
   }
 
   @Slash('cooldown', {
-    description: 'Reset hatch, gift, and/or rename cooldowns.',
+    description: 'Reset hatch, gift, and/or breed cooldowns.',
     defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
   })
   // @SlashGroup('mod', 'nfd')
@@ -1671,7 +1662,6 @@ class NFD {
       description: 'Which dino cooldown should be cooled down.',
     })
     @SlashChoice({ name: 'Hatch', value: 'HATCH' })
-    @SlashChoice({ name: 'Rename', value: 'RENAME' })
     @SlashChoice({ name: 'Gift', value: 'GIFT' })
     @SlashChoice({ name: 'Breed', value: 'BREED' })
     @SlashChoice({ name: 'All', value: 'ALL' })
@@ -1693,19 +1683,6 @@ class NFD {
           },
           update: {
             lastMint: new Date('0'),
-          },
-        })
-        break
-      case 'RENAME':
-        await this.client.nFDEnjoyer.upsert({
-          where: {
-            id: chatter.id,
-          },
-          create: {
-            id: chatter.id,
-          },
-          update: {
-            lastRename: new Date('0'),
           },
         })
         break
@@ -1745,11 +1722,12 @@ class NFD {
           },
           update: {
             lastMint: new Date('0'),
-            lastRename: new Date('0'),
             lastGiftGiven: new Date('0'),
             lastSlurp: new Date('0'),
           },
         })
+        break
+      default:
         break
     }
 
