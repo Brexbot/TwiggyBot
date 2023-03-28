@@ -70,10 +70,9 @@ class Rolesub {
       return
     }
 
-    // TODO: fix types
     await guildRoles
       ?.delete(roleToBeDeleted.id)
-      .then(() => command.message.channel.send(`\`${modifiedRoleName}\` has been deleted.`))
+      .then(async () => command.message.channel.send(`\`${modifiedRoleName}\` has been deleted.`))
       .catch(console.error)
   }
 

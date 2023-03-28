@@ -128,9 +128,9 @@ class quoteCommand {
   // TODO: fix types
   private async fetchQuotes(): Promise<QuoteData> {
     console.log('Fetching quotes from API')
-    return await fetch(this.endpoint).then(async (resp) => {
+    return fetch(this.endpoint).then(async (resp) => {
       if (resp.ok) {
-        return await resp.json()
+        return resp.json() as Promise<QuoteData>
       } else {
         return Promise.reject(`An error occurred while fetching quotes (status: ${resp.status} - ${resp.statusText}`)
       }

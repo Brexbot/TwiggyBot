@@ -45,7 +45,7 @@ class Pardon {
           lastLoss: new Date(0),
         },
       })
-      .then((_) =>
+      .then(async () =>
         command.message.channel.send(
           `${mentionedMember?.nickname ?? mentionedMember?.user.username}, consider your sentence served.`
         )

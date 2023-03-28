@@ -27,13 +27,12 @@ class SetGamble {
     if (!isNaN(gambleChance) && gambleChance >= 0) {
       const newChance = new Prisma.Decimal(gambleChance).toDecimalPlaces(2)
 
-      // TODO: Fix types
       await this.client.guildOptions
         .update({
           where: { guildId: guildId },
           data: { gambleChance: newChance },
         })
-        .then((_) => command.message.channel.send(`Gamble chance is now ${newChance}`))
+        .then(async () => command.message.channel.send(`Gamble chance is now ${newChance}`))
     } else {
       const guildOptions = await this.client.guildOptions.upsert({
         where: { guildId: guildId },
