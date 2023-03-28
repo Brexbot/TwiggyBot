@@ -10,7 +10,7 @@ import { IsSuperUser } from '../../guards/RoleChecks'
 class Pardon {
   public constructor(private client: ORM) {}
 
-  @SimpleCommand('pardon')
+  @SimpleCommand({ name: 'pardon' })
   async simplePardon(command: SimpleCommandMessage) {
     let mentionedMember: GuildMember | undefined
     if ((command.message.mentions.members?.size ?? 0) > 0) {

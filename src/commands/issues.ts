@@ -5,12 +5,12 @@ import { Discord, SimpleCommand, SimpleCommandMessage, Slash } from 'discordx'
 class Issues {
   private url = 'https://github.com/Brexbot/DiscordBot/issues'
 
-  @SimpleCommand('issues')
+  @SimpleCommand({ name: 'issues' })
   simple(command: SimpleCommandMessage) {
     command.message.reply(this.url)
   }
 
-  @Slash('issues', { description: "Output link to this bot's issues on GitHub" })
+  @Slash({ name: 'issues', description: "Output link to this bot's issues on GitHub" })
   async slash(interaction: CommandInteraction) {
     interaction.reply(this.url)
   }

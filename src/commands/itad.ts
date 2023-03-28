@@ -52,9 +52,9 @@ class IsThereAnyDeal {
     }
   }
 
-  @SimpleCommand('itad', { description: 'Check isthereanydeal.com for deals', argSplitter: '\n' })
+  @SimpleCommand({ name: 'itad', description: 'Check isthereanydeal.com for deals', argSplitter: '\n' })
   async simple(
-    @SimpleCommandOption('game', { type: SimpleCommandOptionType.String })
+    @SimpleCommandOption({ name: 'game', type: SimpleCommandOptionType.String })
     game: string | undefined,
     command: SimpleCommandMessage
   ) {
@@ -71,9 +71,9 @@ class IsThereAnyDeal {
       })
   }
 
-  @Slash('itad', { description: 'Check isthereanydeal.com for deals' })
+  @Slash({ name: 'itad', description: 'Check isthereanydeal.com for deals' })
   private async slash(
-    @SlashOption('game', { type: ApplicationCommandOptionType.String, description: 'Game to search for' })
+    @SlashOption({ name: 'game', type: ApplicationCommandOptionType.String, description: 'Game to search for' })
     game: string,
     interaction: CommandInteraction
   ) {

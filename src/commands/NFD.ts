@@ -104,7 +104,7 @@ class NFD {
     }
   }
 
-  @Slash('hatch', { description: 'Attempt to hatch a new dino. Being a subscriber makes hatching more likely.' })
+  @Slash({ name: 'hatch', description: 'Attempt to hatch a new dino. Being a subscriber makes hatching more likely.' })
   @SlashGroup('dino')
   async mint(interaction: CommandInteraction) {
     const ownerMember = getCallerFromCommand(interaction)
@@ -193,18 +193,25 @@ class NFD {
       })
   }
 
-  @Slash('view', { description: 'View an existing dino.' })
+  @Slash({ name: 'view', description: 'View an existing dino.' })
   @SlashGroup('dino')
   async view(
-    @SlashOption('name', {
+    @SlashOption({
+      name: 'name',
       type: ApplicationCommandOptionType.String,
       required: true,
+      description: "The dino's name",
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
         this.allNFDAutoComplete(interaction).then((choices) => interaction.respond(choices))
       },
     })
     name: string,
-    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
+    @SlashOption({
+      name: 'silent',
+      description: 'Whether to show the message only for you',
+      type: ApplicationCommandOptionType.Boolean,
+      required: false,
+    })
     silent = true,
     interaction: CommandInteraction
   ) {
@@ -222,18 +229,29 @@ class NFD {
     return this.makeReply(nfd, interaction, owner, false, silent)
   }
 
-  @Slash('collection', { description: "View a fellow dino enjoyer's collection." })
+  @Slash({ name: 'collection', description: "View a fellow dino enjoyer's collection." })
   @SlashGroup('dino')
   async collection(
-    @SlashOption('owner', {
+    @SlashOption({
+      name: 'owner',
       type: ApplicationCommandOptionType.User,
       required: false,
       description: "The person who's collection you want to see.",
     })
     owner: GuildMember,
-    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
+    @SlashOption({
+      name: 'silent',
+      description: 'Whether to show the message only for you',
+      type: ApplicationCommandOptionType.Boolean,
+      required: false,
+    })
     silent = true,
-    @SlashOption('type', { type: ApplicationCommandOptionType.String, required: false })
+    @SlashOption({
+      name: 'type',
+      description: 'The type of collection you want to see',
+      type: ApplicationCommandOptionType.String,
+      required: false,
+    })
     @SlashChoice({ name: 'Favorites', value: 'FAVORITES' })
     @SlashChoice({ name: 'Trash', value: 'TRASH' })
     @SlashChoice({ name: 'All', value: 'ALL' })
@@ -369,10 +387,11 @@ class NFD {
     })
   }
 
-  @Slash('gift', { description: 'Gift your dino to another chatter. How kind.' })
+  @Slash({ name: 'gift', description: 'Gift your dino to another chatter. How kind.' })
   @SlashGroup('dino')
   async gift(
-    @SlashOption('name', {
+    @SlashOption({
+      name: 'name',
       type: ApplicationCommandOptionType.String,
       description: 'The name of the dino to be gifted.',
       required: true,
@@ -381,7 +400,8 @@ class NFD {
       },
     })
     name: string,
-    @SlashOption('recipient', {
+    @SlashOption({
+      name: 'recipient',
       type: ApplicationCommandOptionType.User,
       description: 'The chatter to receive the dino.',
       required: true,
@@ -469,10 +489,11 @@ class NFD {
     }
   }
 
-  @Slash('rename', { description: 'Give your dino a better name' })
+  @Slash({ name: 'rename', description: 'Give your dino a better name' })
   @SlashGroup('dino')
   async rename(
-    @SlashOption('name', {
+    @SlashOption({
+      name: 'name',
       type: ApplicationCommandOptionType.String,
       required: true,
       description: 'The *existing* name for the dino.',
@@ -481,7 +502,8 @@ class NFD {
       },
     })
     name: string,
-    @SlashOption('replacement', {
+    @SlashOption({
+      name: 'replacement',
       type: ApplicationCommandOptionType.String,
       required: true,
       description: 'The *new* name for the dino.',
@@ -550,10 +572,11 @@ class NFD {
     return interaction.reply({ content: `**${callerName}** renamed **${name}** to **${replacement}**!` })
   }
 
-  @Slash('favorite', { description: 'Toggle a dino as a favorite.' })
+  @Slash({ name: 'favorite', description: 'Toggle a dino as a favorite.' })
   @SlashGroup('dino')
   async favourite(
-    @SlashOption('name', {
+    @SlashOption({
+      name: 'name',
       type: ApplicationCommandOptionType.String,
       description: 'The name of the dino.',
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
@@ -577,12 +600,14 @@ class NFD {
     })
   }
 
-  @Slash('breed', {
+  @Slash({
+    name: 'breed',
     description: "A lotta yall still don't get it. You can consume two dinos to create a new dino.",
   })
   @SlashGroup('dino')
   async slurp(
-    @SlashOption('first', {
+    @SlashOption({
+      name: 'first',
       type: ApplicationCommandOptionType.String,
       description: 'The first dino to be bred.',
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
@@ -590,7 +615,8 @@ class NFD {
       },
     })
     first: string,
-    @SlashOption('second', {
+    @SlashOption({
+      name: 'second',
       type: ApplicationCommandOptionType.String,
       description: 'The second dino to be bred.',
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
@@ -656,12 +682,11 @@ class NFD {
     await this.makeReply(newNFD, interaction, ownerMember, true)
   }
 
-  @Slash('orgy', {
-    description: 'Throw a trashy dino orgy.',
-  })
+  @Slash({ name: 'orgy', description: 'Throw a trashy dino orgy.' })
   @SlashGroup('dino')
   async orgy(
-    @SlashOption('confirm', {
+    @SlashOption({
+      name: 'confirm',
       type: ApplicationCommandOptionType.Boolean,
       description: 'Please confirm you are ok with your non-favorite dinos being destroyed.',
       required: false,
@@ -789,12 +814,11 @@ class NFD {
     })
   }
 
-  @Slash('rate', {
-    description: 'Make your approval or disapproval of a dino known.',
-  })
+  @Slash({ name: 'rate', description: 'Make your approval or disapproval of a dino known.' })
   @SlashGroup('dino')
   async covet(
-    @SlashOption('name', {
+    @SlashOption({
+      name: 'name',
       type: ApplicationCommandOptionType.String,
       description: 'The lucky dino.',
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
@@ -802,7 +826,8 @@ class NFD {
       },
     })
     name: string,
-    @SlashOption('action', {
+    @SlashOption({
+      name: 'action',
       type: ApplicationCommandOptionType.String,
       required: true,
       description: 'Covet or Shun the dino?',
@@ -842,10 +867,15 @@ class NFD {
     }
   }
 
-  @Slash('vids', { description: 'Which dino is best dino? Which is most cursed?' })
+  @Slash({ name: 'vids', description: 'Which dino is best dino? Which is most cursed?' })
   @SlashGroup('dino')
   async vids(
-    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
+    @SlashOption({
+      name: 'silent',
+      description: 'Whether to show the message only for you',
+      type: ApplicationCommandOptionType.Boolean,
+      required: false,
+    })
     silent = true,
     interaction: CommandInteraction
   ) {
@@ -1612,14 +1642,17 @@ class NFD {
   // MODERATOR BASEMENT
   // ==================
 
-  @Slash('purge', {
+  @Slash({
+    name: 'purge',
     description: 'Remove a dino from the database.',
     defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
   })
   // @SlashGroup('mod', 'nfd')
   @Guard(IsSuperUser)
   async purge(
-    @SlashOption('name', {
+    @SlashOption({
+      name: 'name',
+      description: 'The name of the dino to delete',
       type: ApplicationCommandOptionType.String,
       required: true,
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
@@ -1643,20 +1676,23 @@ class NFD {
     return interaction.reply({ content: `${nfd.name} has been deleted from the database.` })
   }
 
-  @Slash('cooldown', {
+  @Slash({
+    name: 'cooldown',
     description: 'Reset hatch, gift, and/or breed cooldowns.',
     defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
   })
   // @SlashGroup('mod', 'nfd')
   @Guard(IsSuperUser)
   async cooldown(
-    @SlashOption('chatter', {
+    @SlashOption({
+      name: 'chatter',
       type: ApplicationCommandOptionType.User,
       required: true,
       description: "The chatter who's cooldowns should be reset",
     })
     chatter: User | GuildMember,
-    @SlashOption('cooldown', {
+    @SlashOption({
+      name: 'cooldown',
       type: ApplicationCommandOptionType.String,
       required: true,
       description: 'Which dino cooldown should be cooled down.',
@@ -1737,14 +1773,16 @@ class NFD {
     return interaction.reply({ content: `${interaction.user} reset ${cooldown} cooldown for ${chatter}.` })
   }
 
-  @Slash('reassign', {
+  @Slash({
+    name: 'reassign',
     description: "Forcibly change a dino's owner.",
     defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
   })
   // @SlashGroup('mod', 'nfd')
   @Guard(IsSuperUser)
   async reassign(
-    @SlashOption('nfd', {
+    @SlashOption({
+      name: 'nfd',
       type: ApplicationCommandOptionType.String,
       description: 'The name of the dino to be gifted.',
       required: true,
@@ -1752,7 +1790,8 @@ class NFD {
         this.allNFDAutoComplete(interaction).then((choices) => interaction.respond(choices))
       },
     })
-    @SlashOption('recipient', {
+    @SlashOption({
+      name: 'recipient',
       type: ApplicationCommandOptionType.User,
       description: 'The chatter to receive the dino.',
       required: true,

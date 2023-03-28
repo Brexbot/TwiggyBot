@@ -1,4 +1,11 @@
-import { Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption } from 'discordx'
+import {
+  Discord,
+  Guard,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  SimpleCommandOptionType,
+} from 'discordx'
 import { Prisma } from '../../../prisma/generated/prisma-client-js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
@@ -10,15 +17,17 @@ import { IsSuperUser } from '../../guards/RoleChecks'
 class SetGamble {
   public constructor(private client: ORM) {}
 
-  @SimpleCommand('gamblechance')
+  @SimpleCommand({ name: 'gamblechance' })
   async simpleGambleChance(
-    @SimpleCommandOption('gamblechance')
+    @SimpleCommandOption({ name: 'gamblechance', description: 'Gample chance', type: SimpleCommandOptionType.String })
     gambleChance: number,
     command: SimpleCommandMessage
   ) {
     const guildId = command.message.guildId ?? '-1'
     if (!isNaN(gambleChance) && gambleChance >= 0) {
       const newChance = new Prisma.Decimal(gambleChance).toDecimalPlaces(2)
+
+      // TODO: Fix types
       await this.client.guildOptions
         .update({
           where: { guildId: guildId },

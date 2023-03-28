@@ -46,7 +46,7 @@ class RPS {
     this.failMessage = ''
   }
 
-  @Slash('rps', { description: 'Play a game of rock paper scissors' })
+  @Slash({ name: 'rps', description: 'Play a game of rock paper scissors' })
   async rpsSlash(interaction: CommandInteraction) {
     if (interaction.channelId !== this.generalChannel) {
       await interaction.reply({ content: 'You cannot use that command here', ephemeral: true })

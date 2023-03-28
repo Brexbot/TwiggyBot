@@ -27,9 +27,9 @@ interface weatherDirections {
 
 @Discord()
 class Weather {
-  @SimpleCommand('weather', { description: 'Get the weather for a location', argSplitter: '\n' })
+  @SimpleCommand({ name: 'weather', description: 'Get the weather for a location', argSplitter: '\n' })
   async simple(
-    @SimpleCommandOption('location', { type: SimpleCommandOptionType.String }) text: string,
+    @SimpleCommandOption({ name: 'location', type: SimpleCommandOptionType.String }) text: string,
     command: SimpleCommandMessage
   ) {
     if (!text) {
@@ -39,9 +39,13 @@ class Weather {
     command.message.channel.send({ embeds: [weatherInfo.msg] })
   }
 
-  @Slash('weather', { description: 'Get the weather for a location' })
+  @Slash({ name: 'weather', description: 'Get the weather for a location' })
   async slash(
-    @SlashOption('location', { type: ApplicationCommandOptionType.String })
+    @SlashOption({
+      name: 'location',
+      description: 'The location for which to display the weather',
+      type: ApplicationCommandOptionType.String,
+    })
     message: string,
     interaction: CommandInteraction
   ) {

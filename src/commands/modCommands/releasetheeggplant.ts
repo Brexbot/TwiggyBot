@@ -1,15 +1,33 @@
 import { User } from 'discord.js'
-import { Client, Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption } from 'discordx'
+import {
+  Client,
+  Discord,
+  Guard,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  SimpleCommandOptionType,
+} from 'discordx'
 import { IsSuperUser, memberIsSU } from '../../guards/RoleChecks'
 
 @Discord()
 @Guard(IsSuperUser)
 class ReleaseTheEggplant {
-  @SimpleCommand('releasetheeggplant', {
+  @SimpleCommand({
+    name: 'releasetheeggplant',
     description: 'Release the eggplant on a user of your choosing',
     argSplitter: '\n',
   })
-  simple(@SimpleCommandOption('name') name: User, command: SimpleCommandMessage, client: Client) {
+  simple(
+    @SimpleCommandOption({
+      name: 'name',
+      description: 'User on whom to release the eggplant.',
+      type: SimpleCommandOptionType.String,
+    })
+    name: User,
+    command: SimpleCommandMessage,
+    client: Client
+  ) {
     if (!name) return command.message.reply('usage: ``>releasetheeggplant <user>``')
     const botId = client.user?.id
     const thisBot = command.message.guild?.members.cache.find((u) => u.id === botId)

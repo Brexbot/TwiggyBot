@@ -10,10 +10,15 @@ class Roll {
   private MAX_REPLY_LENGTH = 200
   private MAX_MESSAGE_LENGTH = 150
 
-  @Slash('dice', { description: 'Roll some dice' })
+  @Slash({ name: 'dice', description: 'Roll some dice' })
   async roll(
-    @SlashOption('dice', { type: ApplicationCommandOptionType.String })
-    @SlashOption('message', { type: ApplicationCommandOptionType.String, required: false })
+    @SlashOption({ name: 'dice', description: 'Type of dice to roll', type: ApplicationCommandOptionType.String })
+    @SlashOption({
+      name: 'message',
+      description: 'A message to attach to your roll',
+      type: ApplicationCommandOptionType.String,
+      required: false,
+    })
     dice: string,
     message: string,
     interaction: CommandInteraction
@@ -59,15 +64,24 @@ class Roll {
     }
   }
 
-  @Slash('cursed', { description: 'more 2s = more cursed.' })
+  @Slash({ name: 'cursed', description: 'more 2s = more cursed.' })
   async cursed(interaction: CommandInteraction) {
     await this.roll('999d444', '', interaction)
   }
 
-  @Slash('choose', { description: 'Let the bot control your life from comma separated choices' })
+  @Slash({ name: 'choose', description: 'Let the bot control your life from comma separated choices' })
   async choose(
-    @SlashOption('choices', { type: ApplicationCommandOptionType.String })
-    @SlashOption('message', { type: ApplicationCommandOptionType.String, required: false })
+    @SlashOption({
+      name: 'choices',
+      description: 'List of comma separated choices',
+      type: ApplicationCommandOptionType.String,
+    })
+    @SlashOption({
+      name: 'message',
+      description: 'A message to attach to your choices',
+      type: ApplicationCommandOptionType.String,
+      required: false,
+    })
     choices: string,
     message: string,
     interaction: CommandInteraction

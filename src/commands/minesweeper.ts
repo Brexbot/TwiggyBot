@@ -136,9 +136,9 @@ class Minesweeper {
   static mixuChannel = '340275382093611011'
   private lastUse = 0
 
-  @SimpleCommand('minesweeper', { description: 'Play a game of minesweeper', argSplitter: '\t' })
+  @SimpleCommand({ name: 'minesweeper', description: 'Play a game of minesweeper', argSplitter: '\t' })
   async simpleCommand(
-    @SimpleCommandOption('difficulty', { type: SimpleCommandOptionType.String })
+    @SimpleCommandOption({ name: 'difficulty', type: SimpleCommandOptionType.String })
     difficulty: string | undefined,
     command: SimpleCommandMessage
   ) {
@@ -148,13 +148,14 @@ class Minesweeper {
     }
   }
 
-  @Slash('minesweeper', { description: 'Play a game of minesweeper' })
+  @Slash({ name: 'minesweeper', description: 'Play a game of minesweeper' })
   async slashCommand(
     @SlashChoice({ name: 'Easy', value: 'easy' })
     @SlashChoice({ name: 'Normal', value: 'normal' })
     @SlashChoice({ name: 'Hard', value: 'hard' })
     @SlashChoice({ name: 'Ultra nightmare', value: 'ultra nightmare' })
-    @SlashOption('difficulty', {
+    @SlashOption({
+      name: 'difficulty',
       description: 'Which difficulty would you like to choose?',
       type: ApplicationCommandOptionType.String,
     })

@@ -95,10 +95,11 @@ abstract class Timeout {
     return `${member}, you're timed out for ${time} seconds.${msg}`
   }
 
-  @SimpleCommand('sudoku', { argSplitter: '\n' })
+  @SimpleCommand({ name: 'sudoku', argSplitter: '\n' })
   async sudokuCommand(
     // message: everything after the command and before a new line
-    @SimpleCommandOption('message', {
+    @SimpleCommandOption({
+      name: 'message',
       type: SimpleCommandOptionType.String,
       description: 'Your last message before committing sudoku',
     })
@@ -112,9 +113,10 @@ abstract class Timeout {
     await command.message.channel.send(await this.sudoku(command.message.member, message))
   }
 
-  @Slash('sudoku', { description: 'Commit sudoku' })
+  @Slash({ name: 'sudoku', description: 'Commit sudoku' })
   async sudokuInteraction(
-    @SlashOption('message', {
+    @SlashOption({
+      name: 'message',
       type: ApplicationCommandOptionType.String,
       description: 'Your last message before committing sudoku',
       required: false,
@@ -133,11 +135,11 @@ abstract class Timeout {
     await interaction.reply(await this.sudoku(interaction.member, message))
   }
 
-  @SimpleCommand('timeout')
+  @SimpleCommand({ name: 'timeout' })
   @Guard(IsSuperUser)
   async timeoutCommand(
-    @SimpleCommandOption('user', { type: SimpleCommandOptionType.User }) user: GuildMember | User | undefined,
-    @SimpleCommandOption('duration', { type: SimpleCommandOptionType.Number }) duration: number | undefined,
+    @SimpleCommandOption({ name: 'user', type: SimpleCommandOptionType.User }) user: GuildMember | User | undefined,
+    @SimpleCommandOption({ name: 'duration', type: SimpleCommandOptionType.Number }) duration: number | undefined,
     command: SimpleCommandMessage
   ) {
     if (!(user instanceof GuildMember) || !this.hasPermission(command, user)) {
@@ -160,11 +162,16 @@ abstract class Timeout {
     }
   }
 
-  @Slash('timeout', { defaultMemberPermissions: PermissionFlagsBits.ModerateMembers })
+  @Slash({
+    name: 'timeout',
+    description: 'Time out a user',
+    defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
+  })
   async timeoutInteraction(
-    @SlashOption('user', { type: ApplicationCommandOptionType.User, description: 'User you want to timeout' })
+    @SlashOption({ name: 'user', type: ApplicationCommandOptionType.User, description: 'User you want to timeout' })
     user: GuildMember,
-    @SlashOption('duration', {
+    @SlashOption({
+      name: 'duration',
       type: ApplicationCommandOptionType.Integer,
       description: 'Duration of the timeout in seconds',
     })

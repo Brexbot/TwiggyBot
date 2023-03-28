@@ -30,9 +30,14 @@ class quoteCommand {
   private lastFetch: Date = new Date()
   private cacheDuration = 30 * 60 * 1000 // 30 minutes in milliseconds
 
-  @Slash('quote', { description: 'Get server quote' })
+  @Slash({ name: 'quote', description: 'Get server quote' })
   private async quoteSlash(
-    @SlashOption('quoteid', { type: ApplicationCommandOptionType.Integer, required: false })
+    @SlashOption({
+      name: 'quoteid',
+      description: 'Quote ID',
+      type: ApplicationCommandOptionType.Integer,
+      required: false,
+    })
     id: number | undefined,
     interaction: CommandInteraction
   ) {
@@ -41,9 +46,9 @@ class quoteCommand {
     )
   }
 
-  @SimpleCommand('quote', { description: 'Get server quote', argSplitter: '\n' })
+  @SimpleCommand({ name: 'quote', description: 'Get server quote', argSplitter: '\n' })
   private async quoteSimple(
-    @SimpleCommandOption('id', { type: SimpleCommandOptionType.Number })
+    @SimpleCommandOption({ name: 'id', type: SimpleCommandOptionType.Number })
     id: number | undefined,
     command: SimpleCommandMessage
   ) {
@@ -52,9 +57,14 @@ class quoteCommand {
     )
   }
 
-  @Slash('quwuote', { description: 'Get sewvew quwuote' })
+  @Slash({ name: 'quwuote', description: 'Get sewvew quwuote' })
   private async quwuoteSlash(
-    @SlashOption('quwuoteid', { type: ApplicationCommandOptionType.Integer, required: false })
+    @SlashOption({
+      name: 'quwuoteid',
+      description: 'Quwuote ID',
+      type: ApplicationCommandOptionType.Integer,
+      required: false,
+    })
     id: number | undefined,
     interaction: CommandInteraction
   ) {
@@ -63,9 +73,9 @@ class quoteCommand {
     )
   }
 
-  @SimpleCommand('quwuote', { description: 'Get sewvew quwuote', argSplitter: '\n' })
+  @SimpleCommand({ name: 'quwuote', description: 'Get sewvew quwuote', argSplitter: '\n' })
   private async quwuoteSimple(
-    @SimpleCommandOption('id', { type: SimpleCommandOptionType.Number })
+    @SimpleCommandOption({ name: 'id', type: SimpleCommandOptionType.Number })
     id: number | undefined,
     command: SimpleCommandMessage
   ) {
@@ -115,6 +125,7 @@ class quoteCommand {
     }
   }
 
+  // TODO: fix types
   private async fetchQuotes(): Promise<QuoteData> {
     console.log('Fetching quotes from API')
     return await fetch(this.endpoint).then(async (resp) => {

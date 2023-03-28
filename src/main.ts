@@ -44,10 +44,8 @@ bot.once('ready', async () => {
   await bot.guilds.fetch()
 
   // init all application commands
-  await bot.initApplicationCommands({
-    guild: { log: false },
-    global: { log: false },
-  })
+  // TODO: figure out if we needed the guild and global options and what they did
+  await bot.initApplicationCommands()
 
   // To clear all guild commands, uncomment this line,
   // This is useful when moving from guild commands to global commands

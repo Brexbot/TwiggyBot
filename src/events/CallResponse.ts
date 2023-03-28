@@ -38,7 +38,7 @@ abstract class CallAndResponder {
     },
   ]
 
-  @On('messageCreate')
+  @On({ event: 'messageCreate' })
   private onMessage([message]: ArgsOf<'messageCreate'>) {
     const prompt = message.content
     for (const call of this.calls) {

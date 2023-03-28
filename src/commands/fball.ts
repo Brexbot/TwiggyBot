@@ -28,14 +28,19 @@ class Fball {
     'yasss o nah',
   ]
 
-  @SimpleCommand('fball')
+  @SimpleCommand({ name: 'fball', description: 'majicc 8bol" n "d Q u wan2b askerin d 8bol' })
   simple(command: SimpleCommandMessage) {
     command.message.reply(this.getMessage())
   }
 
-  @Slash('fball', { description: 'Fball' })
+  @Slash({ name: 'fball', description: 'majicc 8bol' })
   async slash(
-    @SlashOption('message', { type: ApplicationCommandOptionType.String, required: false })
+    @SlashOption({
+      name: 'message',
+      description: 'Kwestiun fer askin the ball',
+      type: ApplicationCommandOptionType.String,
+      required: false,
+    })
     message: string,
     interaction: CommandInteraction
   ) {

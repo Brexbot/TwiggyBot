@@ -1,14 +1,25 @@
-import { Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import {
+  Discord,
+  Guard,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  SimpleCommandOptionType,
+  Slash,
+  SlashOption,
+} from 'discordx'
 import { ApplicationCommandOptionType, CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
 import { IsSuperUser } from '../../guards/RoleChecks'
 
 @Discord()
 class Icon {
-  @SimpleCommand('createicon')
+  @SimpleCommand({ name: 'createicon' })
   @Guard(IsSuperUser)
   async createIconRole(
-    @SimpleCommandOption('emote', {
+    @SimpleCommandOption({
+      name: 'emote',
       description: 'The emote to create an icon role from',
+      type: SimpleCommandOptionType.String,
     })
     emote: string,
     command: SimpleCommandMessage
@@ -44,11 +55,13 @@ class Icon {
       .catch(console.error)
   }
 
-  @SimpleCommand('delicon')
+  @SimpleCommand({ name: 'delicon' })
   @Guard(IsSuperUser)
   async delRole(
-    @SimpleCommandOption('emote', {
+    @SimpleCommandOption({
+      name: 'emote',
       description: 'The emote of the icon to delete',
+      type: SimpleCommandOptionType.String,
     })
     emote: string,
     command: SimpleCommandMessage
@@ -66,16 +79,19 @@ class Icon {
       return
     }
 
+    // TODO: fix types
     await guildRoles
       ?.delete(roleToBeDeleted.id)
       .then(() => command.message.channel.send(`\`${modifiedRoleName}\` has been deleted.`))
       .catch(console.error)
   }
 
-  @SimpleCommand('icon')
+  @SimpleCommand({ name: 'icon' })
   async simpleRolesub(
-    @SimpleCommandOption('emote', {
+    @SimpleCommandOption({
+      name: 'emote',
       description: 'The emote of the icon to delete',
+      type: SimpleCommandOptionType.String,
     })
     emote: string,
     command: SimpleCommandMessage
@@ -91,9 +107,10 @@ class Icon {
       .catch(console.error)
   }
 
-  @Slash('icon', { description: 'Add or remove one of the many icon roles!' })
+  @Slash({ name: 'icon', description: 'Add or remove one of the many icon roles!' })
   async slashRolesub(
-    @SlashOption('emote', {
+    @SlashOption({
+      name: 'emote',
       required: false,
       description: 'Get the icon list or select an icon to add/remove',
       type: ApplicationCommandOptionType.String,
