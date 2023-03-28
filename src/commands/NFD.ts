@@ -579,6 +579,7 @@ class NFD {
       name: 'name',
       type: ApplicationCommandOptionType.String,
       description: 'The name of the dino.',
+      required: true,
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
         this.allNFDAutoComplete(interaction).then((choices) => interaction.respond(choices))
       },
@@ -610,6 +611,7 @@ class NFD {
       name: 'first',
       type: ApplicationCommandOptionType.String,
       description: 'The first dino to be bred.',
+      required: true,
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
         this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
       },
@@ -619,6 +621,7 @@ class NFD {
       name: 'second',
       type: ApplicationCommandOptionType.String,
       description: 'The second dino to be bred.',
+      required: true,
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
         this.userNFDAutoComplete(interaction.user.id, interaction).then((choices) => interaction.respond(choices))
       },
@@ -821,6 +824,7 @@ class NFD {
       name: 'name',
       type: ApplicationCommandOptionType.String,
       description: 'The lucky dino.',
+      required: true,
       autocomplete: function (this: NFD, interaction: AutocompleteInteraction) {
         this.allNFDAutoComplete(interaction).then((choices) => interaction.respond(choices))
       },

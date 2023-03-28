@@ -10,7 +10,6 @@ import {
 } from 'discordx'
 import hslRgb from 'hsl-rgb'
 
-
 interface weatherResponse {
   msg: EmbedBuilder
   ephemeral: boolean
@@ -45,6 +44,7 @@ class Weather {
       name: 'location',
       description: 'The location for which to display the weather',
       type: ApplicationCommandOptionType.String,
+      required: true,
     })
     message: string,
     interaction: CommandInteraction

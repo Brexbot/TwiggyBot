@@ -158,6 +158,7 @@ class Minesweeper {
       name: 'difficulty',
       description: 'Which difficulty would you like to choose?',
       type: ApplicationCommandOptionType.String,
+      required: true,
     })
     difficulty: string | undefined,
     interaction: CommandInteraction

@@ -38,7 +38,12 @@ class Spongebob {
 
   @Slash({ name: 'sb', description: 'Spongebobify text' })
   async slash(
-    @SlashOption({ name: 'text', description: 'THe texT to sPongebOBifY.', type: ApplicationCommandOptionType.String })
+    @SlashOption({
+      name: 'text',
+      description: 'THe texT to sPongebOBifY.',
+      type: ApplicationCommandOptionType.String,
+      required: true,
+    })
     message: string,
     interaction: CommandInteraction
   ) {

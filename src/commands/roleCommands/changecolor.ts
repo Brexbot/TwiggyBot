@@ -82,6 +82,7 @@ export class ColorRoles {
       name: 'color',
       description: 'The hex color to change to',
       type: ApplicationCommandOptionType.String,
+      required: true,
     })
     color: string,
     @SlashOption({

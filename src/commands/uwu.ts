@@ -57,7 +57,12 @@ class UwU {
 
   @Slash({ name: 'uwu', description: 'UwUify text' })
   private async slash(
-    @SlashOption({ name: 'text', description: 'Text to UwUify', type: ApplicationCommandOptionType.String })
+    @SlashOption({
+      name: 'text',
+      description: 'Text to UwUify',
+      type: ApplicationCommandOptionType.String,
+      required: true,
+    })
     text: string,
     interaction: CommandInteraction
   ) {

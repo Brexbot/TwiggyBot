@@ -71,7 +71,12 @@ class IsThereAnyDeal {
 
   @Slash({ name: 'itad', description: 'Check isthereanydeal.com for deals' })
   private async slash(
-    @SlashOption({ name: 'game', type: ApplicationCommandOptionType.String, description: 'Game to search for' })
+    @SlashOption({
+      name: 'game',
+      type: ApplicationCommandOptionType.String,
+      description: 'Game to search for',
+      required: true,
+    })
     game: string,
     interaction: CommandInteraction
   ) {

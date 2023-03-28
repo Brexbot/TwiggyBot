@@ -168,12 +168,18 @@ abstract class Timeout {
     defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
   })
   async timeoutInteraction(
-    @SlashOption({ name: 'user', type: ApplicationCommandOptionType.User, description: 'User you want to timeout' })
+    @SlashOption({
+      name: 'user',
+      type: ApplicationCommandOptionType.User,
+      description: 'User you want to timeout',
+      required: true,
+    })
     user: GuildMember,
     @SlashOption({
       name: 'duration',
       type: ApplicationCommandOptionType.Integer,
       description: 'Duration of the timeout in seconds',
+      required: true,
     })
     duration: number,
     interaction: CommandInteraction

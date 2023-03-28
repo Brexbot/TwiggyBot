@@ -12,7 +12,12 @@ class Roll {
 
   @Slash({ name: 'dice', description: 'Roll some dice' })
   async roll(
-    @SlashOption({ name: 'dice', description: 'Type of dice to roll', type: ApplicationCommandOptionType.String })
+    @SlashOption({
+      name: 'dice',
+      description: 'Type of dice to roll',
+      type: ApplicationCommandOptionType.String,
+      required: true,
+    })
     @SlashOption({
       name: 'message',
       description: 'A message to attach to your roll',
@@ -75,6 +80,7 @@ class Roll {
       name: 'choices',
       description: 'List of comma separated choices',
       type: ApplicationCommandOptionType.String,
+      required: true,
     })
     @SlashOption({
       name: 'message',

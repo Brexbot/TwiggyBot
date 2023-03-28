@@ -44,7 +44,12 @@ class MyTime {
 
   @Slash({ name: 'mytime', description: 'Localised times within the provided text' })
   private async slash(
-    @SlashOption({ name: 'text', type: ApplicationCommandOptionType.String, description: 'Text containing times' })
+    @SlashOption({
+      name: 'text',
+      type: ApplicationCommandOptionType.String,
+      description: 'Text containing times',
+      required: true,
+    })
     text: string,
     @SlashOption({
       name: 'mode',
