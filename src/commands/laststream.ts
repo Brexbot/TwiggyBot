@@ -1,7 +1,7 @@
 import { CommandInteraction } from 'discord.js'
 import { Discord, SimpleCommand, SimpleCommandMessage, Slash } from 'discordx'
 
-import { AppTokenAuthProvider  } from '@twurple/auth'
+import { AppTokenAuthProvider } from '@twurple/auth'
 import { ApiClient } from '@twurple/api'
 
 const formatTimeString = (duration: number) => {
