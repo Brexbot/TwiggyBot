@@ -1,8 +1,7 @@
 import { CommandInteraction } from 'discord.js'
 import { Discord, SimpleCommand, SimpleCommandMessage, Slash } from 'discordx'
 
-// TODO: fix twurple
-import { ClientCredentialsAuthProvider } from '@twurple/auth'
+import { AppTokenAuthProvider  } from '@twurple/auth'
 import { ApiClient } from '@twurple/api'
 
 const formatTimeString = (duration: number) => {
@@ -31,7 +30,7 @@ class LastStream {
       throw new Error('TWITCH_SECRET and TWITCH_CLIENT_ID must both be set.')
     }
 
-    const authProvider = new ClientCredentialsAuthProvider(twitchClientID, twitchSecret)
+    const authProvider = new AppTokenAuthProvider(twitchClientID, twitchSecret)
     this.client = new ApiClient({ authProvider })
   }
 
