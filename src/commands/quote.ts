@@ -9,7 +9,6 @@ import {
   SlashOption,
 } from 'discordx'
 import { uwuify } from './uwu'
-import fetch from 'node-fetch'
 
 interface Quote {
   id: number

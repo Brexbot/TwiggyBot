@@ -8,8 +8,8 @@ import {
   Slash,
   SlashOption,
 } from 'discordx'
-import fetch from 'node-fetch'
 import hslRgb from 'hsl-rgb'
+
 
 interface weatherResponse {
   msg: EmbedBuilder

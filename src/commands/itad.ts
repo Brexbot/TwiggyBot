@@ -9,8 +9,6 @@ import {
   SlashOption,
 } from 'discordx'
 
-import fetch from 'node-fetch'
-
 type PlainResponse = {
   data: { plain: string } | []
 }
