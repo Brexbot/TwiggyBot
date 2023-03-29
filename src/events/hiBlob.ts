@@ -7,7 +7,7 @@ abstract class hiBlob {
   private lastBlobMessage = 0 // Initializes most recent message time from Blob.
   private blobID = '104908485266817024' // Blob's user ID.
 
-  @On('messageCreate')
+  @On({ event: 'messageCreate' })
   private onMessage([message]: ArgsOf<'messageCreate'>) {
     if (message.author.id === this.blobID) {
       // Check whether it has been <cooldown> seconds since last message.

@@ -32,7 +32,7 @@ export class Duel {
 
   public constructor(private client: ORM) {}
 
-  @Slash('duel', { description: 'Challenge the chat to a duel' })
+  @Slash({ name: 'duel', description: 'Challenge the chat to a duel' })
   private async duel(interaction: CommandInteraction) {
     // Get the challenger from the DB. Create them if they don't exist yet.
     const challengerMember = getCallerFromCommand(interaction)
@@ -215,7 +215,7 @@ export class Duel {
     })
   }
 
-  @Slash('duelstats', { description: 'Display your duel statistics' })
+  @Slash({ name: 'duelstats', description: 'Display your duel statistics' })
   private async duelStats(interaction: CommandInteraction) {
     await interaction.deferReply()
 
@@ -263,10 +263,10 @@ export class Duel {
     }
   }
 
-  @Slash('duelstreaks', { description: 'Show the overall duel statistics' })
+  @Slash({ name: 'duelstreaks', description: 'Show the overall duel statistics' })
   private async streaks(interaction: CommandInteraction) {
     const streakStats = ['winStreakMax', 'lossStreakMax', 'draws', 'losses', 'wins'] as const
-    const statFormatter = async (statName: typeof streakStats[number], emptyText: string): Promise<string> => {
+    const statFormatter = async (statName: (typeof streakStats)[number], emptyText: string): Promise<string> => {
       let stats = await this.client.$queryRawUnsafe<Duels[]>(
         `SELECT * FROM Duels WHERE ${statName}=(SELECT MAX(${statName}) FROM Duels) AND ${statName} > 0`
       )

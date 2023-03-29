@@ -14,9 +14,9 @@ import { spongeCase } from 'sponge-case'
 class Spongebob {
   private mainChannel = '103678524375699456'
 
-  @SimpleCommand('sb', { description: 'Spongebobify text', argSplitter: '\n' })
+  @SimpleCommand({ name: 'sb', description: 'Spongebobify text', argSplitter: '\n' })
   async simple(
-    @SimpleCommandOption('text', { type: SimpleCommandOptionType.String }) text: string | undefined,
+    @SimpleCommandOption({ name: 'text', type: SimpleCommandOptionType.String }) text: string | undefined,
     command: SimpleCommandMessage
   ) {
     if (!text) {
@@ -36,9 +36,14 @@ class Spongebob {
     await command.message.reply({ content: spongeCase(text), allowedMentions: { repliedUser: false } })
   }
 
-  @Slash('sb', { description: 'Spongebobify text' })
+  @Slash({ name: 'sb', description: 'Spongebobify text' })
   async slash(
-    @SlashOption('text', { type: ApplicationCommandOptionType.String })
+    @SlashOption({
+      name: 'text',
+      description: 'THe texT to sPongebOBifY.',
+      type: ApplicationCommandOptionType.String,
+      required: true,
+    })
     message: string,
     interaction: CommandInteraction
   ) {

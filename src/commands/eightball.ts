@@ -28,14 +28,19 @@ class Eightball {
 
   private mention = false
 
-  @SimpleCommand('eightball')
+  @SimpleCommand({ name: 'eightball' })
   simple(command: SimpleCommandMessage) {
     command.message.reply(this.getMessage())
   }
 
-  @Slash('eightball', { description: 'Eightball' })
+  @Slash({ name: 'eightball', description: 'Magic 8 Ball' })
   async slash(
-    @SlashOption('message', { type: ApplicationCommandOptionType.String, required: false })
+    @SlashOption({
+      name: 'message',
+      description: 'The question you want to ask the 8 Ball',
+      type: ApplicationCommandOptionType.String,
+      required: false,
+    })
     message: string,
     interaction: CommandInteraction
   ) {

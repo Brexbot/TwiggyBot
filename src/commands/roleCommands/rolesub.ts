@@ -1,13 +1,24 @@
-import { Discord, Guard, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Slash, SlashOption } from 'discordx'
+import {
+  Discord,
+  Guard,
+  SimpleCommand,
+  SimpleCommandMessage,
+  SimpleCommandOption,
+  SimpleCommandOptionType,
+  Slash,
+  SlashOption,
+} from 'discordx'
 import { ApplicationCommandOptionType, CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
 import { IsSuperUser } from '../../guards/RoleChecks'
 
 @Discord()
 class Rolesub {
-  @SimpleCommand('createrole', { argSplitter: '\n' })
+  @SimpleCommand({ name: 'createrole', argSplitter: '\n' })
   @Guard(IsSuperUser)
   async createRole(
-    @SimpleCommandOption('role_name', {
+    @SimpleCommandOption({
+      name: 'role_name',
+      type: SimpleCommandOptionType.String,
       description: 'The name of the role to be created',
     })
     roleName: string,
@@ -36,11 +47,13 @@ class Rolesub {
       .catch(console.error)
   }
 
-  @SimpleCommand('delrole', { argSplitter: '\n' })
+  @SimpleCommand({ name: 'delrole', argSplitter: '\n' })
   @Guard(IsSuperUser)
   async delRole(
-    @SimpleCommandOption('role_name', {
+    @SimpleCommandOption({
+      name: 'role_name',
       description: 'The name of the role to be created',
+      type: SimpleCommandOptionType.String,
     })
     roleName: string,
     command: SimpleCommandMessage
@@ -59,12 +72,20 @@ class Rolesub {
 
     await guildRoles
       ?.delete(roleToBeDeleted.id)
-      .then(() => command.message.channel.send(`\`${modifiedRoleName}\` has been deleted.`))
+      .then(async () => command.message.channel.send(`\`${modifiedRoleName}\` has been deleted.`))
       .catch(console.error)
   }
 
-  @SimpleCommand('rolesub', { argSplitter: '\n' })
-  async simpleRolesub(@SimpleCommandOption('role_name') roleName: string, command: SimpleCommandMessage) {
+  @SimpleCommand({ name: 'rolesub', argSplitter: '\n' })
+  async simpleRolesub(
+    @SimpleCommandOption({
+      name: 'role_name',
+      description: 'Name of the rule to acquire',
+      type: SimpleCommandOptionType.String,
+    })
+    roleName: string,
+    command: SimpleCommandMessage
+  ) {
     const msg = this.rolesub(roleName, command.message.guild?.roles, command.message.member?.roles)
     await command.message
       .reply({
@@ -76,9 +97,10 @@ class Rolesub {
       .catch(console.error)
   }
 
-  @Slash('rolesub', { description: 'Add or remove one of the many community roles!' })
+  @Slash({ name: 'rolesub', description: 'Add or remove one of the many community roles!' })
   async slashRolesub(
-    @SlashOption('role', {
+    @SlashOption({
+      name: 'role',
       required: false,
       description: 'Get the role list or select a role to add/remove',
       type: ApplicationCommandOptionType.String,

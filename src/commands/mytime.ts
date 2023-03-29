@@ -18,12 +18,9 @@ function makeSafe(text: string): string {
 
 @Discord()
 class MyTime {
-  @SimpleCommand('mytime', { description: 'Localised times within the provided text', argSplitter: '\t' })
+  @SimpleCommand({ name: 'mytime', description: 'Localised times within the provided text', argSplitter: '\t' })
   async simple(
-    @SimpleCommandOption('text', {
-      type: SimpleCommandOptionType.String,
-      description: 'Text containing times',
-    })
+    @SimpleCommandOption({ name: 'text', type: SimpleCommandOptionType.String, description: 'Text containing times' })
     text: string,
     command: SimpleCommandMessage
   ) {
@@ -45,20 +42,24 @@ class MyTime {
     }
   }
 
-  @Slash('mytime', { description: 'Localised times within the provided text' })
+  @Slash({ name: 'mytime', description: 'Localised times within the provided text' })
   private async slash(
-    @SlashOption('text', {
+    @SlashOption({
+      name: 'text',
       type: ApplicationCommandOptionType.String,
       description: 'Text containing times',
+      required: true,
     })
     text: string,
-    @SlashOption('mode', {
+    @SlashOption({
+      name: 'mode',
       type: ApplicationCommandOptionType.String,
       description: 'The output mode. One of: tTdDfFR, Default: t',
       required: false,
     })
     mode: string,
-    @SlashOption('raw', {
+    @SlashOption({
+      name: 'raw',
       type: ApplicationCommandOptionType.Boolean,
       description: 'Outputs the time in a copy/paste friendly format for discord ',
       required: false,

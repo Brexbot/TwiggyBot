@@ -32,9 +32,9 @@ export const uwuify = (text: string): string => {
 class UwU {
   private mainChannel = '103678524375699456'
 
-  @SimpleCommand('uwu', { description: 'UwUify text', argSplitter: '\n' })
+  @SimpleCommand({ name: 'uwu', description: 'UwUify text', argSplitter: '\n' })
   async simple(
-    @SimpleCommandOption('text', { type: SimpleCommandOptionType.String }) text: string | undefined,
+    @SimpleCommandOption({ name: 'text', type: SimpleCommandOptionType.String }) text: string | undefined,
     command: SimpleCommandMessage
   ) {
     if (!text) {
@@ -55,9 +55,14 @@ class UwU {
     await command.message.reply({ content: uwuify(text), allowedMentions: { repliedUser: false } })
   }
 
-  @Slash('uwu', { description: 'UwUify text' })
+  @Slash({ name: 'uwu', description: 'UwUify text' })
   private async slash(
-    @SlashOption('text', { type: ApplicationCommandOptionType.String })
+    @SlashOption({
+      name: 'text',
+      description: 'Text to UwUify',
+      type: ApplicationCommandOptionType.String,
+      required: true,
+    })
     text: string,
     interaction: CommandInteraction
   ) {

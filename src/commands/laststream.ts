@@ -1,7 +1,7 @@
 import { CommandInteraction } from 'discord.js'
 import { Discord, SimpleCommand, SimpleCommandMessage, Slash } from 'discordx'
 
-import { ClientCredentialsAuthProvider } from '@twurple/auth'
+import { AppTokenAuthProvider } from '@twurple/auth'
 import { ApiClient } from '@twurple/api'
 
 const formatTimeString = (duration: number) => {
@@ -30,11 +30,11 @@ class LastStream {
       throw new Error('TWITCH_SECRET and TWITCH_CLIENT_ID must both be set.')
     }
 
-    const authProvider = new ClientCredentialsAuthProvider(twitchClientID, twitchSecret)
+    const authProvider = new AppTokenAuthProvider(twitchClientID, twitchSecret)
     this.client = new ApiClient({ authProvider })
   }
 
-  @SimpleCommand('flaststream')
+  @SimpleCommand({ name: 'flaststream' })
   async simple(command: SimpleCommandMessage) {
     const lastStream = await this.getLastStream()
     if (lastStream == -1) {
@@ -54,7 +54,7 @@ class LastStream {
     })
   }
 
-  @Slash('flaststream', { description: "Get time since Rex's last stream" })
+  @Slash({ name: 'flaststream', description: "Get time since Rex's last stream" })
   async slash(interaction: CommandInteraction) {
     await interaction.deferReply()
 
@@ -72,12 +72,12 @@ class LastStream {
   }
 
   // Joke versions
-  @SimpleCommand('flatstream')
+  @SimpleCommand({ name: 'flatstream' })
   async simpleFlat(command: SimpleCommandMessage) {
     await command.message.channel.send('🐊')
   }
 
-  @SimpleCommand('fartstream')
+  @SimpleCommand({ name: 'fartstream' })
   async simpleFart(command: SimpleCommandMessage) {
     await command.message.channel.send('💨')
   }

@@ -12,7 +12,7 @@ export abstract class AppDiscord {
     return presence.activities.some((activity) => activity.type === ActivityType.Streaming)
   }
 
-  @On('presenceUpdate')
+  @On({ event: 'presenceUpdate' })
   async onUpdate([oldPresence, newPresence]: ArgsOf<'presenceUpdate'>) {
     if (!AppDiscord.guildRoleMap.has(newPresence.guild?.id ?? '')) {
       return

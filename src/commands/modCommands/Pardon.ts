@@ -10,7 +10,7 @@ import { IsSuperUser } from '../../guards/RoleChecks'
 class Pardon {
   public constructor(private client: ORM) {}
 
-  @SimpleCommand('pardon')
+  @SimpleCommand({ name: 'pardon' })
   async simplePardon(command: SimpleCommandMessage) {
     let mentionedMember: GuildMember | undefined
     if ((command.message.mentions.members?.size ?? 0) > 0) {
@@ -45,7 +45,7 @@ class Pardon {
           lastLoss: new Date(0),
         },
       })
-      .then((_) =>
+      .then(async () =>
         command.message.channel.send(
           `${mentionedMember?.nickname ?? mentionedMember?.user.username}, consider your sentence served.`
         )

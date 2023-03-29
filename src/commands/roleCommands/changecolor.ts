@@ -37,7 +37,7 @@ export class ColorRoles {
 
   public constructor(private client: ORM) {}
 
-  @SimpleCommand('uncolor')
+  @SimpleCommand({ name: 'uncolor' })
   @Guard(IsSuperUser)
   async simpleUncolor(command: SimpleCommandMessage) {
     const guild = getGuildFromCommand(command)
@@ -53,14 +53,18 @@ export class ColorRoles {
     await ColorRoles.setColor('uncolor', mentionedMember, guild)
   }
 
-  @SimpleCommand('changecolor')
+  @SimpleCommand({ name: 'changecolor' })
   async simpleChangeColor(
-    @SimpleCommandOption('color', {
+    @SimpleCommandOption({
+      name: 'color',
       description: 'The hex color to change to',
+      type: SimpleCommandOptionType.String,
     })
     color: string,
-    @SimpleCommandOption('is_favorite', {
+    @SimpleCommandOption({
+      name: 'is_favorite',
       description: 'Should this color be registered as your favorite',
+      type: SimpleCommandOptionType.String,
     })
     isFavorite: boolean,
     command: SimpleCommandMessage
@@ -72,15 +76,20 @@ export class ColorRoles {
       .catch(console.error)
   }
 
-  @Slash('changecolor', { description: 'Change your display color' })
+  @Slash({ name: 'changecolor', description: 'Change your display color' })
   async slashChangeColor(
-    @SlashOption('color', {
+    @SlashOption({
+      name: 'color',
       description: 'The hex color to change to',
+      type: ApplicationCommandOptionType.String,
+      required: true,
     })
     color: string,
-    @SlashOption('favorite', {
+    @SlashOption({
+      name: 'favorite',
       description: 'Is this your favorite color?',
       required: false,
+      type: ApplicationCommandOptionType.String,
     })
     isFavorite: boolean,
     interaction: CommandInteraction
@@ -93,7 +102,7 @@ export class ColorRoles {
       .catch(console.error)
   }
 
-  @SimpleCommand('random')
+  @SimpleCommand({ name: 'random' })
   async simpleRandomColor(command: SimpleCommandMessage) {
     this.changeUserColor('RANDOM', false, command)
       .then(async (reply) => {
@@ -102,7 +111,7 @@ export class ColorRoles {
       .catch(console.error)
   }
 
-  @Slash('random', { description: 'Change to a random display color' })
+  @Slash({ name: 'random', description: 'Change to a random display color' })
   async slashRandomColor(interaction: CommandInteraction) {
     await interaction.deferReply()
 
@@ -113,9 +122,10 @@ export class ColorRoles {
       .catch(console.error)
   }
 
-  @SimpleCommand('lazy')
+  @SimpleCommand({ name: 'lazy' })
   async simpleLazyColor(
-    @SimpleCommandOption('fav_color', {
+    @SimpleCommandOption({
+      name: 'fav_color',
       type: SimpleCommandOptionType.String,
       description: 'The hex value of your favorite color',
     })
@@ -137,9 +147,10 @@ export class ColorRoles {
     }
   }
 
-  @Slash('lazy', { description: 'Change to your favorite display color' })
+  @Slash({ name: 'lazy', description: 'Change to your favorite display color' })
   async slashLazyColor(
-    @SlashOption('fav_color', {
+    @SlashOption({
+      name: 'fav_color',
       type: ApplicationCommandOptionType.String,
       description: 'The hex value of your favorite color',
       required: false,
@@ -165,7 +176,7 @@ export class ColorRoles {
     }
   }
 
-  @SimpleCommand('gamble')
+  @SimpleCommand({ name: 'gamble' })
   async simpleGamble(command: SimpleCommandMessage) {
     this.changeUserColor('GAMBLE', false, command)
       .then(async (reply) => {
@@ -174,7 +185,7 @@ export class ColorRoles {
       .catch(console.error)
   }
 
-  @Slash('gamble', { description: 'Tempt The Wheel of Fate for a new color... or not!' })
+  @Slash({ name: 'gamble', description: 'Tempt The Wheel of Fate for a new color... or not!' })
   async slashGamble(interaction: CommandInteraction) {
     await interaction.deferReply({ ephemeral: true })
 

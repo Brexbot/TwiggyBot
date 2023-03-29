@@ -9,7 +9,7 @@ import { memberIsSU } from '../../guards/RoleChecks'
 class EmbedPls {
   private roleId = '787815221317992448'
 
-  @SimpleCommand('embedpls')
+  @SimpleCommand({ name: 'embedpls' })
   simple(command: SimpleCommandMessage) {
     const mentions = command.message.mentions
     const embedRole = command.message.guild?.roles?.cache?.find((role) => role.id === this.roleId)

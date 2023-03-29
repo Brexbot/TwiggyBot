@@ -255,11 +255,21 @@ export class RPG {
     return result
   }
 
-  @Slash('character', { description: 'Show off your character sheet' })
+  @Slash({ name: 'character', description: 'Show off your character sheet' })
   async character(
-    @SlashOption('name', { type: ApplicationCommandOptionType.String, required: false })
+    @SlashOption({
+      name: 'name',
+      description: 'Name of the character',
+      type: ApplicationCommandOptionType.String,
+      required: false,
+    })
     name: string,
-    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
+    @SlashOption({
+      name: 'silent',
+      description: 'Whether to show the message only for you',
+      type: ApplicationCommandOptionType.Boolean,
+      required: false,
+    })
     silent = true,
     interaction: CommandInteraction
   ) {
@@ -288,9 +298,14 @@ export class RPG {
     }
   }
 
-  @Slash('stats', { description: 'Display your fight statistics' })
+  @Slash({ name: 'stats', description: 'Display your fight statistics' })
   async stats(
-    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
+    @SlashOption({
+      name: 'silent',
+      description: 'Whether to show the message only for you',
+      type: ApplicationCommandOptionType.Boolean,
+      required: false,
+    })
     silent = true,
     interaction: CommandInteraction
   ) {
@@ -322,9 +337,14 @@ export class RPG {
     }
   }
 
-  @Slash('ladder', { description: 'Who is the strongest chatter around?' })
+  @Slash({ name: 'ladder', description: 'Who is the strongest chatter around?' })
   async ladder(
-    @SlashOption('silent', { type: ApplicationCommandOptionType.Boolean, required: false })
+    @SlashOption({
+      name: 'silent',
+      description: 'Whether to show the message only for you',
+      type: ApplicationCommandOptionType.Boolean,
+      required: false,
+    })
     silent = true,
     interaction: CommandInteraction
   ) {
@@ -390,7 +410,7 @@ export class RPG {
     interaction.reply({ embeds: [ladderEmbed], ephemeral: silent })
   }
 
-  @Slash('duel', { description: 'Challenge other chatters and prove your strength.' })
+  @Slash({ name: 'duel', description: 'Challenge other chatters and prove your strength.' })
   async challenge(interaction: CommandInteraction) {
     // await interaction.deferReply()
 

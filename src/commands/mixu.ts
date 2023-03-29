@@ -107,7 +107,7 @@ class Mixu {
     return [`Best Mixu by ${mixu.owner}`, text]
   }
 
-  @SimpleCommand('mixu', { directMessage: false })
+  @SimpleCommand({ name: 'mixu', directMessage: false })
   async mixuCommand(command: SimpleCommandMessage) {
     if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) {
       return
@@ -117,7 +117,7 @@ class Mixu {
     await command.message.channel.send(message)
   }
 
-  @Slash('mixu', { description: 'Miku tile game' })
+  @Slash({ name: 'mixu', description: 'Miku tile game' })
   async mixuSlashCommand(interaction: CommandInteraction) {
     if (
       !interaction.command?.guild ||
@@ -134,7 +134,7 @@ class Mixu {
     await interaction.followUp(message)
   }
 
-  @SimpleCommand('bestmixu', { directMessage: false })
+  @SimpleCommand({ name: 'bestmixu', directMessage: false })
   async bestMixuSimpleCommand(command: SimpleCommandMessage) {
     if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) {
       return
@@ -151,7 +151,7 @@ class Mixu {
     command.message.channel.send(text)
   }
 
-  @Slash('bestmixu', { description: 'Show best mixu' })
+  @Slash({ name: 'bestmixu', description: 'Show best mixu' })
   async bestMixuSlashCommand(interaction: CommandInteraction) {
     if (
       !interaction.command?.guild ||
@@ -175,7 +175,7 @@ class Mixu {
     await interaction.followUp(text)
   }
 
-  @SimpleCommand('mikustare', { directMessage: false })
+  @SimpleCommand({ name: 'mikustare', directMessage: false })
   mikustareSimple(command: SimpleCommandMessage) {
     if (!command.message.guild || !this.isMixuChannel(command.message.channel.id)) {
       return
@@ -187,7 +187,7 @@ class Mixu {
     )
   }
 
-  @Slash('mikustare', { description: 'Output correctly aligned Miku picture' })
+  @Slash({ name: 'mikustare', description: 'Output correctly aligned Miku picture' })
   async mikustareSlash(interaction: CommandInteraction) {
     if (!interaction.command?.guild || !interaction.channel?.id || !this.isMixuChannel(interaction.channel.id)) {
       await interaction.reply({ content: 'This command can only be used in the #mixu channel', ephemeral: true })
