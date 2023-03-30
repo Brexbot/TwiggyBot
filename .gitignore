@@ -112,8 +112,8 @@ dist
 .tern-port
 
 # Prisma
-prisma/
-!prisma/schema.prisma
+prisma/generated
+prisma/*.db*
 
 # Generated "NFD" images
 src/assets/NFD/images
