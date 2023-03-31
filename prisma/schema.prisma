@@ -9,7 +9,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./main.db"
+  url      = "file:./db/main.db"
 }
 
 model GuildOptions {
