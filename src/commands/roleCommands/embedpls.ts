@@ -7,8 +7,7 @@ import { memberIsSU } from '../../guards/RoleChecks'
 
 @Discord()
 class EmbedPls {
-  // private roleId = '787815221317992448'
-  private roleId = '930791790490030100'
+  private roleId = '787815221317992448'
 
   @SimpleCommand({ name: 'embedpls' })
   simple(command: SimpleCommandMessage) {
