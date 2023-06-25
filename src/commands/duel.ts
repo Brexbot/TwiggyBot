@@ -10,7 +10,7 @@ import {
   Message,
   MessageActionRowComponentBuilder,
 } from 'discord.js'
-import { Discord, Slash } from 'discordx'
+import { Discord, Slash, SlashGroup } from 'discordx'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence/ORM'
 
@@ -21,6 +21,7 @@ import { getGlobalDuelCDRemaining, getTimeLeftInReadableFormat } from '../utils/
 import { shuffleArray } from '../utils/Helpers'
 
 @Discord()
+@SlashGroup({ name: 'duel', description: 'Duel minigame' })
 @injectable()
 export class Duel {
   static cooldown = 10 * 60 * 1000 // Cooldown period after loss in milliseconds
@@ -32,7 +33,7 @@ export class Duel {
 
   public constructor(private client: ORM) {}
 
-  @Slash({ name: 'duel', description: 'Challenge the chat to a duel' })
+  @Slash({ name: 'challenge', description: 'Challenge the chat to a duel' })
   private async duel(interaction: CommandInteraction) {
     // Get the challenger from the DB. Create them if they don't exist yet.
     const challengerMember = getCallerFromCommand(interaction)
@@ -215,7 +216,7 @@ export class Duel {
     })
   }
 
-  @Slash({ name: 'duelstats', description: 'Display your duel statistics' })
+  @Slash({ name: 'stats', description: 'Display your duel statistics' })
   private async duelStats(interaction: CommandInteraction) {
     await interaction.deferReply()
 
@@ -263,7 +264,7 @@ export class Duel {
     }
   }
 
-  @Slash({ name: 'duelstreaks', description: 'Show the overall duel statistics' })
+  @Slash({ name: 'streaks', description: 'Show the overall duel statistics' })
   private async streaks(interaction: CommandInteraction) {
     const streakStats = ['winStreakMax', 'lossStreakMax', 'draws', 'losses', 'wins'] as const
     const statFormatter = async (statName: (typeof streakStats)[number], emptyText: string): Promise<string> => {
