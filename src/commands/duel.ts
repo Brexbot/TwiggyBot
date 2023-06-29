@@ -22,6 +22,7 @@ import { shuffleArray } from '../utils/Helpers'
 
 @Discord()
 @SlashGroup({ name: 'duel', description: 'Duel minigame' })
+@SlashGroup('duel')
 @injectable()
 export class Duel {
   static cooldown = 10 * 60 * 1000 // Cooldown period after loss in milliseconds
