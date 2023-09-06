@@ -1382,6 +1382,7 @@ class NFD {
               const newHotnessScore = this.calculateHotnessScore(covetShunDifference)
 
               const editedEmbed = EmbedBuilder.from(message.embeds[0])
+                .setTitle(nfd.name)
                 .setFooter({
                   text:
                     `${nfd.name} is worth ${this.getNFDPrice(nfd).toFixed(2)} Dino Bucks!` +
