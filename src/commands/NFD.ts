@@ -366,6 +366,18 @@ class NFD {
     const collage = await this.makeCollage(collection)
     const fauxFileName = `${interaction.id}.png`
 
+    let dinoType
+    switch (type) {
+      case 'FAVORITES':
+        dinoType = 'favorite '
+        break
+      case 'TRASH':
+        dinoType = 'trash '
+        break
+      default:
+        dinoType = ''
+    }
+
     const imageAttachment = new AttachmentBuilder(collage, { name: fauxFileName })
     const embed = new EmbedBuilder()
       .setColor(this.NFD_COLOR)
@@ -376,7 +388,9 @@ class NFD {
       .setTitle(ownerName + "'s collection")
       .setImage(`attachment://${fauxFileName}`)
       .setFooter({
-        text: `${ownerName} owns ${collection.length} dinos worth ${totalValue.toFixed(2)} Dino Bucks in total. 🦖🙌`,
+        text: `${ownerName} owns ${collection.length} ${dinoType}dinos worth ${totalValue.toFixed(
+          2
+        )} Dino Bucks in total. 🦖🙌`,
       })
       .setDescription(ostr)
 
