@@ -22,7 +22,7 @@ import {
   userMention,
 } from 'discord.js'
 import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
-import { getCallerFromCommand, getNicknameFromUser, isTwitchSub } from '../utils/CommandUtils'
+import { getCallerFromCommand, getNicknameFromUser } from '../utils/CommandUtils'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence'
 import { NFDItem } from '../../prisma/generated/prisma-client-js'
@@ -104,7 +104,7 @@ class NFD {
     }
   }
 
-  @Slash({ name: 'hatch', description: 'Attempt to hatch a new dino. Being a subscriber makes hatching more likely.' })
+  @Slash({ name: 'hatch', description: 'Attempt to hatch a new dino.' })
   @SlashGroup('dino')
   async mint(interaction: CommandInteraction) {
     const ownerMember = getCallerFromCommand(interaction)
@@ -146,12 +146,7 @@ class NFD {
 
     // If we got this far then we are all set to hatch.
     // Roll the hatch check
-    let res = roll_dy_x_TimesPick_z(4, 1, 1)
-
-    // Twitch subs get a re-roll
-    if (isTwitchSub(ownerMember, guild)) {
-      res = Math.max(res, roll_dy_x_TimesPick_z(4, 1, 1))
-    }
+    const res = roll_dy_x_TimesPick_z(4, 1, 1)
 
     if (res <= this.MAXIMUM_FAILED_HATCHES - ownerRecordPrev.consecutiveFails) {
       this.updateDBfailedMint(ownerMember.id)
