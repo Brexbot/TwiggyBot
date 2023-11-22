@@ -1,5 +1,5 @@
 import { CommandInteraction } from 'discord.js'
-import { Discord, SimpleCommand, SimpleCommandMessage, Slash } from 'discordx'
+import { Discord, SimpleCommand, SimpleCommandMessage } from 'discordx'
 
 import { AppTokenAuthProvider } from '@twurple/auth'
 import { ApiClient } from '@twurple/api'
@@ -34,7 +34,7 @@ class LastStream {
     this.client = new ApiClient({ authProvider })
   }
 
-  @SimpleCommand({ name: 'flaststream' })
+  // @SimpleCommand({ name: 'flaststream' })
   async simple(command: SimpleCommandMessage) {
     const lastStream = await this.getLastStream()
     if (lastStream == -1) {
@@ -54,7 +54,7 @@ class LastStream {
     })
   }
 
-  @Slash({ name: 'flaststream', description: "Get time since Rex's last stream" })
+  // @Slash({ name: 'flaststream', description: "Get time since Rex's last stream" })
   async slash(interaction: CommandInteraction) {
     await interaction.deferReply()
 
