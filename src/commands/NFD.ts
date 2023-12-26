@@ -148,7 +148,7 @@ class NFD {
     // Roll the hatch check
     const res = roll_dy_x_TimesPick_z(4, 1, 1)
 
-    if (res <= this.MAXIMUM_FAILED_HATCHES - ownerRecordPrev.consecutiveFails) {
+    if (res <= this.MAXIMUM_FAILED_HATCHES - ownerRecordPrev.consecutiveFails && !this.isTodayChristmas()) {
       this.updateDBfailedMint(ownerMember.id)
       const nowtime = Date.now()
       const nextMint =
@@ -186,6 +186,12 @@ class NFD {
             console.error('Something really went wrong hatching this dino...', err)
           })
       })
+  }
+
+  private isTodayChristmas(): boolean {
+    const today = new Date()
+    // Day is between 1 and 31 while month is between 0 and 11
+    return today.getDate() == 25 && today.getMonth() == 11
   }
 
   @Slash({ name: 'view', description: 'View an existing dino.' })
