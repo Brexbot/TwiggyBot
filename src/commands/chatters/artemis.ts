@@ -19,7 +19,7 @@ class Artemis {
     "After filming, the entire fellowship got matching elvish tattoos, save for John Rhys Davis, as he did not want to get a tattoo. Instead Gimli's stuntman got the tattoo in his place.",
     'Tolkien did not receive the total amount he was owed for the LotR Trilogy.',
     'Tolkien originally did not want to name the third book The Return of the King because it revealed too much about the story.',
-    'Tolkien and his wife\'s gravestones are engraved with two names from the Silmarillion, Beren and Luthien, the characters in "the greatest love story he ever wrote" according to Tolkien.',
+    'Tolkien\'s and his wife\'s gravestones are engraved with two names from the Silmarillion, Beren and Luthien, the characters in "the greatest love story he ever wrote", according to Tolkien.',
     'The University of California offers a LotR dorm for its freshmen.',
     "We don't talk about the Hobbit movies.",
     'Frodo is depicted as a clumsy character in the films, falling 39 times.',
