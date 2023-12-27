@@ -10,7 +10,7 @@ class Artemis {
     'Christopher Lee met Tolkien by coincidence.',
     'Pippin named his son Faramir.',
     'The Beatles tried to make their own LotR movie.',
-    'During filming Christopher Lee corrected Peter Jackson on the appropriate sound a man would make when he was stabbed in the back, stating "do you know what it actually sounds "like when someone is stabbed? Because I do."',
+    'During filming, Christopher Lee corrected Peter Jackson on the appropriate sound a man would make when he was stabbed in the back, stating, "Do you know what it actually sounds "like when someone is stabbed? Because I do."',
     'Merry was originally named Marmaduke Brandybuck.',
     'Billy Boyd wrote the music for the song "Edge of Night" which he sings in Denethor\'s halls.',
     'The theatrical edition of the movies is 9h6m. The extended edition is 11h22m.',
