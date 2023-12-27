@@ -21,7 +21,7 @@ class Artemis {
     'Tolkien originally did not want to name the third book The Return of the King because it revealed too much about the story.',
     'Tolkien and his wife\'s gravestones are engraved with two names from the Silmarillion, Beren and Luthien, the characters in "the greatest love story he ever wrote" according to Tolkien.',
     'The University of California offers a LotR dorm for its freshmen.',
-    "We don't talk about the Hobbit films.",
+    "We don't talk about the Hobbit movies.",
     'Frodo is depicted as a clumsy character in the films, falling 39 times.',
     "Christopher Lee is the only cast member to have met Tolkien, and always wanted to play the role of Gandalf which he received Tolkien's blessing to play.",
     'Nicolas Cage was originally supposed to play the role of Aragorn.',
