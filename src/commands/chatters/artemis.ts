@@ -49,6 +49,7 @@ class Artemis {
     'Aragorn is the hottest character in the movies.',
     'Most of the Rohirrim are actually women in fake beards, as the production found it hard to find enough male horse riders.',
     "Weta Workshop had to keep asking the stuntmen playing soldiers/orcs to be more gentle with the swords they made, as they kept breaking swords and injuring each other. (The stuntmen didn't listen)",
+    'Tolkien once received a goblet as a gift with the script of the one ring around the top. As the language was of Mordor and as such, a cursed language, he used it as an ashtray instead.',
   ]
 
   @SimpleCommand({ name: 'artemis', description: 'Artemis', prefix: '!' })
