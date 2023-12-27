@@ -26,7 +26,7 @@ class Artemis {
     "Christopher Lee is the only cast member to have met Tolkien, and always wanted to play the role of Gandalf which he received Tolkien's blessing to play.",
     'Nicolas Cage was originally supposed to play the role of Aragorn.',
     'The fight scenes were choreographed by an Olympic fencer, who described Viggo Mortensen as "the best Sword fighter i have ever trained"',
-    'Viggo Mortensen did his stunts without a double (he also broke his toe…)',
+    'Viggo Mortensen did his stunts without a double (he also broke his toe)',
     'Orlando Bloom broke his ribs during filming.',
     'John Rhy-Davies (Gimli) is the tallest actor in the fellowship.',
     "Peter Jackson's daughter makes several cameos throughout the films.",
