@@ -5,7 +5,7 @@ class Artemis {
   protected facts = [
     'Viggo Mortensen bought 3 horses that were used in the films.',
     "The son of Tolkien does not like the LotR movies. (He's wrong)",
-    'Sean Bean climbed the mountains of New Zealand daily to get to the set. Due to being scared to ride in a helicopter.',
+    'Sean Bean climbed the mountains of New Zealand daily to get to the set, due to being scared to ride in a helicopter.',
     'The LotR movies cost less to make compared to the Hobbit films.',
     'Christopher Lee met Tolkien by coincidence.',
     'Pippin named his son Faramir.',
