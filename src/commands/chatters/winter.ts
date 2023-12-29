@@ -2,7 +2,7 @@ import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, Simp
 
 @Discord()
 class Winter {
-  @SimpleCommand({ name: 'winter', description: 'Winter', prefix: '!', argSplitter: '\n' })
+  @SimpleCommand({ name: 'winter', description: 'Winter', argSplitter: '\n' })
   async simple(
     @SimpleCommandOption({ name: 'text', type: SimpleCommandOptionType.String }) text: string | undefined,
     command: SimpleCommandMessage
