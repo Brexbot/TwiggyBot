@@ -10,6 +10,7 @@ import { isPromise } from 'util/types'
 import { CronJob } from 'cron'
 import { clearOrphanedRoles } from './standalones/clearOrphanedRoles'
 import { decayElo } from './standalones/eloDecay'
+import { SSM } from 'aws-sdk'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ;(BigInt.prototype as any).toJSON = function () {
@@ -116,7 +117,21 @@ async function run() {
   DIService.engine = tsyringeDependencyRegistryEngine.setInjector(container)
 
   await importx(`${__dirname}/{events,commands,persistence}/**/*.{ts,js}`)
-  bot.login(process.env.DISCORD_TOKEN ?? '') // provide your bot token
+
+  let discord_token
+  if (process.env.PRODUCTION) {
+    const ssm = new SSM()
+    discord_token = await ssm
+      .getParameter({
+        Name: 'discord-token',
+        WithDecryption: true,
+      })
+      .promise()
+  } else {
+    discord_token = process.env.DISCORD_TOKEN ?? '' // provide your bot token
+  }
+
+  bot.login(discord_token)
 }
 
 run()

@@ -39,6 +39,7 @@
     "typescript": "^5.0.2"
   },
   "dependencies": {
+    "@aws-sdk/client-ssm": "^3.484.0",
     "@dice-roller/rpg-dice-roller": "^5.2.1",
     "@discordx/importer": "^1.2.1",
     "@discordx/pagination": "^3.4.1",
