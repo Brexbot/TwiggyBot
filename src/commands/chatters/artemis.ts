@@ -32,7 +32,7 @@ class Artemis {
     'Nazgul screeches were made with plastic cups.',
     'The game of golf canonically exists in Middle Earth.',
     "The Battle of Helm's Deep took 4 months to film and was edited down from 20 hours of footage.",
-    "Did you know, the Urukhai who threw the knife at Aragorn was supposed to miss? However, the actor had limited vision in the prosthetics and he threw it right at Viggo Mortensen, who simply “Aragorned” the knife away?",
+    'Did you know, the Urukhai who threw the knife at Aragorn was supposed to miss? However, the actor had limited vision in the prosthetics and he threw it right at Viggo Mortensen, who simply “Aragorned” the knife away?',
     "The Dead Marshes were said to be based on Tolkien's experience in the First World War.",
     'Sean Astin (Samwise) was knocked unconscious during filming. He also suffered a deep laceration to his foot.',
     'Jake Gyllenhaal auditioned to play Frodo.',
