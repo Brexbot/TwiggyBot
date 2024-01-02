@@ -92,11 +92,26 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           awslogs-stream-prefix : "twiggy"
         }
       },
-
-      environment : [
+      secrets : [
         {
-          name : "PRODUCTION"
-          value : "1"
+          "name" : "DISCORD_TOKEN",
+          "valueFrom" : aws_ssm_parameter.ssm_parameter_discord_token.arn
+        },
+        {
+          "name" : "ITAD_TOKEN",
+          "valueFrom" : aws_ssm_parameter.ssm_parameter_itad_token.arn
+        },
+        {
+          "name" : "TWITCH_SECRET",
+          "valueFrom" : aws_ssm_parameter.ssm_parameter_twitch_secret.arn
+        },
+        {
+          "name" : "TWITCH_CLIENT_ID",
+          "valueFrom" : aws_ssm_parameter.ssm_parameter_twitch_client_id.arn
+        },
+        {
+          "name" : "OPEN_WEATHER_TOKEN",
+          "valueFrom" : aws_ssm_parameter.ssm_parameter_open_weather_token.arn
         }
       ]
     }

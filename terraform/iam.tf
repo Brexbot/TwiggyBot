@@ -19,18 +19,6 @@ resource "aws_iam_role" "ecs_task_role" {
       ]
     })
   }
-  inline_policy {
-    name = "systems-manager-parameter-store-access"
-    policy = jsonencode({
-      Statement : [
-        {
-          Effect : "Allow",
-          Action : "ssm:GetParameter",
-          Resource : "arn:aws:ssm:eu-west-1:866826529066:discord-token"
-        }
-      ]
-    })
-  }
 }
 
 resource "aws_iam_role" "ecs_task_execution_role" {
@@ -40,6 +28,18 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   managed_policy_arns = [
     "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
   ]
+  inline_policy {
+    name = "systems-manager-parameter-store-access"
+    policy = jsonencode({
+      Statement : [
+        {
+          Effect : "Allow",
+          Action : "ssm:GetParameter",
+          Resource : "arn:aws:ssm:eu-west-1:866826529066:/twiggy/*"
+        }
+      ]
+    })
+  }
 }
 
 resource "aws_iam_role" "lambda" {
