@@ -8,7 +8,7 @@ class Winter {
     command: SimpleCommandMessage
   ) {
     let content
-    if (text !== undefined) {
+    if (text) {
       content = `${text}? Estrogen can help with that`
     } else {
       content = 'Estrogen can help with that'
