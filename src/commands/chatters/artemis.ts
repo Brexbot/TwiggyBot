@@ -1,4 +1,5 @@
 import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, SimpleCommandOptionType } from 'discordx'
+import { shuffleArray } from '../../utils/Helpers'
 
 @Discord()
 class Artemis {
@@ -47,13 +48,24 @@ class Artemis {
     'There was a copy of all three books on set at all times during filming.',
   ]
 
+  protected shuffledBag: string[] = []
+
+  protected get fact(): string | undefined {
+    if (!this.shuffledBag.length) {
+      this.shuffledBag = [...this.facts]
+      shuffleArray(this.shuffledBag)
+    }
+
+    return this.shuffledBag.pop()
+  }
+
   @SimpleCommand({ name: 'artemis', description: 'Artemis' })
   async simple(
     @SimpleCommandOption({ name: 'text', type: SimpleCommandOptionType.String }) text: string | undefined,
     command: SimpleCommandMessage
   ) {
     await command.message.channel.send({
-      content: this.facts[Math.floor(Math.random() * this.facts.length)],
+      content: this.fact,
     })
     return
   }
