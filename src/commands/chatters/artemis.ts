@@ -50,13 +50,13 @@ class Artemis {
 
   protected shuffledBag: string[] = []
 
-  private getFact(): string | undefined {
+  private get_fact(): string | undefined {
     if (!this.shuffledBag.length) {
       this.shuffledBag = [...this.facts]
       shuffleArray(this.shuffledBag)
     }
 
-    return this.shuffledBag.shift()
+    return this.shuffledBag.pop()
   }
 
   @SimpleCommand({ name: 'artemis', description: 'Artemis' })
@@ -65,7 +65,7 @@ class Artemis {
     command: SimpleCommandMessage
   ) {
     await command.message.channel.send({
-      content: this.getFact(),
+      content: this.get_fact(),
     })
     return
   }
