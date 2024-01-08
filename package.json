@@ -10,7 +10,7 @@
     "serve": "node build/main.js",
     "lint": "eslint -c .eslintrc.cjs src .eslintrc.cjs",
     "lint:fix": "eslint -c .eslintrc.cjs src .eslintrc.cjs --fix",
-    "eloDecay": " node ./build/standalones/eloDecay.js"
+    "migrate:serve": "prisma migrate deploy && npm run serve"
   },
   "repository": {
     "type": "git",
