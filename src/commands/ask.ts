@@ -67,7 +67,7 @@ class Ask {
   ): Promise<InteractionResponse<boolean>> {
     const cooldownMessage = this.isOnCooldown()
     if (cooldownMessage) {
-      return interaction.reply(cooldownMessage)
+      return interaction.reply({ content: cooldownMessage, ephemeral: true })
     }
 
     try {
