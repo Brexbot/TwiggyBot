@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, CommandInteraction, InteractionResponse, Message } from 'discord.js'
+import { ApplicationCommandOptionType, CommandInteraction, InteractionResponse, escapeMarkdown } from 'discord.js'
 import {
   Discord,
   SimpleCommand,
@@ -28,7 +28,7 @@ class Ask {
     }
   }
 
-  @SimpleCommand({ name: COMMAND_NAME, description: COMMAND_DESC })
+  @SimpleCommand({ name: COMMAND_NAME, description: COMMAND_DESC, argSplitter: '\n' })
   async simple(
     @SimpleCommandOption({ name: 'question', type: SimpleCommandOptionType.String })
     question: string | undefined,
@@ -72,7 +72,7 @@ class Ask {
 
     try {
       const answer = await this.fetchAnswer(question)
-      return interaction.reply(`[${question}] ${answer}`)
+      return interaction.reply(`[${escapeMarkdown(question)}] ${answer}`)
     } catch (err) {
       console.error(err)
       return interaction.reply('There was a problem communicating with Wolfram Alpha.')
@@ -88,7 +88,7 @@ class Ask {
     const response = await fetch(url)
 
     if (response.ok) {
-      return response.text()
+      return escapeMarkdown(await response.text())
     }
 
     switch (response.status) {
