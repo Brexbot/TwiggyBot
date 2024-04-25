@@ -32,6 +32,8 @@ class Ask {
   async simple(
     @SimpleCommandOption({ name: 'question', type: SimpleCommandOptionType.String })
     question: string | undefined,
+    @SimpleCommandOption({ name: 'use freedom units', type: SimpleCommandOptionType.Boolean })
+    useFreedomUnits: boolean | undefined,
     command: SimpleCommandMessage
   ) {
     if (!question) {
@@ -43,7 +45,7 @@ class Ask {
     }
 
     try {
-      const answer = await this.fetchAnswer(question)
+      const answer = await this.fetchAnswer(question, useFreedomUnits)
       return command.message.reply({ content: answer, allowedMentions: { repliedUser: false } })
     } catch (err) {
       console.error(err)
@@ -63,6 +65,13 @@ class Ask {
       required: true,
     })
     question: string,
+    @SlashOption({
+      name: 'use_freedom_units',
+      type: ApplicationCommandOptionType.Boolean,
+      description: 'Convert measurements for the land of the free',
+      required: false,
+    })
+    useFreedomUnits: boolean,
     interaction: CommandInteraction
   ): Promise<InteractionResponse<boolean>> {
     const cooldownMessage = this.isOnCooldown()
@@ -71,7 +80,7 @@ class Ask {
     }
 
     try {
-      const answer = await this.fetchAnswer(question)
+      const answer = await this.fetchAnswer(question, useFreedomUnits)
       return interaction.reply(`[${escapeMarkdown(question)}] ${answer}`)
     } catch (err) {
       console.error(err)
@@ -79,11 +88,11 @@ class Ask {
     }
   }
 
-  private async fetchAnswer(question: string): Promise<string> {
+  private async fetchAnswer(question: string, useFreedomUnits?: boolean): Promise<string> {
     const url = new URL('https://api.wolframalpha.com/v1/result')
     url.searchParams.append('appid', this.apiToken)
     url.searchParams.append('i', question)
-    url.searchParams.append('units', 'metric')
+    url.searchParams.append('units', useFreedomUnits ? 'imperial' : 'metric')
 
     const response = await fetch(url)
 
