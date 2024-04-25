@@ -24,7 +24,7 @@ class Ask {
     this.lastUsage = 0
 
     if (this.apiToken == '') {
-      throw Error('WOLFRAM_APP_ID needs to be set')
+      throw new Error('WOLFRAM_APP_ID needs to be set')
     }
   }
 
