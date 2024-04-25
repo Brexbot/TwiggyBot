@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, CommandInteraction } from 'discord.js'
+import { ApplicationCommandOptionType, CommandInteraction, InteractionResponse, Message } from 'discord.js'
 import {
   Discord,
   SimpleCommand,
@@ -12,12 +12,16 @@ import {
 const COMMAND_NAME = 'ask'
 const COMMAND_DESC = 'Ask a question to Wolfram Alpha'
 
+const COOLDOWN_MILLISECONDS = 3 * 60 * 1000
+
 @Discord()
 class Ask {
   private apiToken: string
+  private lastUsage: number
 
   constructor() {
     this.apiToken = process.env.WOLFRAM_APP_ID ?? ''
+    this.lastUsage = 0
 
     if (this.apiToken == '') {
       throw Error('WOLFRAM_APP_ID needs to be set')
@@ -34,15 +38,20 @@ class Ask {
       return await command.message.reply({ content: 'Usage: >ask <question>', allowedMentions: { repliedUser: false } })
     }
 
-    this.fetchAnswer(question)
-      .then((answer) => command.message.reply({ content: answer, allowedMentions: { repliedUser: false } }))
-      .catch((err) => {
-        console.error(err)
-        command.message.reply({
-          content: 'There was a problem communicating with Wolfram Alpha.',
-          allowedMentions: { repliedUser: false },
-        })
+    if (this.isOnCooldown()) {
+      return
+    }
+
+    try {
+      const answer = await this.fetchAnswer(question)
+      return command.message.reply({ content: answer, allowedMentions: { repliedUser: false } })
+    } catch (err) {
+      console.error(err)
+      return command.message.reply({
+        content: 'There was a problem communicating with Wolfram Alpha.',
+        allowedMentions: { repliedUser: false },
       })
+    }
   }
 
   @Slash({ name: COMMAND_NAME, description: COMMAND_DESC })
@@ -55,13 +64,19 @@ class Ask {
     })
     question: string,
     interaction: CommandInteraction
-  ) {
-    this.fetchAnswer(question)
-      .then((answer) => interaction.reply(answer))
-      .catch((err) => {
-        console.error(err)
-        interaction.reply('There was a problem communicating with Wolfram Alpha.')
-      })
+  ): Promise<InteractionResponse<boolean>> {
+    const cooldownMessage = this.isOnCooldown()
+    if (cooldownMessage) {
+      return interaction.reply(cooldownMessage)
+    }
+
+    try {
+      const answer = await this.fetchAnswer(question)
+      return interaction.reply(answer)
+    } catch (err) {
+      console.error(err)
+      return interaction.reply('There was a problem communicating with Wolfram Alpha.')
+    }
   }
 
   private async fetchAnswer(question: string): Promise<string> {
@@ -87,5 +102,17 @@ class Ask {
         throw new Error(`Something went wrong while asking Wolfram Alpha a question. Status Code: ${response.status}`)
       }
     }
+  }
+
+  private isOnCooldown(): string | null {
+    const now = Date.now()
+    const cooldownEnd = this.lastUsage + COOLDOWN_MILLISECONDS
+
+    if (cooldownEnd > now) {
+      return `Command is on cooldown until <t:${Math.floor(cooldownEnd / 1000)}:T>.`
+    }
+
+    this.lastUsage = now
+    return null
   }
 }
