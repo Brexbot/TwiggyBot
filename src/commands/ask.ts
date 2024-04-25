@@ -118,7 +118,7 @@ class Ask {
     const cooldownEnd = this.lastUsage + COOLDOWN_MILLISECONDS
 
     if (cooldownEnd > now) {
-      return `Command is on cooldown until <t:${Math.floor(cooldownEnd / 1000)}:T>.`
+      return `Command will be off cooldown <t:${Math.floor(cooldownEnd / 1000)}:R>.`
     }
 
     this.lastUsage = now
