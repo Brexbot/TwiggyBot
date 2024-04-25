@@ -72,7 +72,7 @@ class Ask {
 
     try {
       const answer = await this.fetchAnswer(question)
-      return interaction.reply(answer)
+      return interaction.reply(`[${question}] ${answer}`)
     } catch (err) {
       console.error(err)
       return interaction.reply('There was a problem communicating with Wolfram Alpha.')
