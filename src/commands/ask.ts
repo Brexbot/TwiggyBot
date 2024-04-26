@@ -1,9 +1,8 @@
 import {
   ApplicationCommandOptionType,
   CommandInteraction,
+  EmbedBuilder,
   InteractionResponse,
-  blockQuote,
-  bold,
   escapeMarkdown,
 } from 'discord.js'
 import { Discord, Slash, SlashChoice, SlashOption } from 'discordx'
@@ -54,7 +53,13 @@ class Ask {
 
     try {
       const answer = await this.fetchAnswer(question, units)
-      return interaction.reply(`### ${escapeMarkdown(question)}\n${blockQuote(answer)}`)
+      const capitalizedAnswer = answer.charAt(0).toUpperCase() + answer.slice(1)
+      const embed = new EmbedBuilder()
+        .setColor('#FBAB00') // MasterMind's color
+        .setTitle(escapeMarkdown(question))
+        .setDescription(capitalizedAnswer)
+
+      return await interaction.reply({ embeds: [embed] })
     } catch (err) {
       console.error(err)
       return interaction.reply({ content: 'There was a problem communicating with Wolfram Alpha.', ephemeral: true })
