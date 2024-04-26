@@ -57,7 +57,7 @@ class Ask {
       return interaction.reply(`### ${escapeMarkdown(question)}\n${blockQuote(answer)}`)
     } catch (err) {
       console.error(err)
-      return interaction.reply('There was a problem communicating with Wolfram Alpha.')
+      return interaction.reply({ content: 'There was a problem communicating with Wolfram Alpha.', ephemeral: true })
     }
   }
 
