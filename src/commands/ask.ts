@@ -54,7 +54,7 @@ class Ask {
 
     try {
       const answer = await this.fetchAnswer(question, units)
-      return interaction.reply(`[${escapeMarkdown(question)}] ${answer}`)
+      return interaction.reply(`[${bold(escapeMarkdown(question))}] ${blockQuote(answer)}`)
     } catch (err) {
       console.error(err)
       return interaction.reply('There was a problem communicating with Wolfram Alpha.')
