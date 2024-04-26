@@ -4,7 +4,7 @@ import {
   InteractionResponse,
   escapeMarkdown,
   bold,
-  quote,
+  quote, blockQuote,
 } from 'discord.js'
 import {
   Discord,
@@ -96,7 +96,7 @@ class Ask {
       const answer = await this.fetchAnswer(question, units)
       return interaction.reply(
         `### ${escapeMarkdown(question)}
-          ${quote(answer)}`
+          ${blockQuote(answer)}`
       )
     } catch (err) {
       console.error(err)
