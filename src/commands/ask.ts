@@ -1,4 +1,11 @@
-import { ApplicationCommandOptionType, CommandInteraction, InteractionResponse, escapeMarkdown } from 'discord.js'
+import {
+  ApplicationCommandOptionType,
+  CommandInteraction,
+  InteractionResponse,
+  escapeMarkdown,
+  bold,
+  quote
+} from 'discord.js'
 import {
   Discord,
   SimpleCommand,
@@ -50,7 +57,7 @@ class Ask {
 
     try {
       const answer = await this.fetchAnswer(question, units)
-      return command.message.reply({ content: answer, allowedMentions: { repliedUser: false } })
+      return command.message.reply({ content: quote(answer), allowedMentions: { repliedUser: false } })
     } catch (err) {
       console.error(err)
       return command.message.reply({
@@ -87,7 +94,11 @@ class Ask {
 
     try {
       const answer = await this.fetchAnswer(question, units)
-      return interaction.reply(`[${escapeMarkdown(question)}] ${answer}`)
+      return interaction.reply(
+        `### ${escapeMarkdown(question)}
+          ${quote(answer)}
+          `
+      )
     } catch (err) {
       console.error(err)
       return interaction.reply('There was a problem communicating with Wolfram Alpha.')
