@@ -1,14 +1,12 @@
-import { ApplicationCommandOptionType, CommandInteraction, InteractionResponse, escapeMarkdown } from 'discord.js'
 import {
-  Discord,
-  SimpleCommand,
-  SimpleCommandMessage,
-  SimpleCommandOption,
-  SimpleCommandOptionType,
-  Slash,
-  SlashChoice,
-  SlashOption,
-} from 'discordx'
+  ApplicationCommandOptionType,
+  CommandInteraction,
+  InteractionResponse,
+  blockQuote,
+  bold,
+  escapeMarkdown,
+} from 'discord.js'
+import { Discord, Slash, SlashChoice, SlashOption } from 'discordx'
 
 const COMMAND_NAME = 'ask'
 const COMMAND_DESC = 'Ask a question to Wolfram Alpha'
@@ -26,37 +24,6 @@ class Ask {
 
     if (this.apiToken == '') {
       throw new Error('WOLFRAM_APP_ID needs to be set')
-    }
-  }
-
-  @SimpleCommand({ name: COMMAND_NAME, description: COMMAND_DESC, argSplitter: '\n' })
-  async simple(
-    @SimpleCommandOption({ name: 'question', type: SimpleCommandOptionType.String })
-    question: string | undefined,
-    @SimpleCommandOption({ name: 'units of measurement', type: SimpleCommandOptionType.Boolean })
-    units: string | undefined,
-    command: SimpleCommandMessage
-  ) {
-    if (!question) {
-      return await command.message.reply({
-        content: 'Usage: >ask <question>\n<units?> (metric or imperial)',
-        allowedMentions: { repliedUser: false },
-      })
-    }
-
-    if (this.isOnCooldown()) {
-      return
-    }
-
-    try {
-      const answer = await this.fetchAnswer(question, units)
-      return command.message.reply({ content: answer, allowedMentions: { repliedUser: false } })
-    } catch (err) {
-      console.error(err)
-      return command.message.reply({
-        content: 'There was a problem communicating with Wolfram Alpha.',
-        allowedMentions: { repliedUser: false },
-      })
     }
   }
 
@@ -104,10 +71,7 @@ class Ask {
     url.searchParams.append('i', question)
     url.searchParams.append('units', units.toLowerCase())
 
-    console.log(url)
-
     const response = await fetch(url)
-
     if (response.ok) {
       return escapeMarkdown(await response.text())
     }
