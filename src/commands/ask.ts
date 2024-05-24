@@ -10,7 +10,7 @@ import { Discord, Slash, SlashChoice, SlashOption } from 'discordx'
 const COMMAND_NAME = 'ask'
 const COMMAND_DESC = 'Ask a question to Wolfram Alpha'
 
-const COOLDOWN_MILLISECONDS = 3 * 60 * 1000
+const COOLDOWN_MILLISECONDS = 30 * 1000
 
 @Discord()
 class Ask {
@@ -112,5 +112,5 @@ function truncate(text: string, maxLength: number): string {
     return text
   }
 
-  return text.substring(0, maxLength - 3) + '...'
+  return text.substring(0, maxLength - 3).trim() + '...'
 }
