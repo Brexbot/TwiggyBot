@@ -56,8 +56,8 @@ class Ask {
       const capitalizedAnswer = answer.charAt(0).toUpperCase() + answer.slice(1)
       const embed = new EmbedBuilder()
         .setColor('#FBAB00') // MasterMind's color
-        .setTitle(escapeMarkdown(question))
-        .setDescription(capitalizedAnswer)
+        .setTitle(truncate(escapeMarkdown(question).trim(), 256))
+        .setDescription(truncate(capitalizedAnswer.trim(), 4096))
 
       return await interaction.reply({ embeds: [embed] })
     } catch (err) {
@@ -105,4 +105,12 @@ class Ask {
     this.lastUsage = now
     return null
   }
+}
+
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) {
+    return text
+  }
+
+  return text.substring(0, maxLength - 3) + '...'
 }
