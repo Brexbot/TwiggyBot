@@ -14,7 +14,7 @@ type CallResponse = {
 
 @Discord()
 abstract class CallAndResponder {
-  private BasePath = '../../src/assets'
+  private BasePath = '../../assets'
 
   // todo: Move these into a json obj and serialize and cache the obj at runtime
   //  Would allow us to add triggers via a mod command should we choose to
