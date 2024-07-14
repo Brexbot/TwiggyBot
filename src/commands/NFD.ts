@@ -22,11 +22,11 @@ import {
   userMention,
 } from 'discord.js'
 import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
-import { getCallerFromCommand, getNicknameFromUser } from '../utils/CommandUtils'
+import { getCallerFromCommand, getNicknameFromUser } from '../utils/CommandUtils.js'
 import { injectable } from 'tsyringe'
-import { ORM } from '../persistence'
-import { NFDItem } from '../../prisma/generated/prisma-client-js'
-import { IsSuperUser } from '../guards/RoleChecks'
+import { ORM } from '../persistence/ORM.js'
+import { NFDItem } from '../../prisma/generated/prisma-client-js/index.js'
+import { IsSuperUser } from '../guards/RoleChecks.js'
 import sharp from 'sharp'
 
 type BodyParts = {

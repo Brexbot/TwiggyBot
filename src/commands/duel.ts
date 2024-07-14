@@ -12,13 +12,13 @@ import {
 } from 'discord.js'
 import { Discord, Slash, SlashGroup } from 'discordx'
 import { injectable } from 'tsyringe'
-import { ORM } from '../persistence/ORM'
+import { ORM } from '../persistence/ORM.js'
 
-import { Duels } from '../../prisma/generated/prisma-client-js'
-import { ColorRoles } from './roleCommands/changecolor'
-import { getCallerFromCommand, getGuildAndCallerFromCommand } from '../utils/CommandUtils'
-import { getGlobalDuelCDRemaining, getTimeLeftInReadableFormat } from '../utils/CooldownUtils'
-import { shuffleArray } from '../utils/Helpers'
+import { Duels } from '../../prisma/generated/prisma-client-js/index.js'
+import { ColorRoles } from './roleCommands/changecolor.js'
+import { getCallerFromCommand, getGuildAndCallerFromCommand } from '../utils/CommandUtils.js'
+import { getGlobalDuelCDRemaining, getTimeLeftInReadableFormat } from '../utils/CooldownUtils.js'
+import { shuffleArray } from '../utils/Helpers.js'
 
 @Discord()
 @SlashGroup({ name: 'duel', description: 'Duel minigame' })

@@ -3,13 +3,13 @@ import type { Interaction, Message } from 'discord.js'
 import { GatewayIntentBits, IntentsBitField } from 'discord.js'
 import { Client, DIService, tsyringeDependencyRegistryEngine } from 'discordx'
 import { container } from 'tsyringe'
-import { importx } from '@discordx/importer'
-import { NotBot } from './guards/RoleChecks'
-import { NoWhitespace } from './guards/NoWhitespace'
+import { dirname, importx } from '@discordx/importer'
+import { NotBot } from './guards/RoleChecks.js'
+import { NoWhitespace } from './guards/NoWhitespace.js'
 import { isPromise } from 'util/types'
 import { CronJob } from 'cron'
-import { clearOrphanedRoles } from './standalones/clearOrphanedRoles'
-import { decayElo } from './standalones/eloDecay'
+import { clearOrphanedRoles } from './standalones/clearOrphanedRoles.js'
+import { decayElo } from './standalones/eloDecay.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ;(BigInt.prototype as any).toJSON = function () {
@@ -115,7 +115,7 @@ bot.on('messageCreate', (message: Message) => {
 async function run() {
   DIService.engine = tsyringeDependencyRegistryEngine.setInjector(container)
 
-  await importx(`${__dirname}/{events,commands,persistence}/**/*.{ts,js}`)
+  await importx(`${dirname}/{events,commands,persistence}/**/*.{ts,js}`)
   bot.login(process.env.DISCORD_TOKEN ?? '') // provide your bot token
 }
 

@@ -9,7 +9,7 @@ import {
   SlashOption,
 } from 'discordx'
 import { ApplicationCommandOptionType, CommandInteraction, GuildMemberRoleManager, RoleManager } from 'discord.js'
-import { IsSuperUser } from '../../guards/RoleChecks'
+import { IsSuperUser } from '../../guards/RoleChecks.js'
 
 @Discord()
 class Rolesub {

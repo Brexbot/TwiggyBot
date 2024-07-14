@@ -1,7 +1,7 @@
-import { Character } from './Character'
-import { getEloRankChange, getRandomElement as getRandomElement, roll_dy_x_TimesPick_z } from './util'
-import { attackTexts, defenceFailureTexts, defenceSuccessTexts, ladderTexts, victoryTexts } from './Dialogue'
-import { ELO_K } from './Data'
+import { Character } from './Character.js'
+import { getEloRankChange, getRandomElement as getRandomElement, roll_dy_x_TimesPick_z } from './util.js'
+import { attackTexts, defenceFailureTexts, defenceSuccessTexts, ladderTexts, victoryTexts } from './Dialogue.js'
+import { ELO_K } from './Data.js'
 
 import {
   ActionRowBuilder,

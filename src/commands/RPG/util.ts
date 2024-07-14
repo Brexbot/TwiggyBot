@@ -1,4 +1,4 @@
-import { classes } from './Data'
+import { classes } from './Data.js'
 
 export function cyrb53(str: string, seed = 0): number {
   // Hash the input string to int

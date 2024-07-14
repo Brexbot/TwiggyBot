@@ -1,8 +1,8 @@
 import { Client, Discord, Guard, SimpleCommand, SimpleCommandMessage } from 'discordx'
 import { GuildMember } from 'discord.js'
 import { injectable } from 'tsyringe'
-import { ORM } from '../../persistence'
-import { IsSuperUser } from '../../guards/RoleChecks'
+import { ORM } from '../../persistence/index.js'
+import { IsSuperUser } from '../../guards/RoleChecks.js'
 
 @Discord()
 @injectable()

@@ -10,7 +10,7 @@ import {
   MessageActionRowComponentBuilder,
 } from 'discord.js'
 import { Discord, Slash } from 'discordx'
-import { getCallerFromCommand } from '../utils/CommandUtils'
+import { getCallerFromCommand } from '../utils/CommandUtils.js'
 
 type RPSChoice = 'rock' | 'paper' | 'scissors'
 
