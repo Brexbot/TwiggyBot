@@ -11,7 +11,7 @@ import {
 import {
   ApplicationCommandOptionType,
   CommandInteraction,
-  Formatters,
+  italic,
   Guild,
   GuildMember,
   HexColorString,
@@ -293,7 +293,7 @@ export class ColorRoles {
     const hexColor: HexColorString = color[0] !== '#' ? `#${color}` : (color as HexColorString)
     let favoriteString = ' '
     if (isFavorite || hexColor === userOptions.favColor?.toUpperCase()) {
-      favoriteString += Formatters.italic('favorite') + ' '
+      favoriteString += italic('favorite') + ' '
     }
 
     await ColorRoles.setColor(hexColor, member, guild)
