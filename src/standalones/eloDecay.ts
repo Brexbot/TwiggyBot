@@ -1,6 +1,6 @@
-import { PrismaClient, RPGCharacter } from '../../prisma/generated/prisma-client-js'
-import { ELO_DECAY_FACTOR } from '../commands/RPG/Data'
-import { getRandomElement } from '../commands/RPG/util'
+import { PrismaClient, RPGCharacter } from '../../prisma/generated/prisma-client-js/index.js'
+import { ELO_DECAY_FACTOR } from '../commands/RPG/Data.js'
+import { getRandomElement } from '../commands/RPG/util.js'
 
 function calculateEloDecay(eloRank: number): number {
   // Linear interpolation between eloRank and 1000 which is the mean ladder "skill"

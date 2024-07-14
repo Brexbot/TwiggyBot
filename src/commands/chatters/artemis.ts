@@ -1,5 +1,5 @@
 import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, SimpleCommandOptionType } from 'discordx'
-import { shuffleArray } from '../../utils/Helpers'
+import { shuffleArray } from '../../utils/Helpers.js'
 
 @Discord()
 class Artemis {

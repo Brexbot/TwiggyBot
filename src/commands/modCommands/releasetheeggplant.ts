@@ -8,7 +8,7 @@ import {
   SimpleCommandOption,
   SimpleCommandOptionType,
 } from 'discordx'
-import { IsSuperUser, memberIsSU } from '../../guards/RoleChecks'
+import { IsSuperUser, memberIsSU } from '../../guards/RoleChecks.js'
 
 @Discord()
 @Guard(IsSuperUser)

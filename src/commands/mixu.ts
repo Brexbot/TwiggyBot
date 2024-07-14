@@ -1,9 +1,9 @@
 import { CommandInteraction, Guild } from 'discord.js'
 import { Discord, SimpleCommand, SimpleCommandMessage, Slash } from 'discordx'
 import { injectable } from 'tsyringe'
-import { ORM } from '../persistence'
-import { BestMixu } from '../../prisma/generated/prisma-client-js'
-import { shuffleArray } from '../utils/Helpers'
+import { ORM } from '../persistence/ORM.js'
+import { BestMixu } from '../../prisma/generated/prisma-client-js/index.js'
+import { shuffleArray } from '../utils/Helpers.js'
 
 @Discord()
 @injectable()

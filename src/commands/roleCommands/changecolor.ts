@@ -17,12 +17,12 @@ import {
   HexColorString,
 } from 'discord.js'
 import { injectable } from 'tsyringe'
-import { ORM } from '../../persistence'
-import { Prisma } from '../../../prisma/generated/prisma-client-js'
+import { ORM } from '../../persistence/index.js'
+import { Prisma } from '../../../prisma/generated/prisma-client-js/index.js'
 import { IsSuperUser, superUserIds, superUserRoles } from '../../guards/RoleChecks'
-import { getCallerFromCommand, getGuildAndCallerFromCommand, getGuildFromCommand } from '../../utils/CommandUtils'
-import { Duel } from '../duel'
-import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils'
+import { getCallerFromCommand, getGuildAndCallerFromCommand, getGuildFromCommand } from '../../utils/CommandUtils.js'
+import { Duel } from '../duel.js'
+import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils.js'
 
 @Discord()
 @injectable()

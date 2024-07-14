@@ -22,7 +22,7 @@ import {
   Slash,
   SlashOption,
 } from 'discordx'
-import { IsSuperUser, memberIsSU } from '../guards/RoleChecks'
+import { IsSuperUser, memberIsSU } from '../guards/RoleChecks.js'
 
 @Discord()
 abstract class Timeout {
