@@ -4,7 +4,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
   CommandInteraction,
-  Formatters,
+  quote,
   Guild,
   GuildMember,
   GuildMemberRoleManager,
@@ -67,7 +67,7 @@ abstract class Timeout {
   async sudoku(member: GuildMember | null, message?: string): Promise<string> {
     const time = this.sudokuDuration()
     await member?.timeout(time * 1000, "Sudoku'd").catch(console.error)
-    const msg = message && message.length < 150 ? `\n${Formatters.quote(message)}` : ''
+    const msg = message && message.length < 150 ? `\n${quote(message)}` : ''
 
     // If the Sudoku-ee is a Super User send them a DM with a button to remove the timeout
     if (memberIsSU(member)) {

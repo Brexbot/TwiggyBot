@@ -1223,8 +1223,8 @@ class NFD {
   ) {
     const nfdName = nfd.name
 
-    const author = owner ? owner.nickname ?? owner.user.username : 'UNKNOWN'
-    const avatar = owner ? owner.user.avatarURL() ?? undefined : undefined
+    const author = owner ? (owner.nickname ?? owner.user.username) : 'UNKNOWN'
+    const avatar = owner ? (owner.user.avatarURL() ?? undefined) : undefined
 
     // Check for the existence of the image in the cache, if it doesn't exist, make it.
 

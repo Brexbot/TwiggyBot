@@ -5,10 +5,10 @@ import {
   ButtonStyle,
   CommandInteraction,
   EmbedBuilder,
-  Formatters,
   GuildMember,
   Message,
   MessageActionRowComponentBuilder,
+  inlineCode,
 } from 'discord.js'
 import { Discord, Slash, SlashGroup } from 'discordx'
 import { injectable } from 'tsyringe'
@@ -143,7 +143,7 @@ export class Duel {
 
         // Check if there is no current duel
         await collectionInteraction.followUp({
-          content: `Someone beat you to the challenge! (or the duel expired... who knows!). You may issue a new challenge with ${Formatters.inlineCode(
+          content: `Someone beat you to the challenge! (or the duel expired... who knows!). You may issue a new challenge with ${inlineCode(
             '/duel'
           )}.`,
           ephemeral: true,

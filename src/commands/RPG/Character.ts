@@ -23,7 +23,11 @@ export class Character {
 
   rng: () => number
 
-  public constructor(public user: User, public nickname: string, private seedPhrase?: string) {
+  public constructor(
+    public user: User,
+    public nickname: string,
+    private seedPhrase?: string
+  ) {
     // Maybe the screen name is better until folks can build their own character
     if (this.seedPhrase) {
       this.seed = cyrb53(this.seedPhrase)
