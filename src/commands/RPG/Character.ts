@@ -1,5 +1,5 @@
-import { adjectives, nouns, CharacterClass, classes, CharacterSpecie, species } from './Data'
-import { getSeededRandomElement, rollSeeded_dy_x_TimesPick_z, mulberry32, cyrb53 } from './util'
+import { adjectives, nouns, CharacterClass, classes, CharacterSpecie, species } from './Data.js'
+import { getSeededRandomElement, rollSeeded_dy_x_TimesPick_z, mulberry32, cyrb53 } from './util.js'
 import { EmbedBuilder, User } from 'discord.js'
 
 export class Character {
@@ -23,7 +23,11 @@ export class Character {
 
   rng: () => number
 
-  public constructor(public user: User, public nickname: string, private seedPhrase?: string) {
+  public constructor(
+    public user: User,
+    public nickname: string,
+    private seedPhrase?: string
+  ) {
     // Maybe the screen name is better until folks can build their own character
     if (this.seedPhrase) {
       this.seed = cyrb53(this.seedPhrase)

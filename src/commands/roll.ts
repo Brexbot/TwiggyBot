@@ -1,7 +1,7 @@
 import { DiceRoll } from '@dice-roller/rpg-dice-roller'
 import { ApplicationCommandOptionType, CommandInteraction } from 'discord.js'
 import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
-import { getRandomElement } from './RPG/util'
+import { getRandomElement } from './RPG/util.js'
 
 @SlashGroup({ name: 'roll', description: 'Ask the dice for advice' })
 @SlashGroup('roll')

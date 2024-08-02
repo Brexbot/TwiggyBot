@@ -1,6 +1,6 @@
 import { Discord, SimpleCommand, SimpleCommandMessage, Slash, SlashOption } from 'discordx'
-import { ApplicationCommandOptionType, CommandInteraction, GuildMember, GuildMemberRoleManager, User } from 'discord.js'
-import { memberIsSU } from '../../guards/RoleChecks'
+import { ApplicationCommandOptionType, CommandInteraction, GuildMember, GuildMemberRoleManager } from 'discord.js'
+import { memberIsSU } from '../../guards/RoleChecks.js'
 
 // Intentionally leaving out the slash command for this as it doesn't really make sense to
 // clutter the slash menu with a command that most users will only ever use once

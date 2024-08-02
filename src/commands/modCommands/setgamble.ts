@@ -6,10 +6,10 @@ import {
   SimpleCommandOption,
   SimpleCommandOptionType,
 } from 'discordx'
-import { Prisma } from '../../../prisma/generated/prisma-client-js'
+import { Prisma } from '../../../prisma/generated/prisma-client-js/index.js'
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence'
-import { IsSuperUser } from '../../guards/RoleChecks'
+import { IsSuperUser } from '../../guards/RoleChecks.js'
 
 @Discord()
 @injectable()

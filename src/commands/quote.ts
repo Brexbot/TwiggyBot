@@ -8,7 +8,7 @@ import {
   Slash,
   SlashOption,
 } from 'discordx'
-import { uwuify } from './uwu'
+import { uwuify } from './uwu.js'
 
 interface Quote {
   id: number

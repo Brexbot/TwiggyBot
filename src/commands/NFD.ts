@@ -22,11 +22,11 @@ import {
   userMention,
 } from 'discord.js'
 import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
-import { getCallerFromCommand, getNicknameFromUser } from '../utils/CommandUtils'
+import { getCallerFromCommand, getNicknameFromUser } from '../utils/CommandUtils.js'
 import { injectable } from 'tsyringe'
-import { ORM } from '../persistence'
-import { NFDItem } from '../../prisma/generated/prisma-client-js'
-import { IsSuperUser } from '../guards/RoleChecks'
+import { ORM } from '../persistence/ORM.js'
+import { NFDItem } from '../../prisma/generated/prisma-client-js/index.js'
+import { IsSuperUser } from '../guards/RoleChecks.js'
 import sharp from 'sharp'
 
 type BodyParts = {
@@ -1223,8 +1223,8 @@ class NFD {
   ) {
     const nfdName = nfd.name
 
-    const author = owner ? owner.nickname ?? owner.user.username : 'UNKNOWN'
-    const avatar = owner ? owner.user.avatarURL() ?? undefined : undefined
+    const author = owner ? (owner.nickname ?? owner.user.username) : 'UNKNOWN'
+    const avatar = owner ? (owner.user.avatarURL() ?? undefined) : undefined
 
     // Check for the existence of the image in the cache, if it doesn't exist, make it.
 
