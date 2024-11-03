@@ -18,16 +18,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set up Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Install Node.js dependencies
         run: npm ci
       - name: Run linters
-        uses: wearerequired/lint-action@v1
+        uses: wearerequired/lint-action@v2
         with:
           eslint: true
-          eslint_args: '-c .eslintrc.cjs'
-          eslint_extensions: js,ts,cjs
+          eslint_args: '-c eslint.config.js'
+          eslint_extensions: js,ts
