@@ -71,7 +71,10 @@ export class ColorRoles {
   ) {
     this.changeUserColor(color, isFavorite ?? false, command)
       .then(async (reply) => {
-        await command.message.channel.send(reply)
+        const channel = command.message.channel
+        if (channel && channel.isSendable()) {
+          await channel.send(reply)
+        }
       })
       .catch(console.error)
   }
@@ -106,7 +109,10 @@ export class ColorRoles {
   async simpleRandomColor(command: SimpleCommandMessage) {
     this.changeUserColor('RANDOM', false, command)
       .then(async (reply) => {
-        await command.message.channel.send(reply)
+        const channel = command.message.channel
+        if (channel && channel.isSendable()) {
+          channel.send(reply)
+        }
       })
       .catch(console.error)
   }
@@ -135,13 +141,19 @@ export class ColorRoles {
     if (color) {
       this.setFavorite(color, command.message.member)
         .then(async (reply) => {
-          await command.message.channel.send(reply)
+          const channel = command.message.channel
+          if (channel && channel.isSendable()) {
+            channel.send(reply)
+          }
         })
         .catch(console.error)
     } else {
       this.changeUserColor('LAZY', false, command)
         .then(async (reply) => {
-          await command.message.channel.send(reply)
+          const channel = command.message.channel
+          if (channel && channel.isSendable()) {
+            channel.send(reply)
+          }
         })
         .catch(console.error)
     }
@@ -180,7 +192,10 @@ export class ColorRoles {
   async simpleGamble(command: SimpleCommandMessage) {
     this.changeUserColor('GAMBLE', false, command)
       .then(async (reply) => {
-        return await command.message.channel.send(reply)
+        const channel = command.message.channel
+        if (channel && channel.isSendable()) {
+          channel.send(reply)
+        }
       })
       .catch(console.error)
   }

@@ -64,7 +64,7 @@ class IsThereAnyDeal {
       .then(async (deals) => {
         await command.message.reply({ content: deals, allowedMentions: { repliedUser: false } })
       })
-      .catch(async (reason) => {
+      .catch(async (_) => {
         await command.message.reply({ content: `No deals found for ${game}`, allowedMentions: { repliedUser: false } })
       })
   }
