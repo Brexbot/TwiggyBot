@@ -9,15 +9,26 @@ import {
   SlashOption,
 } from 'discordx'
 
-type PlainResponse = {
-  data: { plain: string } | []
-}
+type SearchResponse = {
+  id: string
+  slug: string
+  title: string
+  type: string
+  mature: boolean
+}[]
+
+type PricesResponse = {
+  id: string
+  deals: ShopInfo[]
+}[]
 
 type ShopInfo = {
   drm: string[]
-  price_cut: number
-  price_new: number
-  price_old: number
+  price: {
+    amount: number
+    amountInt: number
+    currency: string
+  }
   shop: {
     id: string
     name: string
@@ -25,25 +36,17 @@ type ShopInfo = {
   url: string
 }
 
-type PriceResponse = {
-  data: {
-    [game: string]: {
-      list: ShopInfo[]
-      urls: {
-        game: string
-      }
-    }
-  }
-}
-
 @Discord()
 class IsThereAnyDeal {
   // API reference: https://itad.docs.apiary.io
   private baseUrl = 'https://api.isthereanydeal.com'
+  private gamePageBaseUrl = 'https://isthereanydeal.com/game'
   private apiToken: string
+  private formatter: Intl.NumberFormat
 
   constructor() {
     this.apiToken = process.env.ITAD_TOKEN ?? ''
+    this.formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 
     if (this.apiToken == '') {
       throw Error('ITAD_TOKEN needs to be set')
@@ -65,7 +68,7 @@ class IsThereAnyDeal {
         await command.message.reply({ content: deals, allowedMentions: { repliedUser: false } })
       })
       .catch(async (reason) => {
-        await command.message.reply({ content: `No deals found for ${game}`, allowedMentions: { repliedUser: false } })
+        await command.message.reply({ content: reason, allowedMentions: { repliedUser: false } })
       })
   }
 
@@ -89,33 +92,56 @@ class IsThereAnyDeal {
       })
   }
 
-  private async getDeals(game: string): Promise<string> {
-    // Get plain name
-    const plainResponse = await fetch(
-      `${this.baseUrl}/v02/game/plain/?key=${this.apiToken}&title=${encodeURIComponent(game)}`
-    )
-    if (!plainResponse.ok) {
-      return Promise.reject(`Unable to query api, returned ${plainResponse.status}`)
-    }
-    const plainJson = await plainResponse.json()
-    const plainData = plainJson as PlainResponse
+  private async getDeals(title: string): Promise<string> {
+    // https://docs.isthereanydeal.com/#tag/Game/operation/games-search-v1
+    const searchUrl = new URL('/games/search/v1', this.baseUrl)
+    searchUrl.searchParams.append('key', this.apiToken)
+    searchUrl.searchParams.append('title', title)
+    searchUrl.searchParams.append('results', '1')
 
-    if (plainData.data instanceof Array) {
-      return Promise.reject(`No game found for query ${game}`)
+    const searchResponse = await fetch(searchUrl)
+    if (!searchResponse.ok) {
+      return Promise.reject(`Unable to query api, returned ${searchResponse.status}`)
     }
 
-    const plain = plainData.data.plain
+    let gameId
+    let gameSlug
+    try {
+      const searchJson = (await searchResponse.json()) as SearchResponse
+      gameId = searchJson[0].id
+      gameSlug = searchJson[0].slug
+    } catch {
+      return Promise.reject(`No game found for query ${title}`)
+    }
 
-    // Use the plain name to get the actual deal info
-    const gameResponse = await fetch(`${this.baseUrl}/v01/game/prices/?key=${this.apiToken}&country=US&plains=${plain}`)
-    if (!gameResponse.ok) {
+    // https://docs.isthereanydeal.com/#tag/Prices/operation/games-prices-v3
+    const pricesUrl = new URL('/games/prices/v3', this.baseUrl)
+    pricesUrl.searchParams.append('key', this.apiToken)
+    pricesUrl.searchParams.append('country', 'US')
+    pricesUrl.searchParams.append('deals', 'true')
+
+    const pricesResponse = await fetch(pricesUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([gameId]),
+    })
+
+    if (!pricesResponse.ok) {
       return Promise.reject('Unable to find deals for this game')
     }
-    const gameJson = await gameResponse.json()
-    const gameInfo = gameJson as PriceResponse
-    return (
-      gameInfo.data[plain].list.map((entry) => `${entry.shop.name}: $${entry.price_new.toFixed(2)}`).join('; ') +
-      `\n <${gameInfo.data[plain].urls.game}>`
-    )
+
+    try {
+      const pricesJson = (await pricesResponse.json()) as PricesResponse
+      const game = pricesJson[0]
+
+      const deals = game.deals.map((d) => `${d.shop.name}: ${this.formatter.format(d.price.amount)}`).join('; ')
+      const gameInfoUrl = `${this.gamePageBaseUrl}/${gameSlug}/info`
+
+      return Promise.resolve(`${deals}\n<${gameInfoUrl}>`)
+    } catch {
+      return Promise.reject('Unable to find deals for this game')
+    }
   }
 }
