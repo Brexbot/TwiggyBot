@@ -26,8 +26,4 @@ jobs:
       - name: Install Node.js dependencies
         run: npm ci
       - name: Run linters
-        uses: wearerequired/lint-action@v2
-        with:
-          eslint: true
-          eslint_args: '-c eslint.config.js'
-          eslint_extensions: js,ts
+        run: npm run lint
