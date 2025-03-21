@@ -74,12 +74,18 @@ class LastStream {
   // Joke versions
   @SimpleCommand({ name: 'flatstream' })
   async simpleFlat(command: SimpleCommandMessage) {
-    await command.message.channel.send('🐊')
+    const channel = command.message.channel
+    if (channel && channel.isSendable()) {
+      channel.send('🐊')
+    }
   }
 
   @SimpleCommand({ name: 'fartstream' })
   async simpleFart(command: SimpleCommandMessage) {
-    await command.message.channel.send('💨')
+    const channel = command.message.channel
+    if (channel && channel.isSendable()) {
+      await channel.send('💨')
+    }
   }
 
   private async getLastStream(): Promise<number | null> {

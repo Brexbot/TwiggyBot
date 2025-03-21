@@ -26,19 +26,22 @@ class MyTime {
   ) {
     const localisedInfo = localiseInput(text)
 
-    if (localisedInfo[1]) {
-      command.message.channel.send({ content: makeSafe(localisedInfo[0]) })
-    } else {
-      command.message.channel.send({
-        embeds: [
-          new EmbedBuilder()
-            .setAuthor({
-              name: 'MyTime',
-            })
-            .setColor(embedColors[1])
-            .setDescription(this.formatError(localisedInfo[0])),
-        ],
-      })
+    const channel = command.message.channel
+    if (channel && channel.isSendable()) {
+      if (localisedInfo[1]) {
+        channel.send({ content: makeSafe(localisedInfo[0]) })
+      } else {
+        channel.send({
+          embeds: [
+            new EmbedBuilder()
+              .setAuthor({
+                name: 'MyTime',
+              })
+              .setColor(embedColors[1])
+              .setDescription(this.formatError(localisedInfo[0])),
+          ],
+        })
+      }
     }
   }
 

@@ -28,17 +28,23 @@ class Icon {
       return command.sendUsageSyntax()
     }
 
+    const channel = command.message.channel
+
     const emoteName = Icon.parseEmoteName(emote)
     const icon = command.message.guild?.emojis?.cache?.find((emoji) => emoji.name === emoteName)
     if (!icon) {
-      command.message.channel.send(`\`${emoteName}\` is not from this server!`)
+      if (channel && channel.isSendable()) {
+        channel.send(`\`${emoteName}\` is not from this server!`)
+      }
       return
     }
 
     const modifiedRoleName = `${emoteName} [ICON]`
     const guildRoles = command.message.guild?.roles
     if (guildRoles?.cache.some((role) => role.name.toLowerCase() === modifiedRoleName.toLowerCase())) {
-      command.message.channel.send(`\`${modifiedRoleName}\` already exists.`)
+      if (channel && channel.isSendable()) {
+        channel.send(`\`${modifiedRoleName}\` already exists.`)
+      }
       return
     }
 
@@ -50,7 +56,9 @@ class Icon {
         icon: icon,
       })
       .then(() => {
-        command.message.channel.send(`\`${modifiedRoleName}\` was created. Use \`>icon ${emoteName}\` to join it.`)
+        if (channel && channel.isSendable()) {
+          channel.send(`\`${modifiedRoleName}\` was created. Use \`>icon ${emoteName}\` to join it.`)
+        }
       })
       .catch(console.error)
   }
@@ -69,19 +77,25 @@ class Icon {
     if (!emote) {
       return command.sendUsageSyntax()
     }
-
+    const channel = command.message.channel
     const emoteName = Icon.parseEmoteName(emote)
     const modifiedRoleName = `${emoteName} [ICON]`
     const guildRoles = command.message.guild?.roles
     const roleToBeDeleted = guildRoles?.cache.find((role) => role.name.toLowerCase() === modifiedRoleName.toLowerCase())
     if (!roleToBeDeleted) {
-      command.message.channel.send(`Couldn't find the \`${modifiedRoleName}\` icon to delete`)
+      if (channel && channel.isSendable()) {
+        channel.send(`Couldn't find the \`${modifiedRoleName}\` icon to delete`)
+      }
       return
     }
 
     await guildRoles
       ?.delete(roleToBeDeleted.id)
-      .then(async () => command.message.channel.send(`\`${modifiedRoleName}\` has been deleted.`))
+      .then(async () => {
+        if (channel && channel.isSendable()) {
+          channel.send(`\`${modifiedRoleName}\` has been deleted.`)
+        }
+      })
       .catch(console.error)
   }
 

@@ -114,7 +114,10 @@ class Mixu {
     }
 
     const message = await this.generateMixu(command.message.guild, command.message.author.username)
-    await command.message.channel.send(message)
+    const channel = command.message.channel
+    if (channel && channel.isSendable()) {
+      await channel.send(message)
+    }
   }
 
   @Slash({ name: 'mixu', description: 'Miku tile game' })
@@ -147,8 +150,11 @@ class Mixu {
     const [owner, text] = mixuInfo
 
     // Sending 2 separate messages to keep the Mixu emotes size big
-    command.message.channel.send(owner)
-    command.message.channel.send(text)
+    const channel = command.message.channel
+    if (channel && channel.isSendable()) {
+      channel.send(owner)
+      channel.send(text)
+    }
   }
 
   @Slash({ name: 'bestmixu', description: 'Show best mixu' })
@@ -182,9 +188,10 @@ class Mixu {
     }
 
     const text = this.stringify(this.numbers, command.message.guild)
-    command.message.channel.send(
-      `:regional_indicator_m::regional_indicator_i::regional_indicator_k::regional_indicator_u:${text}`
-    )
+    const channel = command.message.channel
+    if (channel && channel.isSendable()) {
+      channel.send(`:regional_indicator_m::regional_indicator_i::regional_indicator_k::regional_indicator_u:${text}`)
+    }
   }
 
   @Slash({ name: 'mikustare', description: 'Output correctly aligned Miku picture' })

@@ -14,9 +14,11 @@ class Winter {
       content = 'Estrogen can help with that'
     }
 
-    await command.message.channel.send({
-      content: content,
-    })
-    return
+    const channel = command.message.channel
+    if (channel && channel.isSendable()) {
+      channel.send({
+        content: content,
+      })
+    }
   }
 }

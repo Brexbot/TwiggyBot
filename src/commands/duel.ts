@@ -267,6 +267,7 @@ export class Duel {
 
   @Slash({ name: 'streaks', description: 'Show the overall duel statistics' })
   private async streaks(interaction: CommandInteraction) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const streakStats = ['winStreakMax', 'lossStreakMax', 'draws', 'losses', 'wins'] as const
     const statFormatter = async (statName: (typeof streakStats)[number], emptyText: string): Promise<string> => {
       let stats = await this.client.$queryRawUnsafe<Duels[]>(
