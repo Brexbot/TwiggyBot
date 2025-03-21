@@ -8,7 +8,7 @@ import {
   GuildMember,
   Message,
   MessageReaction,
-  SelectMenuInteraction,
+  StringSelectMenuInteraction,
   VoiceState,
 } from 'discord.js'
 
@@ -35,7 +35,7 @@ export const NotBot: GuardFunction<
   | ArgsOf<'messageCreate' | 'messageReactionAdd' | 'voiceStateUpdate'>
   | CommandInteraction
   | ContextMenuCommandInteraction
-  | SelectMenuInteraction
+  | StringSelectMenuInteraction
   | ButtonInteraction
   | SimpleCommandMessage
 > = async (arg, _, next) => {
@@ -44,19 +44,19 @@ export const NotBot: GuardFunction<
     argObj instanceof CommandInteraction
       ? argObj.user
       : argObj instanceof MessageReaction
-      ? argObj.message.author
-      : argObj instanceof VoiceState
-      ? argObj.member?.user
-      : argObj instanceof Message
-      ? argObj.author
-      : argObj instanceof SimpleCommandMessage
-      ? argObj.message.author
-      : argObj instanceof CommandInteraction ||
-        argObj instanceof ContextMenuCommandInteraction ||
-        argObj instanceof SelectMenuInteraction ||
-        argObj instanceof ButtonInteraction
-      ? argObj.member?.user
-      : argObj?.message?.author
+        ? argObj.message.author
+        : argObj instanceof VoiceState
+          ? argObj.member?.user
+          : argObj instanceof Message
+            ? argObj.author
+            : argObj instanceof SimpleCommandMessage
+              ? argObj.message.author
+              : argObj instanceof CommandInteraction ||
+                  argObj instanceof ContextMenuCommandInteraction ||
+                  argObj instanceof StringSelectMenuInteraction ||
+                  argObj instanceof ButtonInteraction
+                ? argObj.member?.user
+                : argObj?.message?.author
   if (!user?.bot) {
     await next()
   }
@@ -66,7 +66,7 @@ export const IsSuperUser: GuardFunction<
   | ArgsOf<'messageCreate' | 'messageReactionAdd' | 'voiceStateUpdate'>
   | CommandInteraction
   | ContextMenuCommandInteraction
-  | SelectMenuInteraction
+  | StringSelectMenuInteraction
   | ButtonInteraction
   | SimpleCommandMessage
 > = async (arg, _, next) => {
@@ -75,19 +75,19 @@ export const IsSuperUser: GuardFunction<
     argObj instanceof CommandInteraction
       ? argObj.member
       : argObj instanceof MessageReaction
-      ? argObj.message.member
-      : argObj instanceof VoiceState
-      ? argObj.member
-      : argObj instanceof Message
-      ? argObj.member
-      : argObj instanceof SimpleCommandMessage
-      ? argObj.message.member
-      : argObj instanceof CommandInteraction ||
-        argObj instanceof ContextMenuCommandInteraction ||
-        argObj instanceof SelectMenuInteraction ||
-        argObj instanceof ButtonInteraction
-      ? argObj.member
-      : argObj?.message?.member
+        ? argObj.message.member
+        : argObj instanceof VoiceState
+          ? argObj.member
+          : argObj instanceof Message
+            ? argObj.member
+            : argObj instanceof SimpleCommandMessage
+              ? argObj.message.member
+              : argObj instanceof CommandInteraction ||
+                  argObj instanceof ContextMenuCommandInteraction ||
+                  argObj instanceof StringSelectMenuInteraction ||
+                  argObj instanceof ButtonInteraction
+                ? argObj.member
+                : argObj?.message?.member
   if (memberIsSU(member)) {
     await next()
   }

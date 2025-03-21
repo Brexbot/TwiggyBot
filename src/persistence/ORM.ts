@@ -1,4 +1,4 @@
-import { PrismaClient } from '../../prisma/generated/prisma-client-js'
+import { PrismaClient } from '../../prisma/generated/prisma-client-js/index.js'
 import { singleton } from 'tsyringe'
 
 @singleton()

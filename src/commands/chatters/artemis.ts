@@ -1,5 +1,5 @@
 import { Discord, SimpleCommand, SimpleCommandMessage, SimpleCommandOption, SimpleCommandOptionType } from 'discordx'
-import { shuffleArray } from '../../utils/Helpers'
+import { shuffleArray } from '../../utils/Helpers.js'
 
 @Discord()
 class Artemis {
@@ -60,13 +60,12 @@ class Artemis {
   }
 
   @SimpleCommand({ name: 'artemis', description: 'Artemis' })
-  async simple(
-    @SimpleCommandOption({ name: 'text', type: SimpleCommandOptionType.String }) text: string | undefined,
-    command: SimpleCommandMessage
-  ) {
-    await command.message.channel.send({
-      content: this.fact,
-    })
-    return
+  async simple(command: SimpleCommandMessage) {
+    const channel = command.message.channel
+    if (channel && channel.isSendable()) {
+      await channel.send({
+        content: this.fact,
+      })
+    }
   }
 }

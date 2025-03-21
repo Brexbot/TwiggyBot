@@ -22,11 +22,11 @@ import {
   userMention,
 } from 'discord.js'
 import { Discord, Guard, Slash, SlashChoice, SlashGroup, SlashOption } from 'discordx'
-import { getCallerFromCommand, getNicknameFromUser } from '../utils/CommandUtils'
+import { getCallerFromCommand, getNicknameFromUser } from '../utils/CommandUtils.js'
 import { injectable } from 'tsyringe'
-import { ORM } from '../persistence'
-import { NFDItem } from '../../prisma/generated/prisma-client-js'
-import { IsSuperUser } from '../guards/RoleChecks'
+import { ORM } from '../persistence/ORM.js'
+import { NFDItem } from '../../prisma/generated/prisma-client-js/index.js'
+import { IsSuperUser } from '../guards/RoleChecks.js'
 import sharp from 'sharp'
 
 type BodyParts = {
@@ -179,7 +179,7 @@ class NFD {
       .then(() => this.storeNFDinDatabase(parts, getCallerFromCommand(interaction)))
       .then((nfd) => this.makeReply(nfd, interaction, ownerMember, true))
       .then(() => this.updateDBSuccessfulMint(ownerMember.id))
-      .catch((err) => {
+      .catch((_) => {
         interaction
           .reply({ content: 'An asteroid came and broke everything... what a surprise', ephemeral: true })
           .catch((err) => {
@@ -275,7 +275,7 @@ class NFD {
     }
 
     // Get (or create) the owner of the collection from the database
-    const ownerRecord = await this.client.nFDEnjoyer.upsert({
+    await this.client.nFDEnjoyer.upsert({
       where: {
         id: owner.id,
       },
@@ -874,7 +874,7 @@ class NFD {
       return interaction.reply({ content: errMsg, ephemeral: true })
     }
 
-    const result = await this.covetOrShunDino(choice == 'COVET' ? 'COVET' : 'SHUN', nfdItem, user, guild, interaction)
+    const result = await this.covetOrShunDino(choice == 'COVET' ? 'COVET' : 'SHUN', nfdItem, user, interaction)
     if (result) {
       return interaction.editReply({
         content:
@@ -938,7 +938,7 @@ class NFD {
       return interaction.reply({ content: 'Something went wrong fetching the image', ephemeral: true })
     }
     const cursedImageAttachment = new AttachmentBuilder(cursedImageValidated)
-    const cursedOwner = getNicknameFromUser(interaction.user, guild)
+    // const cursedOwner = getNicknameFromUser(interaction.user, guild)
     const cursedEmbed = new EmbedBuilder()
       .setColor('#cc0000')
       .setTitle('Cursed Dino')
@@ -1223,8 +1223,8 @@ class NFD {
   ) {
     const nfdName = nfd.name
 
-    const author = owner ? owner.nickname ?? owner.user.username : 'UNKNOWN'
-    const avatar = owner ? owner.user.avatarURL() ?? undefined : undefined
+    const author = owner ? (owner.nickname ?? owner.user.username) : 'UNKNOWN'
+    const avatar = owner ? (owner.user.avatarURL() ?? undefined) : undefined
 
     // Check for the existence of the image in the cache, if it doesn't exist, make it.
 
@@ -1357,7 +1357,6 @@ class NFD {
                 'COVET',
                 nfd,
                 collectionInteraction.user,
-                guild,
                 collectionInteraction
               )
             } else if (collectionInteraction.customId == this.SHUN_BUTTON_ID) {
@@ -1365,7 +1364,6 @@ class NFD {
                 'SHUN',
                 nfd,
                 collectionInteraction.user,
-                guild,
                 collectionInteraction
               )
             } else if (collectionInteraction.customId == this.FAVORITE_BUTTON_ID) {
@@ -1519,7 +1517,6 @@ class NFD {
     action: 'COVET' | 'SHUN',
     nfd: NFDItem,
     user: User,
-    guild: Guild,
     collectionInteraction: ButtonInteraction | CommandInteraction
   ): Promise<number | null> {
     if (collectionInteraction instanceof CommandInteraction) {
@@ -1788,8 +1785,6 @@ class NFD {
         break
     }
 
-    const callerName = getNicknameFromUser(interaction.user, interaction.guild)
-    const targetName = getNicknameFromUser(chatter, interaction.guild)
     return interaction.reply({ content: `${interaction.user} reset ${cooldown} cooldown for ${chatter}.` })
   }
 

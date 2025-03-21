@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, CommandInteraction, Formatters } from 'discord.js'
+import { ApplicationCommandOptionType, CommandInteraction, spoiler } from 'discord.js'
 import {
   Discord,
   SimpleCommand,
@@ -116,13 +116,13 @@ class Board {
 
       const tile = this.neighbors[i]
       if (tile === -1) {
-        board += Formatters.spoiler(`:${this.randomBomb()}:`)
+        board += spoiler(`:${this.randomBomb()}:`)
       } else {
         if (tile === 0 && !startRevealed) {
           board += `:${Board.neighborCounts[tile]}:`
           startRevealed = true
         } else {
-          board += Formatters.spoiler(`:${Board.neighborCounts[tile]}:`)
+          board += spoiler(`:${Board.neighborCounts[tile]}:`)
         }
       }
     }
@@ -144,7 +144,10 @@ class Minesweeper {
   ) {
     const { content, ephemeral } = this.newGame(command.message.channelId, difficulty)
     if (!ephemeral) {
-      await command.message.channel.send(content)
+      const channel = command.message.channel
+      if (channel && channel.isSendable()) {
+        await channel.send(content)
+      }
     }
   }
 

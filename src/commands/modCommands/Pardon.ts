@@ -1,8 +1,8 @@
 import { Client, Discord, Guard, SimpleCommand, SimpleCommandMessage } from 'discordx'
 import { GuildMember } from 'discord.js'
 import { injectable } from 'tsyringe'
-import { ORM } from '../../persistence'
-import { IsSuperUser } from '../../guards/RoleChecks'
+import { ORM } from '../../persistence/index.js'
+import { IsSuperUser } from '../../guards/RoleChecks.js'
 
 @Discord()
 @injectable()
@@ -45,10 +45,11 @@ class Pardon {
           lastLoss: new Date(0),
         },
       })
-      .then(async () =>
-        command.message.channel.send(
-          `${mentionedMember?.nickname ?? mentionedMember?.user.username}, consider your sentence served.`
-        )
-      )
+      .then(async () => {
+        const channel = command.message.channel
+        if (channel && channel.isSendable()) {
+          channel.send(`${mentionedMember?.nickname ?? mentionedMember?.user.username}, consider your sentence served.`)
+        }
+      })
   }
 }

@@ -35,7 +35,10 @@ class Weather {
       return command.sendUsageSyntax()
     }
     const weatherInfo: weatherResponse = await this.handleInput(text)
-    command.message.channel.send({ embeds: [weatherInfo.msg] })
+    const channel = command.message.channel
+    if (channel && channel.isSendable()) {
+      channel.send({ embeds: [weatherInfo.msg] })
+    }
   }
 
   @Slash({ name: 'weather', description: 'Get the weather for a location' })

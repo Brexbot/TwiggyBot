@@ -4,7 +4,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
   CommandInteraction,
-  Formatters,
+  quote,
   Guild,
   GuildMember,
   GuildMemberRoleManager,
@@ -22,7 +22,7 @@ import {
   Slash,
   SlashOption,
 } from 'discordx'
-import { IsSuperUser, memberIsSU } from '../guards/RoleChecks'
+import { IsSuperUser, memberIsSU } from '../guards/RoleChecks.js'
 
 @Discord()
 abstract class Timeout {
@@ -67,7 +67,7 @@ abstract class Timeout {
   async sudoku(member: GuildMember | null, message?: string): Promise<string> {
     const time = this.sudokuDuration()
     await member?.timeout(time * 1000, "Sudoku'd").catch(console.error)
-    const msg = message && message.length < 150 ? `\n${Formatters.quote(message)}` : ''
+    const msg = message && message.length < 150 ? `\n${quote(message)}` : ''
 
     // If the Sudoku-ee is a Super User send them a DM with a button to remove the timeout
     if (memberIsSU(member)) {
@@ -110,7 +110,10 @@ abstract class Timeout {
       return
     }
 
-    await command.message.channel.send(await this.sudoku(command.message.member, message))
+    const channel = command.message.channel
+    if (channel && channel.isSendable()) {
+      channel.send(await this.sudoku(command.message.member, message))
+    }
   }
 
   @Slash({ name: 'sudoku', description: 'Commit sudoku' })
@@ -146,8 +149,11 @@ abstract class Timeout {
       return
     }
 
+    const channel = command.message.channel
     if (!duration) {
-      await command.message.channel.send('Duration has to be a number.')
+      if (channel && channel.isSendable()) {
+        channel.send('Duration has to be a number.')
+      }
       return
     }
 
@@ -157,8 +163,8 @@ abstract class Timeout {
     }
 
     await user.timeout(duration * 1000, `${command.message.author} used timeout command`)
-    if (command.message.author.id === this.gozId) {
-      await command.message.channel.send('In the name of the Moon, I shall punish you!')
+    if (command.message.author.id === this.gozId && channel && channel.isSendable()) {
+      await channel.send('In the name of the Moon, I shall punish you!')
     }
   }
 

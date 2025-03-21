@@ -8,7 +8,7 @@ import {
   Slash,
   SlashOption,
 } from 'discordx'
-import { uwuify } from './uwu'
+import { uwuify } from './uwu.js'
 
 interface Quote {
   id: number
@@ -23,7 +23,7 @@ interface QuoteData {
 }
 
 @Discord()
-class quoteCommand {
+class QuoteCommand {
   private endpoint = 'https://api.bufutda.com/bot/quote?channel=bananasaurus_rex'
   private quotes: Array<Quote> = []
   private lastFetch: Date = new Date()

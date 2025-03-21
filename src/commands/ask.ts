@@ -1,19 +1,16 @@
-import { ApplicationCommandOptionType, CommandInteraction, InteractionResponse, escapeMarkdown } from 'discord.js'
 import {
-  Discord,
-  SimpleCommand,
-  SimpleCommandMessage,
-  SimpleCommandOption,
-  SimpleCommandOptionType,
-  Slash,
-  SlashChoice,
-  SlashOption,
-} from 'discordx'
+  ApplicationCommandOptionType,
+  CommandInteraction,
+  EmbedBuilder,
+  InteractionResponse,
+  escapeMarkdown,
+} from 'discord.js'
+import { Discord, Slash, SlashChoice, SlashOption } from 'discordx'
 
 const COMMAND_NAME = 'ask'
 const COMMAND_DESC = 'Ask a question to Wolfram Alpha'
 
-const COOLDOWN_MILLISECONDS = 3 * 60 * 1000
+const COOLDOWN_MILLISECONDS = 30 * 1000
 
 @Discord()
 class Ask {
@@ -26,37 +23,6 @@ class Ask {
 
     if (this.apiToken == '') {
       throw new Error('WOLFRAM_APP_ID needs to be set')
-    }
-  }
-
-  @SimpleCommand({ name: COMMAND_NAME, description: COMMAND_DESC, argSplitter: '\n' })
-  async simple(
-    @SimpleCommandOption({ name: 'question', type: SimpleCommandOptionType.String })
-    question: string | undefined,
-    @SimpleCommandOption({ name: 'units of measurement', type: SimpleCommandOptionType.Boolean })
-    units: string | undefined,
-    command: SimpleCommandMessage
-  ) {
-    if (!question) {
-      return await command.message.reply({
-        content: 'Usage: >ask <question>\n<units?> (metric or imperial)',
-        allowedMentions: { repliedUser: false },
-      })
-    }
-
-    if (this.isOnCooldown()) {
-      return
-    }
-
-    try {
-      const answer = await this.fetchAnswer(question, units)
-      return command.message.reply({ content: answer, allowedMentions: { repliedUser: false } })
-    } catch (err) {
-      console.error(err)
-      return command.message.reply({
-        content: 'There was a problem communicating with Wolfram Alpha.',
-        allowedMentions: { repliedUser: false },
-      })
     }
   }
 
@@ -87,10 +53,16 @@ class Ask {
 
     try {
       const answer = await this.fetchAnswer(question, units)
-      return interaction.reply(`[${escapeMarkdown(question)}] ${answer}`)
+      const capitalizedAnswer = answer.charAt(0).toUpperCase() + answer.slice(1)
+      const embed = new EmbedBuilder()
+        .setColor('#FBAB00') // MasterMind's color
+        .setTitle(truncate(escapeMarkdown(question).trim(), 256))
+        .setDescription(truncate(capitalizedAnswer.trim(), 4096))
+
+      return await interaction.reply({ embeds: [embed] })
     } catch (err) {
       console.error(err)
-      return interaction.reply('There was a problem communicating with Wolfram Alpha.')
+      return interaction.reply({ content: 'There was a problem communicating with Wolfram Alpha.', ephemeral: true })
     }
   }
 
@@ -104,10 +76,7 @@ class Ask {
     url.searchParams.append('i', question)
     url.searchParams.append('units', units.toLowerCase())
 
-    console.log(url)
-
     const response = await fetch(url)
-
     if (response.ok) {
       return escapeMarkdown(await response.text())
     }
@@ -136,4 +105,12 @@ class Ask {
     this.lastUsage = now
     return null
   }
+}
+
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) {
+    return text
+  }
+
+  return text.substring(0, maxLength - 3).trim() + '...'
 }

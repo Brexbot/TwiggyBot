@@ -11,18 +11,18 @@ import {
 import {
   ApplicationCommandOptionType,
   CommandInteraction,
-  Formatters,
+  italic,
   Guild,
   GuildMember,
   HexColorString,
 } from 'discord.js'
 import { injectable } from 'tsyringe'
-import { ORM } from '../../persistence'
-import { Prisma } from '../../../prisma/generated/prisma-client-js'
+import { ORM } from '../../persistence/index.js'
+import { Prisma } from '../../../prisma/generated/prisma-client-js/index.js'
 import { IsSuperUser, superUserIds, superUserRoles } from '../../guards/RoleChecks'
-import { getCallerFromCommand, getGuildAndCallerFromCommand, getGuildFromCommand } from '../../utils/CommandUtils'
-import { Duel } from '../duel'
-import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils'
+import { getCallerFromCommand, getGuildAndCallerFromCommand, getGuildFromCommand } from '../../utils/CommandUtils.js'
+import { Duel } from '../duel.js'
+import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils.js'
 
 @Discord()
 @injectable()
@@ -71,7 +71,10 @@ export class ColorRoles {
   ) {
     this.changeUserColor(color, isFavorite ?? false, command)
       .then(async (reply) => {
-        await command.message.channel.send(reply)
+        const channel = command.message.channel
+        if (channel && channel.isSendable()) {
+          await channel.send(reply)
+        }
       })
       .catch(console.error)
   }
@@ -106,7 +109,10 @@ export class ColorRoles {
   async simpleRandomColor(command: SimpleCommandMessage) {
     this.changeUserColor('RANDOM', false, command)
       .then(async (reply) => {
-        await command.message.channel.send(reply)
+        const channel = command.message.channel
+        if (channel && channel.isSendable()) {
+          channel.send(reply)
+        }
       })
       .catch(console.error)
   }
@@ -135,13 +141,19 @@ export class ColorRoles {
     if (color) {
       this.setFavorite(color, command.message.member)
         .then(async (reply) => {
-          await command.message.channel.send(reply)
+          const channel = command.message.channel
+          if (channel && channel.isSendable()) {
+            channel.send(reply)
+          }
         })
         .catch(console.error)
     } else {
       this.changeUserColor('LAZY', false, command)
         .then(async (reply) => {
-          await command.message.channel.send(reply)
+          const channel = command.message.channel
+          if (channel && channel.isSendable()) {
+            channel.send(reply)
+          }
         })
         .catch(console.error)
     }
@@ -180,7 +192,10 @@ export class ColorRoles {
   async simpleGamble(command: SimpleCommandMessage) {
     this.changeUserColor('GAMBLE', false, command)
       .then(async (reply) => {
-        return await command.message.channel.send(reply)
+        const channel = command.message.channel
+        if (channel && channel.isSendable()) {
+          channel.send(reply)
+        }
       })
       .catch(console.error)
   }
@@ -293,7 +308,7 @@ export class ColorRoles {
     const hexColor: HexColorString = color[0] !== '#' ? `#${color}` : (color as HexColorString)
     let favoriteString = ' '
     if (isFavorite || hexColor === userOptions.favColor?.toUpperCase()) {
-      favoriteString += Formatters.italic('favorite') + ' '
+      favoriteString += italic('favorite') + ' '
     }
 
     await ColorRoles.setColor(hexColor, member, guild)

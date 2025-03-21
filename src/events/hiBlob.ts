@@ -2,7 +2,7 @@ import type { ArgsOf } from 'discordx'
 import { Discord, On } from 'discordx'
 
 @Discord()
-abstract class hiBlob {
+abstract class HiBlob {
   private cooldown = 60 * 60 * 6 // [seconds]. Cooldown of 6 hours.
   private lastBlobMessage = 0 // Initializes most recent message time from Blob.
   private blobID = '104908485266817024' // Blob's user ID.
