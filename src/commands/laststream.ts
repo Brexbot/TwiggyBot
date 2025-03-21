@@ -75,7 +75,7 @@ class LastStream {
   @SimpleCommand({ name: 'flatstream' })
   async simpleFlat(command: SimpleCommandMessage) {
     const channel = command.message.channel
-    if (channel && channel.isSendable()) {
+    if (channel && channel.isTextBased()) {
       channel.send('🐊')
     }
   }
@@ -83,7 +83,7 @@ class LastStream {
   @SimpleCommand({ name: 'fartstream' })
   async simpleFart(command: SimpleCommandMessage) {
     const channel = command.message.channel
-    if (channel && channel.isSendable()) {
+    if (channel && channel.isTextBased()) {
       await channel.send('💨')
     }
   }

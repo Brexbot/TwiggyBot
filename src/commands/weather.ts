@@ -36,7 +36,7 @@ class Weather {
     }
     const weatherInfo: weatherResponse = await this.handleInput(text)
     const channel = command.message.channel
-    if (channel && channel.isSendable()) {
+    if (channel && channel.isTextBased()) {
       channel.send({ embeds: [weatherInfo.msg] })
     }
   }

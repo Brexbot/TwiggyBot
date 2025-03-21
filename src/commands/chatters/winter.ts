@@ -15,7 +15,7 @@ class Winter {
     }
 
     const channel = command.message.channel
-    if (channel && channel.isSendable()) {
+    if (channel && channel.isTextBased()) {
       channel.send({
         content: content,
       })

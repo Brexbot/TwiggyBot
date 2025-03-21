@@ -47,7 +47,7 @@ class Pardon {
       })
       .then(async () => {
         const channel = command.message.channel
-        if (channel && channel.isSendable()) {
+        if (channel && channel.isTextBased()) {
           channel.send(`${mentionedMember?.nickname ?? mentionedMember?.user.username}, consider your sentence served.`)
         }
       })
