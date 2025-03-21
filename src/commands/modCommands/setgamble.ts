@@ -8,7 +8,7 @@ import {
 } from 'discordx'
 import { Prisma } from '../../../prisma/generated/prisma-client-js/index.js'
 import { injectable } from 'tsyringe'
-import { ORM } from '../../persistence'
+import { ORM } from '../../persistence/ORM.js'
 import { IsSuperUser } from '../../guards/RoleChecks.js'
 
 @Discord()

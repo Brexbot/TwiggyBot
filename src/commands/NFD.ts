@@ -12,7 +12,6 @@ import {
   ButtonStyle,
   CommandInteraction,
   EmbedBuilder,
-  Guild,
   GuildMember,
   Message,
   MessageActionRowComponentBuilder,
@@ -65,8 +64,8 @@ export class NFD {
 
   private MAX_NFD_PRICE_EXPONENT = 30
 
-  private FRAGMENT_PATH = path.join(__dirname, '../../src/assets/NFD/fragments')
-  private OUTPUT_PATH = path.join(__dirname, '../../src/assets/NFD/images')
+  private FRAGMENT_PATH = path.join(import.meta.dirname, '../../src/assets/NFD/fragments')
+  private OUTPUT_PATH = path.join(import.meta.dirname, '../../src/assets/NFD/images')
 
   private MAX_NFD_LISTED = 25
   private MAX_COLLAGE_ITEMS = 25
