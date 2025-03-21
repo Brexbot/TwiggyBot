@@ -34,7 +34,7 @@ class SetGamble {
         })
         .then(async () => {
           const channel = command.message.channel
-          if (channel && channel.isTextBased()) {
+          if (channel && channel.isSendable()) {
             channel.send(`Gamble chance is now ${newChance}`)
           }
         })
@@ -45,7 +45,7 @@ class SetGamble {
         update: {},
       })
       const channel = command.message.channel
-      if (channel && channel.isTextBased()) {
+      if (channel && channel.isSendable()) {
         channel.send(`Current gamble chance is: ${guildOptions.gambleChance.toDecimalPlaces(2)}`)
       }
     }

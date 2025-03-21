@@ -72,7 +72,7 @@ export class ColorRoles {
     this.changeUserColor(color, isFavorite ?? false, command)
       .then(async (reply) => {
         const channel = command.message.channel
-        if (channel && channel.isTextBased()) {
+        if (channel && channel.isSendable()) {
           await channel.send(reply)
         }
       })
@@ -110,7 +110,7 @@ export class ColorRoles {
     this.changeUserColor('RANDOM', false, command)
       .then(async (reply) => {
         const channel = command.message.channel
-        if (channel && channel.isTextBased()) {
+        if (channel && channel.isSendable()) {
           channel.send(reply)
         }
       })
@@ -142,7 +142,7 @@ export class ColorRoles {
       this.setFavorite(color, command.message.member)
         .then(async (reply) => {
           const channel = command.message.channel
-          if (channel && channel.isTextBased()) {
+          if (channel && channel.isSendable()) {
             channel.send(reply)
           }
         })
@@ -151,7 +151,7 @@ export class ColorRoles {
       this.changeUserColor('LAZY', false, command)
         .then(async (reply) => {
           const channel = command.message.channel
-          if (channel && channel.isTextBased()) {
+          if (channel && channel.isSendable()) {
             channel.send(reply)
           }
         })
@@ -193,7 +193,7 @@ export class ColorRoles {
     this.changeUserColor('GAMBLE', false, command)
       .then(async (reply) => {
         const channel = command.message.channel
-        if (channel && channel.isTextBased()) {
+        if (channel && channel.isSendable()) {
           channel.send(reply)
         }
       })

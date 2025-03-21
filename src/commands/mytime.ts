@@ -27,7 +27,7 @@ class MyTime {
     const localisedInfo = localiseInput(text)
 
     const channel = command.message.channel
-    if (channel && channel.isTextBased()) {
+    if (channel && channel.isSendable()) {
       if (localisedInfo[1]) {
         channel.send({ content: makeSafe(localisedInfo[0]) })
       } else {
