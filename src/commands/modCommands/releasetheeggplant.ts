@@ -8,7 +8,7 @@ import {
   SimpleCommandOption,
   SimpleCommandOptionType,
 } from 'discordx'
-import { IsSuperUser, memberIsSU } from '../../guards/RoleChecks.js'
+import { IsSuperUser } from '../../guards/RoleChecks.js'
 
 @Discord()
 @Guard(IsSuperUser)
@@ -32,12 +32,15 @@ class ReleaseTheEggplant {
     const botId = client.user?.id
     const thisBot = command.message.guild?.members.cache.find((u) => u.id === botId)
     thisBot?.setNickname('🍆🔪')
-    command.message.channel
-      .send(`I'm coming for you, ${name}!`)
-      .then((_) => {
-        setTimeout(() => thisBot?.setNickname(null), 5000)
-      })
-      .catch(console.error)
+    const channel = command.message.channel
+    if (channel && channel.isSendable()) {
+      channel
+        .send(`I'm coming for you, ${name}!`)
+        .then((_) => {
+          setTimeout(() => thisBot?.setNickname(null), 5000)
+        })
+        .catch(console.error)
+    }
   }
 
   // TODO: Lock behind mod permissions

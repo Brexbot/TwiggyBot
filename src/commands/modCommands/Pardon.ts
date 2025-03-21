@@ -45,10 +45,11 @@ class Pardon {
           lastLoss: new Date(0),
         },
       })
-      .then(async () =>
-        command.message.channel.send(
-          `${mentionedMember?.nickname ?? mentionedMember?.user.username}, consider your sentence served.`
-        )
-      )
+      .then(async () => {
+        const channel = command.message.channel
+        if (channel && channel.isSendable()) {
+          channel.send(`${mentionedMember?.nickname ?? mentionedMember?.user.username}, consider your sentence served.`)
+        }
+      })
   }
 }

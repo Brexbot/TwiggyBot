@@ -32,14 +32,22 @@ class SetGamble {
           where: { guildId: guildId },
           data: { gambleChance: newChance },
         })
-        .then(async () => command.message.channel.send(`Gamble chance is now ${newChance}`))
+        .then(async () => {
+          const channel = command.message.channel
+          if (channel && channel.isSendable()) {
+            channel.send(`Gamble chance is now ${newChance}`)
+          }
+        })
     } else {
       const guildOptions = await this.client.guildOptions.upsert({
         where: { guildId: guildId },
         create: { guildId: guildId },
         update: {},
       })
-      command.message.channel.send(`Current gamble chance is: ${guildOptions.gambleChance.toDecimalPlaces(2)}`)
+      const channel = command.message.channel
+      if (channel && channel.isSendable()) {
+        channel.send(`Current gamble chance is: ${guildOptions.gambleChance.toDecimalPlaces(2)}`)
+      }
     }
   }
 }

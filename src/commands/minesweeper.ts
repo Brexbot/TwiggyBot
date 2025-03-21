@@ -144,7 +144,10 @@ class Minesweeper {
   ) {
     const { content, ephemeral } = this.newGame(command.message.channelId, difficulty)
     if (!ephemeral) {
-      await command.message.channel.send(content)
+      const channel = command.message.channel
+      if (channel && channel.isSendable()) {
+        await channel.send(content)
+      }
     }
   }
 
