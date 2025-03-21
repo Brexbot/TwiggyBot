@@ -1,4 +1,4 @@
-import { cyrb53, getRandomElement, roll_dy_x_TimesPick_z, shuffleArray } from '../commands/RPG/util'
+import { cyrb53, getRandomElement, roll_dy_x_TimesPick_z, shuffleArray } from '../commands/RPG/util.js'
 import fs from 'fs'
 import * as path from 'path'
 import {
@@ -44,13 +44,8 @@ type DinoStats = {
 }
 
 @Discord()
-@SlashGroup({ name: 'dino', description: 'Birth, collect, and trade adorable dinos.' })
-// @SlashGroup({
-//   name: 'mod',
-//   description: 'Moderator only commands',
-//   root: 'nfd',
-// })
 @injectable()
+@SlashGroup({ name: 'dino', description: 'Birth, collect, and trade adorable dinos.' })
 class NFD {
   private MINT_COOLDOWN_METHOD: 'DAILY' | 'PERSONAL' = 'DAILY'
   private MINT_COOLDOWN = 1000 * 60 * 60 * 23

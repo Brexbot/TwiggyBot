@@ -19,7 +19,7 @@ import {
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence/index.js'
 import { Prisma } from '../../../prisma/generated/prisma-client-js/index.js'
-import { IsSuperUser, superUserIds, superUserRoles } from '../../guards/RoleChecks'
+import { IsSuperUser, superUserIds, superUserRoles } from '../../guards/RoleChecks.js'
 import { getCallerFromCommand, getGuildAndCallerFromCommand, getGuildFromCommand } from '../../utils/CommandUtils.js'
 import { Duel } from '../duel.js'
 import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils.js'
