@@ -111,7 +111,7 @@ abstract class Timeout {
     }
 
     const channel = command.message.channel
-    if (channel && channel.isSendable()) {
+    if (channel && channel.isTextBased()) {
       channel.send(await this.sudoku(command.message.member, message))
     }
   }
@@ -151,7 +151,7 @@ abstract class Timeout {
 
     const channel = command.message.channel
     if (!duration) {
-      if (channel && channel.isSendable()) {
+      if (channel && channel.isTextBased()) {
         channel.send('Duration has to be a number.')
       }
       return
@@ -163,7 +163,7 @@ abstract class Timeout {
     }
 
     await user.timeout(duration * 1000, `${command.message.author} used timeout command`)
-    if (command.message.author.id === this.gozId && channel && channel.isSendable()) {
+    if (command.message.author.id === this.gozId && channel && channel.isTextBased()) {
       await channel.send('In the name of the Moon, I shall punish you!')
     }
   }

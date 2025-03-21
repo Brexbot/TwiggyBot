@@ -33,7 +33,7 @@ class ReleaseTheEggplant {
     const thisBot = command.message.guild?.members.cache.find((u) => u.id === botId)
     thisBot?.setNickname('🍆🔪')
     const channel = command.message.channel
-    if (channel && channel.isSendable()) {
+    if (channel && channel.isTextBased()) {
       channel
         .send(`I'm coming for you, ${name}!`)
         .then((_) => {
