@@ -33,7 +33,7 @@ class Icon {
     const emoteName = Icon.parseEmoteName(emote)
     const icon = command.message.guild?.emojis?.cache?.find((emoji) => emoji.name === emoteName)
     if (!icon) {
-      if (channel && channel.isTextBased()) {
+      if (channel && channel.isSendable()) {
         channel.send(`\`${emoteName}\` is not from this server!`)
       }
       return
@@ -42,7 +42,7 @@ class Icon {
     const modifiedRoleName = `${emoteName} [ICON]`
     const guildRoles = command.message.guild?.roles
     if (guildRoles?.cache.some((role) => role.name.toLowerCase() === modifiedRoleName.toLowerCase())) {
-      if (channel && channel.isTextBased()) {
+      if (channel && channel.isSendable()) {
         channel.send(`\`${modifiedRoleName}\` already exists.`)
       }
       return
@@ -56,7 +56,7 @@ class Icon {
         icon: icon,
       })
       .then(() => {
-        if (channel && channel.isTextBased()) {
+        if (channel && channel.isSendable()) {
           channel.send(`\`${modifiedRoleName}\` was created. Use \`>icon ${emoteName}\` to join it.`)
         }
       })
@@ -83,7 +83,7 @@ class Icon {
     const guildRoles = command.message.guild?.roles
     const roleToBeDeleted = guildRoles?.cache.find((role) => role.name.toLowerCase() === modifiedRoleName.toLowerCase())
     if (!roleToBeDeleted) {
-      if (channel && channel.isTextBased()) {
+      if (channel && channel.isSendable()) {
         channel.send(`Couldn't find the \`${modifiedRoleName}\` icon to delete`)
       }
       return
@@ -92,7 +92,7 @@ class Icon {
     await guildRoles
       ?.delete(roleToBeDeleted.id)
       .then(async () => {
-        if (channel && channel.isTextBased()) {
+        if (channel && channel.isSendable()) {
           channel.send(`\`${modifiedRoleName}\` has been deleted.`)
         }
       })

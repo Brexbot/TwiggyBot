@@ -14,16 +14,8 @@
     "moduleResolution": "Bundler",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": [
-      "./src/@types/hsl-rgb",
-      "node"
-    ]
+    "types": ["./src/@types/hsl-rgb", "node"]
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "./build"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "./build"]
 }

@@ -32,7 +32,7 @@ class Rolesub {
     const modifiedRoleName = `${roleName} [BOT]`
     const guildRoles = command.message.guild?.roles
     if (guildRoles?.cache.some((role) => role.name.toLowerCase() === modifiedRoleName.toLowerCase())) {
-      if (channel && channel.isTextBased()) {
+      if (channel && channel.isSendable()) {
         channel.send(`\`${modifiedRoleName}\` already exists.`)
       }
       return
@@ -45,7 +45,7 @@ class Rolesub {
         mentionable: true,
       })
       .then(() => {
-        if (channel && channel.isTextBased()) {
+        if (channel && channel.isSendable()) {
           channel.send(`\`${modifiedRoleName}\` was created. Use \`>rolesub ${roleName}\` to join it.`)
         }
       })
@@ -73,7 +73,7 @@ class Rolesub {
     const roleToBeDeleted = guildRoles?.cache.find((role) => role.name.toLowerCase() === modifiedRoleName.toLowerCase())
     if (!roleToBeDeleted) {
       const channel = command.message.channel
-      if (channel && channel.isTextBased()) {
+      if (channel && channel.isSendable()) {
         channel.send(`Couldn't find the \`${modifiedRoleName}\` role to delete`)
       }
       return
@@ -82,7 +82,7 @@ class Rolesub {
     await guildRoles
       ?.delete(roleToBeDeleted.id)
       .then(async () => {
-        if (channel && channel.isTextBased()) {
+        if (channel && channel.isSendable()) {
           channel.send(`\`${modifiedRoleName}\` has been deleted.`)
         }
       })

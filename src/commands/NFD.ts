@@ -1,4 +1,4 @@
-import { cyrb53, getRandomElement, roll_dy_x_TimesPick_z, shuffleArray } from '../commands/RPG/util'
+import { cyrb53, getRandomElement, roll_dy_x_TimesPick_z, shuffleArray } from '../commands/RPG/util.js'
 import fs from 'fs'
 import * as path from 'path'
 import {
@@ -12,7 +12,6 @@ import {
   ButtonStyle,
   CommandInteraction,
   EmbedBuilder,
-  Guild,
   GuildMember,
   Message,
   MessageActionRowComponentBuilder,
@@ -44,14 +43,9 @@ type DinoStats = {
 }
 
 @Discord()
-@SlashGroup({ name: 'dino', description: 'Birth, collect, and trade adorable dinos.' })
-// @SlashGroup({
-//   name: 'mod',
-//   description: 'Moderator only commands',
-//   root: 'nfd',
-// })
 @injectable()
-class NFD {
+@SlashGroup({ name: 'dino', description: 'Birth, collect, and trade adorable dinos.' })
+export class NFD {
   private MINT_COOLDOWN_METHOD: 'DAILY' | 'PERSONAL' = 'DAILY'
   private MINT_COOLDOWN = 1000 * 60 * 60 * 23
   private MILISECONDS_IN_DAY = 86400000
@@ -70,8 +64,8 @@ class NFD {
 
   private MAX_NFD_PRICE_EXPONENT = 30
 
-  private FRAGMENT_PATH = path.join(__dirname, '../../src/assets/NFD/fragments')
-  private OUTPUT_PATH = path.join(__dirname, '../../src/assets/NFD/images')
+  private FRAGMENT_PATH = path.join(import.meta.dirname, '../../src/assets/NFD/fragments')
+  private OUTPUT_PATH = path.join(import.meta.dirname, '../../src/assets/NFD/images')
 
   private MAX_NFD_LISTED = 25
   private MAX_COLLAGE_ITEMS = 25

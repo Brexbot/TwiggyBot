@@ -115,7 +115,7 @@ class Mixu {
 
     const message = await this.generateMixu(command.message.guild, command.message.author.username)
     const channel = command.message.channel
-    if (channel && channel.isTextBased()) {
+    if (channel && channel.isSendable()) {
       await channel.send(message)
     }
   }
@@ -151,7 +151,7 @@ class Mixu {
 
     // Sending 2 separate messages to keep the Mixu emotes size big
     const channel = command.message.channel
-    if (channel && channel.isTextBased()) {
+    if (channel && channel.isSendable()) {
       channel.send(owner)
       channel.send(text)
     }
@@ -189,7 +189,7 @@ class Mixu {
 
     const text = this.stringify(this.numbers, command.message.guild)
     const channel = command.message.channel
-    if (channel && channel.isTextBased()) {
+    if (channel && channel.isSendable()) {
       channel.send(`:regional_indicator_m::regional_indicator_i::regional_indicator_k::regional_indicator_u:${text}`)
     }
   }

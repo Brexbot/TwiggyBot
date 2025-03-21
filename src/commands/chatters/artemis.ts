@@ -62,7 +62,7 @@ class Artemis {
   @SimpleCommand({ name: 'artemis', description: 'Artemis' })
   async simple(command: SimpleCommandMessage) {
     const channel = command.message.channel
-    if (channel && channel.isTextBased()) {
+    if (channel && channel.isSendable()) {
       await channel.send({
         content: this.fact,
       })

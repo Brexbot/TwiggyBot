@@ -18,11 +18,11 @@ import {
   userMention,
 } from 'discord.js'
 import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
-import { getCallerFromCommand } from '../../utils/CommandUtils'
+import { getCallerFromCommand } from '../../utils/CommandUtils.js'
 import { injectable } from 'tsyringe'
-import { ORM } from '../../persistence'
+import { ORM } from '../../persistence/ORM.js'
 import { RPGCharacter } from '../../../prisma/generated/prisma-client-js'
-import { getGlobalRPGCDRemaining, getTimeLeftInReadableFormat } from '../../utils/CooldownUtils'
+import { getGlobalRPGCDRemaining, getTimeLeftInReadableFormat } from '../../utils/CooldownUtils.js'
 
 type AttackResult = {
   text: string

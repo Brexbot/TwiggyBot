@@ -19,7 +19,7 @@ import {
 import { injectable } from 'tsyringe'
 import { ORM } from '../../persistence/index.js'
 import { Prisma } from '../../../prisma/generated/prisma-client-js/index.js'
-import { IsSuperUser, superUserIds, superUserRoles } from '../../guards/RoleChecks'
+import { IsSuperUser, superUserIds, superUserRoles } from '../../guards/RoleChecks.js'
 import { getCallerFromCommand, getGuildAndCallerFromCommand, getGuildFromCommand } from '../../utils/CommandUtils.js'
 import { Duel } from '../duel.js'
 import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils.js'
@@ -72,7 +72,7 @@ export class ColorRoles {
     this.changeUserColor(color, isFavorite ?? false, command)
       .then(async (reply) => {
         const channel = command.message.channel
-        if (channel && channel.isTextBased()) {
+        if (channel && channel.isSendable()) {
           await channel.send(reply)
         }
       })
@@ -110,7 +110,7 @@ export class ColorRoles {
     this.changeUserColor('RANDOM', false, command)
       .then(async (reply) => {
         const channel = command.message.channel
-        if (channel && channel.isTextBased()) {
+        if (channel && channel.isSendable()) {
           channel.send(reply)
         }
       })
@@ -142,7 +142,7 @@ export class ColorRoles {
       this.setFavorite(color, command.message.member)
         .then(async (reply) => {
           const channel = command.message.channel
-          if (channel && channel.isTextBased()) {
+          if (channel && channel.isSendable()) {
             channel.send(reply)
           }
         })
@@ -151,7 +151,7 @@ export class ColorRoles {
       this.changeUserColor('LAZY', false, command)
         .then(async (reply) => {
           const channel = command.message.channel
-          if (channel && channel.isTextBased()) {
+          if (channel && channel.isSendable()) {
             channel.send(reply)
           }
         })
@@ -193,7 +193,7 @@ export class ColorRoles {
     this.changeUserColor('GAMBLE', false, command)
       .then(async (reply) => {
         const channel = command.message.channel
-        if (channel && channel.isTextBased()) {
+        if (channel && channel.isSendable()) {
           channel.send(reply)
         }
       })

@@ -52,7 +52,9 @@ abstract class CallAndResponder {
 
         let imageAttachment: AttachmentBuilder[]
         if (call.responseAttachment) {
-          imageAttachment = [new AttachmentBuilder(path.join(__dirname, `${this.BasePath}/${call.responseAttachment}`))]
+          imageAttachment = [
+            new AttachmentBuilder(path.join(import.meta.dirname, `${this.BasePath}/${call.responseAttachment}`)),
+          ]
         } else {
           imageAttachment = []
         }
