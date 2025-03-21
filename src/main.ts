@@ -115,7 +115,7 @@ bot.on('messageCreate', (message: Message) => {
 async function run() {
   DIService.engine = tsyringeDependencyRegistryEngine.setInjector(container)
 
-  await importx(`${dirname}/{events,commands,persistence}/**/*.{ts,js}`)
+  await importx(`${dirname(import.meta.url)}/{events,commands,persistence}/**/*.{ts,js}`)
   bot.login(process.env.DISCORD_TOKEN ?? '') // provide your bot token
 }
 
