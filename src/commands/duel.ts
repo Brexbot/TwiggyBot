@@ -17,7 +17,6 @@ import { ORM } from '../persistence/ORM.js'
 import { Duels } from '../../prisma/generated/prisma-client-js/index.js'
 import { ColorRoles } from './roleCommands/changecolor.js'
 import { getCallerFromCommand, getGuildAndCallerFromCommand } from '../utils/CommandUtils.js'
-import { getGlobalDuelCDRemaining, getTimeLeftInReadableFormat } from '../utils/CooldownUtils.js'
 import { shuffleArray } from '../utils/Helpers.js'
 
 @Discord()
@@ -59,12 +58,10 @@ export class Duel {
     }
 
     // check if the challenger has recently lost
-    if (challenger.lastLoss.getTime() + Duel.cooldown > Date.now()) {
+    const userCooldownEnd = challenger.lastLoss.getTime() + Duel.cooldown
+    if (userCooldownEnd > Date.now()) {
       await interaction.reply({
-        content: `${challengerMember?.user}, you have recently lost a duel. Please wait ${getTimeLeftInReadableFormat(
-          challenger.lastLoss,
-          Duel.cooldown
-        )} before trying again.`,
+        content: `${challengerMember?.user}, you have recently lost a duel. You can duel again <t:${Math.floor(userCooldownEnd / 1000)}:R>.`,
         ephemeral: true,
         allowedMentions: { repliedUser: false },
       })
@@ -80,10 +77,11 @@ export class Duel {
         update: {},
         create: { guildId: guildId },
       })
-      const globalCD = getGlobalDuelCDRemaining(guildOptions)
-      if (globalCD) {
+
+      const globalCooldownEnd = guildOptions.lastDuel.getTime() + guildOptions.globalDuelCD
+      if (globalCooldownEnd > Date.now()) {
         await interaction.reply({
-          content: `Duels are on cooldown here. Please wait ${globalCD} before trying again.`,
+          content: `Duels are on cooldown here. You can duel again <t:${Math.floor(globalCooldownEnd / 1000)}:R>.`,
           ephemeral: true,
           allowedMentions: { repliedUser: false },
         })
@@ -128,12 +126,10 @@ export class Duel {
       }
 
       // Check if the acceptor has recently lost and can't duel right now. Print their timeout.
-      if (acceptor.lastLoss.getTime() + Duel.cooldown > Date.now()) {
+      const acceptorCooldownEnd = acceptor.lastLoss.getTime() + Duel.cooldown
+      if (acceptorCooldownEnd > Date.now()) {
         await collectionInteraction.followUp({
-          content: `${acceptorMember?.user}, you have recently lost a duel. Please wait ${getTimeLeftInReadableFormat(
-            acceptor.lastLoss,
-            Duel.cooldown
-          )} before trying again.`,
+          content: `${acceptorMember?.user}, you have recently lost a duel. You can duel again <t:${Math.floor(acceptorCooldownEnd / 1000)}:R>.`,
           ephemeral: true,
           allowedMentions: { repliedUser: false },
         })
