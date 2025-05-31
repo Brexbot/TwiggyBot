@@ -3,6 +3,7 @@ import {
   CommandInteraction,
   EmbedBuilder,
   InteractionResponse,
+  Message,
   escapeMarkdown,
 } from 'discord.js'
 import { Discord, Slash, SlashChoice, SlashOption } from 'discordx'
@@ -45,10 +46,12 @@ class Ask {
     })
     units: string,
     interaction: CommandInteraction
-  ): Promise<InteractionResponse<boolean>> {
+  ): Promise<Message<boolean>> {
+    interaction.deferReply()
     const cooldownMessage = this.isOnCooldown()
+
     if (cooldownMessage) {
-      return interaction.reply({ content: cooldownMessage, ephemeral: true })
+      return interaction.followUp({ content: cooldownMessage, ephemeral: true })
     }
 
     try {
@@ -59,10 +62,10 @@ class Ask {
         .setTitle(truncate(escapeMarkdown(question).trim(), 256))
         .setDescription(truncate(capitalizedAnswer.trim(), 4096))
 
-      return await interaction.reply({ embeds: [embed] })
+      return await interaction.followUp({ embeds: [embed] })
     } catch (err) {
       console.error(err)
-      return interaction.reply({ content: 'There was a problem communicating with Wolfram Alpha.', ephemeral: true })
+      return interaction.followUp({ content: 'There was a problem communicating with Wolfram Alpha.', ephemeral: true })
     }
   }
 
@@ -112,5 +115,5 @@ function truncate(text: string, maxLength: number): string {
     return text
   }
 
-  return text.substring(0, maxLength - 3).trim() + '...'
+  return text.substring(0, maxLength - 1).trim() + '…'
 }
