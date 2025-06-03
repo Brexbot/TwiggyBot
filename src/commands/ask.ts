@@ -46,14 +46,14 @@ class Ask {
     })
     units: string,
     interaction: CommandInteraction
-  ): Promise<Message<boolean>> {
-    interaction.deferReply()
+  ): Promise<Message<boolean> | InteractionResponse<boolean>> {
     const cooldownMessage = this.isOnCooldown()
 
     if (cooldownMessage) {
-      return interaction.followUp({ content: cooldownMessage, ephemeral: true })
+      return interaction.reply({ content: cooldownMessage, ephemeral: true })
     }
 
+    interaction.deferReply()
     try {
       const answer = await this.fetchAnswer(question, units)
       const capitalizedAnswer = answer.charAt(0).toUpperCase() + answer.slice(1)
