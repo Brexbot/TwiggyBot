@@ -53,7 +53,7 @@ class Ask {
       return interaction.reply({ content: cooldownMessage, ephemeral: true })
     }
 
-    interaction.deferReply()
+    await interaction.deferReply()
     try {
       const answer = await this.fetchAnswer(question, units)
       const capitalizedAnswer = answer.charAt(0).toUpperCase() + answer.slice(1)
