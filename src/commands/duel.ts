@@ -1,5 +1,6 @@
 import {
   ActionRowBuilder,
+  ApplicationCommandOptionType,
   ButtonBuilder,
   ButtonInteraction,
   ButtonStyle,
@@ -10,7 +11,7 @@ import {
   MessageActionRowComponentBuilder,
   inlineCode,
 } from 'discord.js'
-import { Discord, Slash, SlashGroup } from 'discordx'
+import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
 import { injectable } from 'tsyringe'
 import { ORM } from '../persistence/ORM.js'
 
@@ -34,7 +35,16 @@ export class Duel {
   public constructor(private client: ORM) {}
 
   @Slash({ name: 'challenge', description: 'Challenge the chat to a duel' })
-  private async duel(interaction: CommandInteraction) {
+  private async duel(
+    @SlashOption({
+      name: 'wager',
+      type: ApplicationCommandOptionType.String,
+      description: 'Make this duel mean something',
+      required: false,
+    })
+    wager: string | undefined,
+    interaction: CommandInteraction
+  ) {
     // Get the challenger from the DB. Create them if they don't exist yet.
     const challengerMember = getCallerFromCommand(interaction)
     const challenger = await this.getUserWithDuelStats(interaction.user.id)
@@ -103,9 +113,10 @@ export class Duel {
       this.inProgress = false
     }, this.timeoutDuration)
 
+    const wagerMsg = wager ? '> ' + wager + '\n' : ''
     const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(this.createButton(false))
     const message = await interaction.reply({
-      content: `${challengerMember?.user} is looking for a duel, press the button to accept.`,
+      content: `${wagerMsg}${challengerMember?.user} is looking for a duel, press the button to accept.`,
       fetchReply: true,
       components: [row],
     })
@@ -207,7 +218,7 @@ export class Duel {
         }
 
         await collectionInteraction.editReply({
-          content: `${acceptorMember?.user} has rolled a ${accepterScore} and ${challengerMember?.user} has rolled a ${challengerScore}. ${winnerText}`,
+          content: `${wagerMsg}${acceptorMember?.user} has rolled a ${accepterScore} and ${challengerMember?.user} has rolled a ${challengerScore}. ${winnerText}`,
         })
       }
     })
