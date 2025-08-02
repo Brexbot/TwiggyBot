@@ -100,20 +100,20 @@ export class Duel {
     }
 
     this.inProgress = true
+    const wagerMsg = wager ? '> ' + wager + '\n' : ''
 
     // Disable the duel after a timeout
     this.timeout = setTimeout(async () => {
+      this.inProgress = false
       // Disable the button
       const button = this.createButton(true)
       const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
       await interaction.editReply({
-        content: `${challengerMember?.user} failed to find someone to duel.`,
+        content: `${wagerMsg}${challengerMember?.user} failed to find someone to duel.`,
         components: [row],
       })
-      this.inProgress = false
     }, this.timeoutDuration)
 
-    const wagerMsg = wager ? '> ' + wager + '\n' : ''
     const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(this.createButton(false))
     const message = await interaction.reply({
       content: `${wagerMsg}${challengerMember?.user} is looking for a duel, press the button to accept.`,
