@@ -5,3 +5,11 @@ export const shuffleArray = <T>(array: Array<T>): Array<T> => {
   }
   return array
 }
+
+export const getRandomElement = <T>(array: Array<T>): T => {
+  if (array.length === 0) {
+    throw new Error('Array cannot be empty')
+  }
+  const randomIndex = Math.floor(Math.random() * array.length)
+  return array[randomIndex]
+}
