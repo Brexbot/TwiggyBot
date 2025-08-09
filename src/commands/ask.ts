@@ -8,10 +8,34 @@ import {
 } from 'discord.js'
 import { Discord, Slash, SlashChoice, SlashOption } from 'discordx'
 
+import { getRandomElement } from '../utils/Helpers.js'
+
 const COMMAND_NAME = 'ask'
 const COMMAND_DESC = 'Ask a question to Wolfram Alpha'
 
 const COOLDOWN_MILLISECONDS = 30 * 1000
+
+// Replies for when Wolfram Alpha does not know the answer
+const REPLIES = [
+  'You should really know that yourself.',
+  'What kind of dumbass question is that?',
+  'I have no idea what you\'re talking about.',
+  'Go bother someone else!',
+  'I\'m not your personal assistant.',
+  'I think I heard that somewhere but can\'t remember the details.',
+  'https://www.giybf.com/',
+  'Next question!',
+  'The answer to that question would only confuse you.',
+  'Beep, boop, nope.',
+  'Scientists are still trying to figure out the answer to that question.',
+  'I don\'t know you well enough to be comfortable to tell you.',
+  'Huh?',
+  'No idea.',
+  'Math is hard, let\'s go shopping!',
+  'I could tell you, but then I\'d have to kill you.',
+  'Didn\'t you just ask me that?',
+  'yes or no',
+]
 
 @Discord()
 class Ask {
@@ -86,7 +110,7 @@ class Ask {
 
     switch (response.status) {
       case 501: {
-        return 'The bot was not able to answer.'
+        return getRandomElement(REPLIES)
       }
       case 400: {
         return 'Something was wrong with that input. Did Tip try to break bot again?'
