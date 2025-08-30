@@ -7,8 +7,8 @@ import {
   CommandInteraction,
   EmbedBuilder,
   GuildMember,
-  Message,
   MessageActionRowComponentBuilder,
+  User,
   inlineCode,
 } from 'discord.js'
 import { Discord, Slash, SlashGroup, SlashOption } from 'discordx'
@@ -20,16 +20,19 @@ import { ColorRoles } from './roleCommands/changecolor.js'
 import { getCallerFromCommand, getGuildAndCallerFromCommand } from '../utils/CommandUtils.js'
 import { shuffleArray } from '../utils/Helpers.js'
 
+const DUEL_COOLDOWN = 10 * 60 * 1000 // Cooldown period after loss in milliseconds
+const GLOBAL_DUEL_TIMEOUT_DURATION = 5 * 60 * 1000
+const NAMED_DUEL_TIMEOUT_DURATION = 3 * 60 * 1000
+const DRAW_TIMEOUT_DURATION = 10 * 60 * 1000
+
 @Discord()
 @SlashGroup({ name: 'duel', description: 'Duel minigame' })
 @SlashGroup('duel')
 @injectable()
 export class Duel {
-  static cooldown = 10 * 60 * 1000 // Cooldown period after loss in milliseconds
-
   private inProgress = false
 
-  private timeoutDuration = 5 * 60 * 1000 // Time before the duel is declared dead in milliseconds
+  // Time before the duel is declared dead in milliseconds
   private timeout: ReturnType<typeof setTimeout> | null = null
 
   public constructor(private client: ORM) {}
@@ -43,39 +46,50 @@ export class Duel {
       required: false,
     })
     wager: string | undefined,
+    @SlashOption({
+      name: 'opponent',
+      type: ApplicationCommandOptionType.User,
+      description: 'The one person who can accept the duel',
+    })
+    wanted_accepter: User | undefined,
     interaction: CommandInteraction
   ) {
     // Get the challenger from the DB. Create them if they don't exist yet.
-    const challengerMember = getCallerFromCommand(interaction)
-    const challenger = await this.getUserWithDuelStats(interaction.user.id)
-    if (!challenger) {
-      await interaction.reply({
+    const challenger = interaction.user
+    if (challenger.id === wanted_accepter?.id) {
+      return interaction.reply({
+        content: 'You cannot duel yourself.',
+        ephemeral: true,
+        allowedMentions: { repliedUser: false },
+      })
+    }
+
+    const challengerStats = await this.getUserWithDuelStats(interaction.user.id)
+    if (!challengerStats) {
+      return interaction.reply({
         content: 'An unexpected error occurred.',
         ephemeral: true,
         allowedMentions: { repliedUser: false },
       })
-      return
     }
 
     // Check if a duel is currently already going on.
     if (this.inProgress) {
-      await interaction.reply({
+      return interaction.reply({
         content: 'A duel is already in progress.',
         ephemeral: true,
         allowedMentions: { repliedUser: false },
       })
-      return
     }
 
     // check if the challenger has recently lost
-    const userCooldownEnd = challenger.lastLoss.getTime() + Duel.cooldown
+    const userCooldownEnd = challengerStats.lastLoss.getTime() + DUEL_COOLDOWN
     if (userCooldownEnd > Date.now()) {
-      await interaction.reply({
-        content: `${challengerMember?.user}, you have recently lost a duel. You can duel again <t:${Math.floor(userCooldownEnd / 1000)}:R>.`,
+      return interaction.reply({
+        content: `${challenger}, you have recently lost a duel. You can duel again <t:${Math.floor(userCooldownEnd / 1000)}:R>.`,
         ephemeral: true,
         allowedMentions: { repliedUser: false },
       })
-      return
     }
 
     // Are we on global CD?
@@ -83,19 +97,18 @@ export class Duel {
     const guildId = interaction.guildId
     if (guildId && interaction.channelId !== '340275382093611011') {
       const guildOptions = await this.client.guildOptions.upsert({
-        where: { guildId: guildId },
+        where: { guildId },
         update: {},
-        create: { guildId: guildId },
+        create: { guildId },
       })
 
       const globalCooldownEnd = guildOptions.lastDuel.getTime() + guildOptions.globalDuelCD
       if (globalCooldownEnd > Date.now()) {
-        await interaction.reply({
+        return interaction.reply({
           content: `Duels are on cooldown here. You can duel again <t:${Math.floor(globalCooldownEnd / 1000)}:R>.`,
           ephemeral: true,
           allowedMentions: { repliedUser: false },
         })
-        return
       }
     }
 
@@ -103,52 +116,60 @@ export class Duel {
     const wagerMsg = wager ? '> ' + wager + '\n' : ''
 
     // Disable the duel after a timeout
+    const timeoutDuration = wanted_accepter ? NAMED_DUEL_TIMEOUT_DURATION : GLOBAL_DUEL_TIMEOUT_DURATION
     this.timeout = setTimeout(async () => {
       this.inProgress = false
       // Disable the button
       const button = this.createButton(true)
       const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
       await interaction.editReply({
-        content: `${wagerMsg}${challengerMember?.user} failed to find someone to duel.`,
+        content: `${wagerMsg}${challenger} failed to find someone to duel.`,
         components: [row],
       })
-    }, this.timeoutDuration)
+    }, timeoutDuration)
 
+    const content = wanted_accepter
+      ? `${wagerMsg}${challenger} is looking for a duel against ${wanted_accepter}, press the button to accept.`
+      : `${wagerMsg}${challenger} is looking for a duel, press the button to accept.`
     const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(this.createButton(false))
-    const message = await interaction.reply({
-      content: `${wagerMsg}${challengerMember?.user} is looking for a duel, press the button to accept.`,
-      fetchReply: true,
-      components: [row],
-    })
+    const response = await interaction.reply({ content, withResponse: true, components: [row] })
 
-    if (!(message instanceof Message)) {
-      throw Error('InvalidMessage instance')
+    const collector = response.resource?.message?.createMessageComponentCollector()
+    if (!collector) {
+      throw new Error('Could not create duel button collector.')
     }
 
-    const collector = message.createMessageComponentCollector()
     collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
       await collectionInteraction.deferUpdate()
 
       // Prevent accepting your own duels and ensure that the acceptor is valid.
-      const acceptorMember = getCallerFromCommand(collectionInteraction)
-      const acceptor = await this.getUserWithDuelStats(collectionInteraction.user.id)
-      if (!acceptor || acceptor.id === challenger.id) {
+      const accepter = collectionInteraction.user
+      if (wanted_accepter && accepter.id !== wanted_accepter.id) {
+        return collectionInteraction.followUp({
+          content: "This duel wasn't meant for you, BEGONE!",
+          ephemeral: true,
+          allowedMentions: { repliedUser: false },
+        })
+      }
+
+      const accepterStats = await this.getUserWithDuelStats(collectionInteraction.user.id)
+      if (!accepterStats || accepterStats.id === challenger.id) {
         return
       }
 
       // Check if the acceptor has recently lost and can't duel right now. Print their timeout.
-      const acceptorCooldownEnd = acceptor.lastLoss.getTime() + Duel.cooldown
+      const acceptorCooldownEnd = accepterStats.lastLoss.getTime() + DUEL_COOLDOWN
       if (acceptorCooldownEnd > Date.now()) {
-        await collectionInteraction.followUp({
-          content: `${acceptorMember?.user}, you have recently lost a duel. You can duel again <t:${Math.floor(acceptorCooldownEnd / 1000)}:R>.`,
+        return await collectionInteraction.followUp({
+          content: `${accepter}, you have recently lost a duel. You can duel again <t:${Math.floor(acceptorCooldownEnd / 1000)}:R>.`,
           ephemeral: true,
           allowedMentions: { repliedUser: false },
         })
-      } else if (!this.inProgress) {
+      }
+
+      if (!this.inProgress) {
         // This case is not really supposed to happen because you should not be able to accept a duel after it has expired
         // We are handling this anyways
-
-        // Check if there is no current duel
         await collectionInteraction.followUp({
           content: `Someone beat you to the challenge! (or the duel expired... who knows!). You may issue a new challenge with ${inlineCode(
             '/duel'
@@ -158,69 +179,69 @@ export class Duel {
         // Disable the button
         const button = this.createButton(true)
         const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
-        await collectionInteraction.editReply({
+        return await collectionInteraction.editReply({
           components: [row],
-        })
-        return
-      } else {
-        // Set the Duel global CD
-        // todo MultiGuild: This shouldn't be hardcoded
-        if (guildId && interaction.channelId !== '340275382093611011') {
-          await this.client.guildOptions.update({
-            where: { guildId: guildId },
-            data: { lastDuel: new Date() },
-          })
-        }
-
-        // Disable duel
-        this.inProgress = false
-        // Disable the timeout that will change the message
-        if (this.timeout) {
-          clearTimeout(this.timeout)
-        }
-
-        // Disable the button
-        const button = this.createButton(true)
-        const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
-        await collectionInteraction.editReply({
-          components: [row],
-        })
-
-        // Get and announce the winner
-        const accepterScore = this.getRandomScore()
-        const challengerScore = this.getRandomScore()
-        let winnerText = ''
-        if (challengerScore > accepterScore) {
-          await this.updateUserScore(challenger.duelStats[0], 'win')
-          await this.updateUserScore(acceptor.duelStats[0], 'loss')
-
-          const [guild, member] = getGuildAndCallerFromCommand(collectionInteraction)
-          await ColorRoles.setColor('#FFFFFF', member, guild)
-
-          winnerText = `${challengerMember?.user} has won!`
-        } else if (accepterScore > challengerScore) {
-          await this.updateUserScore(challenger.duelStats[0] as Duels, 'loss')
-          await this.updateUserScore(acceptor.duelStats[0], 'win')
-
-          const [guild, member] = getGuildAndCallerFromCommand(interaction)
-          await ColorRoles.setColor('#FFFFFF', member, guild)
-
-          winnerText = `${acceptorMember?.user} has won!`
-        } else {
-          await this.updateUserScore(challenger.duelStats[0] as Duels, 'draw')
-          await this.updateUserScore(acceptor.duelStats[0], 'draw')
-
-          const tenMinutesInMillis = 10 * 60 * 1000
-          challengerMember?.timeout(tenMinutesInMillis, 'Tied a duel!')
-          acceptorMember?.timeout(tenMinutesInMillis, 'Tied a duel!')
-
-          winnerText = "It's a draw! Now go sit in a corner for 10 minutes and think about your actions..."
-        }
-
-        await collectionInteraction.editReply({
-          content: `${wagerMsg}${acceptorMember?.user} has rolled a ${accepterScore} and ${challengerMember?.user} has rolled a ${challengerScore}. ${winnerText}`,
         })
       }
+
+      // Set the Duel global CD
+      // todo MultiGuild: This shouldn't be hardcoded
+      if (guildId && interaction.channelId !== '340275382093611011') {
+        await this.client.guildOptions.update({
+          where: { guildId: guildId },
+          data: { lastDuel: new Date() },
+        })
+      }
+
+      // Disable duel
+      this.inProgress = false
+      // Disable the timeout that will change the message
+      if (this.timeout) {
+        clearTimeout(this.timeout)
+      }
+
+      // Disable the button
+      const button = this.createButton(true)
+      const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
+      await collectionInteraction.editReply({
+        components: [row],
+      })
+
+      // Get and announce the winner
+      const accepterScore = this.getRandomScore()
+      const challengerScore = this.getRandomScore()
+      let winnerText = ''
+      if (challengerScore > accepterScore) {
+        await this.updateUserScore(challengerStats.duelStats[0], 'win')
+        await this.updateUserScore(accepterStats.duelStats[0], 'loss')
+
+        const [guild, member] = getGuildAndCallerFromCommand(collectionInteraction)
+        await ColorRoles.setColor('#FFFFFF', member, guild)
+
+        winnerText = `${challenger} has won!`
+      } else if (accepterScore > challengerScore) {
+        await this.updateUserScore(challengerStats.duelStats[0] as Duels, 'loss')
+        await this.updateUserScore(accepterStats.duelStats[0], 'win')
+
+        const [guild, member] = getGuildAndCallerFromCommand(interaction)
+        await ColorRoles.setColor('#FFFFFF', member, guild)
+
+        winnerText = `${accepter} has won!`
+      } else {
+        await this.updateUserScore(challengerStats.duelStats[0] as Duels, 'draw')
+        await this.updateUserScore(accepterStats.duelStats[0], 'draw')
+
+        const challengerMember = getCallerFromCommand(interaction)
+        const accepterMember = getCallerFromCommand(collectionInteraction)
+        challengerMember?.timeout(DRAW_TIMEOUT_DURATION, 'Tied a duel!')
+        accepterMember?.timeout(DRAW_TIMEOUT_DURATION, 'Tied a duel!')
+
+        winnerText = "It's a draw! Now go sit in a corner for 10 minutes and think about your actions..."
+      }
+
+      await collectionInteraction.editReply({
+        content: `${wagerMsg}${accepter} has rolled a ${accepterScore} and ${challenger} has rolled a ${challengerScore}. ${winnerText}`,
+      })
     })
   }
 
