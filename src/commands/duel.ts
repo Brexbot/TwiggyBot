@@ -160,7 +160,7 @@ export class Duel {
       // Check if the acceptor has recently lost and can't duel right now. Print their timeout.
       const acceptorCooldownEnd = accepterStats.lastLoss.getTime() + DUEL_COOLDOWN
       if (acceptorCooldownEnd > Date.now()) {
-        return await collectionInteraction.followUp({
+        return collectionInteraction.followUp({
           content: `${accepter}, you have recently lost a duel. You can duel again <t:${Math.floor(acceptorCooldownEnd / 1000)}:R>.`,
           ephemeral: true,
           allowedMentions: { repliedUser: false },
@@ -179,7 +179,7 @@ export class Duel {
         // Disable the button
         const button = this.createButton(true)
         const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
-        return await collectionInteraction.editReply({
+        return collectionInteraction.editReply({
           components: [row],
         })
       }
