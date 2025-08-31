@@ -150,7 +150,7 @@ class Duel {
     collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
       await collectionInteraction.deferUpdate()
 
-      // Prevent accepting your own duels and ensure that the acceptor is valid.
+      // Prevent accepting your own duels and ensure that the accepter is valid.
       const accepter = collectionInteraction.user
       if (wantedAccepter && accepter.id !== wantedAccepter.id) {
         return ephemeralButtonFollowup(collectionInteraction, { content: "This duel wasn't meant for you, BEGONE!" })
@@ -161,11 +161,11 @@ class Duel {
         return
       }
 
-      // Check if the acceptor has recently lost and can't duel right now. Print their timeout.
-      const acceptorCooldownEnd = accepterStats.lastLoss.getTime() + DUEL_COOLDOWN
-      if (acceptorCooldownEnd > Date.now()) {
+      // Check if the accepter has recently lost and can't duel right now. Print their timeout.
+      const accepterCooldownEnd = accepterStats.lastLoss.getTime() + DUEL_COOLDOWN
+      if (accepterCooldownEnd > Date.now()) {
         return ephemeralButtonFollowup(collectionInteraction, {
-          content: `${accepter}, you have recently lost a duel. You can duel again <t:${Math.floor(acceptorCooldownEnd / 1000)}:R>.`,
+          content: `${accepter}, you have recently lost a duel. You can duel again <t:${Math.floor(accepterCooldownEnd / 1000)}:R>.`,
         })
       }
 
