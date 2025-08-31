@@ -51,12 +51,12 @@ class Duel {
       type: ApplicationCommandOptionType.User,
       description: 'The one person who can accept the duel',
     })
-    wanted_accepter: User | undefined,
+    wantedAccepter: User | undefined,
     interaction: CommandInteraction
   ) {
     // Get the challenger from the DB. Create them if they don't exist yet.
     const challenger = interaction.user
-    if (challenger.id === wanted_accepter?.id) {
+    if (challenger.id === wantedAccepter?.id) {
       return interaction.reply({
         content: 'You cannot duel yourself.',
         ephemeral: true,
@@ -116,7 +116,7 @@ class Duel {
     const wagerMsg = wager ? '> ' + wager + '\n' : ''
 
     // Disable the duel after a timeout
-    const timeoutDuration = wanted_accepter ? NAMED_DUEL_TIMEOUT_DURATION : GLOBAL_DUEL_TIMEOUT_DURATION
+    const timeoutDuration = wantedAccepter ? NAMED_DUEL_TIMEOUT_DURATION : GLOBAL_DUEL_TIMEOUT_DURATION
     this.timeout = setTimeout(async () => {
       this.inProgress = false
       // Disable the button
@@ -128,8 +128,8 @@ class Duel {
       })
     }, timeoutDuration)
 
-    const content = wanted_accepter
-      ? `${wagerMsg}${challenger} is looking for a duel against ${wanted_accepter}, press the button to accept.`
+    const content = wantedAccepter
+      ? `${wagerMsg}${challenger} is looking for a duel against ${wantedAccepter}, press the button to accept.`
       : `${wagerMsg}${challenger} is looking for a duel, press the button to accept.`
     const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(this.createButton(false))
     const response = await interaction.reply({ content, withResponse: true, components: [row] })
@@ -144,7 +144,7 @@ class Duel {
 
       // Prevent accepting your own duels and ensure that the acceptor is valid.
       const accepter = collectionInteraction.user
-      if (wanted_accepter && accepter.id !== wanted_accepter.id) {
+      if (wantedAccepter && accepter.id !== wantedAccepter.id) {
         return collectionInteraction.followUp({
           content: "This duel wasn't meant for you, BEGONE!",
           ephemeral: true,
