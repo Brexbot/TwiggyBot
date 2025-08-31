@@ -27,7 +27,7 @@ import { shuffleArray } from '../utils/Helpers.js'
 
 export const DUEL_COOLDOWN = 10 * 60 * 1000 // Cooldown period after loss in milliseconds
 const GLOBAL_DUEL_TIMEOUT_DURATION = 5 * 60 * 1000
-const NAMED_DUEL_TIMEOUT_DURATION = 3 * 60 * 1000
+const NAMED_DUEL_TIMEOUT_DURATION = 1 * 60 * 1000
 const DRAW_TIMEOUT_DURATION = 10 * 60 * 1000
 
 @Discord()
