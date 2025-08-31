@@ -92,6 +92,27 @@ class Duel {
       })
     }
 
+    if (wantedAccepter) {
+      // Check wanted accepter cooldown before creating a duel
+      // The duel would almost certantly time out if that were the case
+      const wantedAccepterStats = await this.getUserWithDuelStats(wantedAccepter.id)
+      if (!wantedAccepterStats) {
+        return interaction.reply({
+          content: "An unexpected error occurred while fetching your opponents' stats.",
+          ephemeral: true,
+          allowedMentions: { repliedUser: false },
+        })
+      }
+      const wantedAccepterCooldownEnd = wantedAccepterStats.lastLoss.getTime() + DUEL_COOLDOWN
+      if (wantedAccepterCooldownEnd > Date.now()) {
+        return interaction.reply({
+          content: `${wantedAccepter} has recently lost a duel, you cannot challenge them right now. They can duel again <t:${Math.floor(wantedAccepterCooldownEnd / 1000)}:R>.`,
+          ephemeral: true,
+          allowedMentions: { repliedUser: false },
+        })
+      }
+    }
+
     // Are we on global CD?
     // todo MultiGuild: This shouldn't be hardcoded (#Mixu's id)
     const guildId = interaction.guildId
