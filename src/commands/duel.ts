@@ -64,19 +64,19 @@ class Duel {
       })
     }
 
-    const challengerStats = await this.getUserWithDuelStats(interaction.user.id)
-    if (!challengerStats) {
+    // Check if a duel is currently already going on.
+    if (this.inProgress) {
       return interaction.reply({
-        content: 'An unexpected error occurred.',
+        content: 'A duel is already in progress.',
         ephemeral: true,
         allowedMentions: { repliedUser: false },
       })
     }
 
-    // Check if a duel is currently already going on.
-    if (this.inProgress) {
+    const challengerStats = await this.getUserWithDuelStats(interaction.user.id)
+    if (!challengerStats) {
       return interaction.reply({
-        content: 'A duel is already in progress.',
+        content: 'An unexpected error occurred.',
         ephemeral: true,
         allowedMentions: { repliedUser: false },
       })
