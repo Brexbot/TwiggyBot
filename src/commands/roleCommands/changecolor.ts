@@ -21,7 +21,7 @@ import { ORM } from '../../persistence/index.js'
 import { Prisma } from '../../../prisma/generated/prisma-client-js/index.js'
 import { IsSuperUser, superUserIds, superUserRoles } from '../../guards/RoleChecks.js'
 import { getCallerFromCommand, getGuildAndCallerFromCommand, getGuildFromCommand } from '../../utils/CommandUtils.js'
-import { Duel } from '../duel.js'
+import { DUEL_COOLDOWN } from '../duel.js'
 import { getTimeLeftInReadableFormat } from '../../utils/CooldownUtils.js'
 
 @Discord()
@@ -241,10 +241,10 @@ export class ColorRoles {
     })
 
     if (!superUserIds.some((id) => id.id === member.id)) {
-      if (userOptions.lastLoss.getTime() + Duel.cooldown > Date.now()) {
+      if (userOptions.lastLoss.getTime() + DUEL_COOLDOWN > Date.now()) {
         return `${member.user}, you have recently lost a duel. Please wait ${getTimeLeftInReadableFormat(
           userOptions.lastLoss,
-          Duel.cooldown
+          DUEL_COOLDOWN
         )} before trying again.`
       } else if (userOptions.lastRandom.getTime() + ColorRoles.cooldown > Date.now()) {
         return `${member.user}, you have recently randomed/gambled. Please wait ${getTimeLeftInReadableFormat(
