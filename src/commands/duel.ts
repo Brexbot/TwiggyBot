@@ -83,6 +83,12 @@ class Duel {
       })
     }
 
+    const wagerMsg = wager ? '> ' + wager + '\n' : ''
+    let timeoutDuration = GLOBAL_DUEL_TIMEOUT_DURATION
+    let content = `${wagerMsg}${challenger} is looking for a duel, press the button to accept.`
+    let failedDuelContent = `${wagerMsg}${challenger} failed to find someone to duel.`
+
+    // Differenciate between a global duel and a named one
     if (wantedAccepter) {
       // Check wanted accepter cooldown before creating a duel
       // The duel would almost certantly time out if that were the case
@@ -98,6 +104,10 @@ class Duel {
           content: `${wantedAccepter} has recently lost a duel, you cannot challenge them right now. They can duel again <t:${Math.floor(wantedAccepterCooldownEnd / 1000)}:R>.`,
         })
       }
+
+      timeoutDuration = NAMED_DUEL_TIMEOUT_DURATION
+      content = `${wagerMsg}${challenger} is looking for a duel against ${wantedAccepter}, press the button to accept.`
+      failedDuelContent = `${wagerMsg}${wantedAccepter} failed accept ${challenger}'s duel.`
     }
 
     // Are we on global CD?
@@ -119,24 +129,16 @@ class Duel {
     }
 
     this.inProgress = true
-    const wagerMsg = wager ? '> ' + wager + '\n' : ''
 
     // Disable the duel after a timeout
-    const timeoutDuration = wantedAccepter ? NAMED_DUEL_TIMEOUT_DURATION : GLOBAL_DUEL_TIMEOUT_DURATION
     this.timeout = setTimeout(async () => {
       this.inProgress = false
       // Disable the button
       const button = this.createButton(true)
       const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
-      await interaction.editReply({
-        content: `${wagerMsg}${challenger} failed to find someone to duel.`,
-        components: [row],
-      })
+      await interaction.editReply({ content: failedDuelContent, components: [row] })
     }, timeoutDuration)
 
-    const content = wantedAccepter
-      ? `${wagerMsg}${challenger} is looking for a duel against ${wantedAccepter}, press the button to accept.`
-      : `${wagerMsg}${challenger} is looking for a duel, press the button to accept.`
     const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(this.createButton(false))
     const response = await interaction.reply({ content, withResponse: true, components: [row] })
 
