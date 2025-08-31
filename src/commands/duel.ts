@@ -20,7 +20,7 @@ import { ColorRoles } from './roleCommands/changecolor.js'
 import { getCallerFromCommand, getGuildAndCallerFromCommand } from '../utils/CommandUtils.js'
 import { shuffleArray } from '../utils/Helpers.js'
 
-const DUEL_COOLDOWN = 10 * 60 * 1000 // Cooldown period after loss in milliseconds
+export const DUEL_COOLDOWN = 10 * 60 * 1000 // Cooldown period after loss in milliseconds
 const GLOBAL_DUEL_TIMEOUT_DURATION = 5 * 60 * 1000
 const NAMED_DUEL_TIMEOUT_DURATION = 3 * 60 * 1000
 const DRAW_TIMEOUT_DURATION = 10 * 60 * 1000
@@ -29,7 +29,7 @@ const DRAW_TIMEOUT_DURATION = 10 * 60 * 1000
 @SlashGroup({ name: 'duel', description: 'Duel minigame' })
 @SlashGroup('duel')
 @injectable()
-export class Duel {
+class Duel {
   private inProgress = false
 
   // Time before the duel is declared dead in milliseconds
