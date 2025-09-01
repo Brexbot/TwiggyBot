@@ -64,6 +64,9 @@ class Duel {
     if (challenger.id === wantedAccepter?.id) {
       return ephemeralReply(interaction, { content: 'You cannot duel yourself.' })
     }
+    if (wantedAccepter?.bot) {
+      return ephemeralReply(interaction, { content: 'Stop trying to fight a bot, chat.' })
+    }
 
     // Check if a duel is currently already going on.
     if (this.inProgress) {
