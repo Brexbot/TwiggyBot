@@ -1,4 +1,13 @@
-import { ButtonInteraction, CommandInteraction, Guild, GuildMember, User } from 'discord.js'
+import {
+  ButtonInteraction,
+  CommandInteraction,
+  Guild,
+  GuildMember,
+  InteractionReplyOptions,
+  InteractionResponse,
+  Message,
+  User,
+} from 'discord.js'
 import { SimpleCommandMessage } from 'discordx'
 
 export function getGuildFromCommand(
@@ -45,4 +54,26 @@ export function getNicknameFromUser(target: User | GuildMember, guild: Guild): s
     // Implies the user has left the server
     return target.username
   }
+}
+
+export function ephemeralReply(
+  interaction: CommandInteraction,
+  options: InteractionReplyOptions
+): Promise<InteractionResponse<boolean>> {
+  return interaction.reply({
+    ephemeral: true,
+    allowedMentions: { repliedUser: false },
+    ...options,
+  })
+}
+
+export function ephemeralButtonFollowup(
+  interaction: ButtonInteraction,
+  options: InteractionReplyOptions
+): Promise<Message<boolean>> {
+  return interaction.followUp({
+    ephemeral: true,
+    allowedMentions: { repliedUser: false },
+    ...options,
+  })
 }

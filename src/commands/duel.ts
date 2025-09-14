@@ -17,12 +17,17 @@ import { ORM } from '../persistence/ORM.js'
 
 import { Duels } from '../../prisma/generated/prisma-client-js/index.js'
 import { ColorRoles } from './roleCommands/changecolor.js'
-import { getCallerFromCommand, getGuildAndCallerFromCommand } from '../utils/CommandUtils.js'
+import {
+  ephemeralButtonFollowup,
+  ephemeralReply,
+  getCallerFromCommand,
+  getGuildAndCallerFromCommand,
+} from '../utils/CommandUtils.js'
 import { shuffleArray } from '../utils/Helpers.js'
 
-export const DUEL_COOLDOWN = 10 * 60 * 1000 // Cooldown period after loss in milliseconds
-const GLOBAL_DUEL_TIMEOUT_DURATION = 5 * 60 * 1000
-const NAMED_DUEL_TIMEOUT_DURATION = 3 * 60 * 1000
+export const DUEL_COOLDOWN = 10 * 10 * 1000 // Cooldown period after loss in milliseconds
+const GLOBAL_DUEL_TIMEOUT_DURATION = 5 * 10 * 1000
+const NAMED_DUEL_TIMEOUT_DURATION = 1 * 60 * 1000
 const DRAW_TIMEOUT_DURATION = 10 * 60 * 1000
 
 @Discord()
@@ -51,45 +56,66 @@ class Duel {
       type: ApplicationCommandOptionType.User,
       description: 'The one person who can accept the duel',
     })
-    wanted_accepter: User | undefined,
+    wantedAccepter: GuildMember | undefined,
     interaction: CommandInteraction
   ) {
-    // Get the challenger from the DB. Create them if they don't exist yet.
-    const challenger = interaction.user
-    if (challenger.id === wanted_accepter?.id) {
-      return interaction.reply({
-        content: 'You cannot duel yourself.',
-        ephemeral: true,
-        allowedMentions: { repliedUser: false },
-      })
+    if (wager && wager.length > 420) {
+      return ephemeralReply(interaction, { content: 'Stop.' })
     }
 
-    const challengerStats = await this.getUserWithDuelStats(interaction.user.id)
-    if (!challengerStats) {
-      return interaction.reply({
-        content: 'An unexpected error occurred.',
-        ephemeral: true,
-        allowedMentions: { repliedUser: false },
-      })
+    // Get the challenger from the DB. Create them if they don't exist yet.
+    const challenger = interaction.user
+    if (challenger.id === wantedAccepter?.id) {
+      return ephemeralReply(interaction, { content: 'You cannot duel yourself.' })
+    }
+
+    if (wantedAccepter?.user.bot) {
+      return ephemeralReply(interaction, { content: 'Stop trying to fight a bot, chat.' })
     }
 
     // Check if a duel is currently already going on.
     if (this.inProgress) {
-      return interaction.reply({
-        content: 'A duel is already in progress.',
-        ephemeral: true,
-        allowedMentions: { repliedUser: false },
-      })
+      return ephemeralReply(interaction, { content: 'A duel is already in progress.' })
+    }
+
+    const challengerStats = await this.getUserWithDuelStats(interaction.user.id)
+    if (!challengerStats) {
+      return ephemeralReply(interaction, { content: 'An unexpected error occurred.' })
     }
 
     // check if the challenger has recently lost
     const userCooldownEnd = challengerStats.lastLoss.getTime() + DUEL_COOLDOWN
     if (userCooldownEnd > Date.now()) {
-      return interaction.reply({
+      return ephemeralReply(interaction, {
         content: `${challenger}, you have recently lost a duel. You can duel again <t:${Math.floor(userCooldownEnd / 1000)}:R>.`,
-        ephemeral: true,
-        allowedMentions: { repliedUser: false },
       })
+    }
+
+    const wagerMsg = wager ? '> ' + wager + '\n' : ''
+    let timeoutDuration = GLOBAL_DUEL_TIMEOUT_DURATION
+    let content = `${wagerMsg}${challenger} is looking for a duel, press the button to accept.`
+    let failedDuelContent = `${wagerMsg}${challenger} failed to find someone to duel.`
+
+    // Differenciate between a global duel and a named one
+    if (wantedAccepter) {
+      // Check wanted accepter cooldown before creating a duel
+      // The duel would almost certantly time out if that were the case
+      const wantedAccepterStats = await this.getUserWithDuelStats(wantedAccepter.id)
+      if (!wantedAccepterStats) {
+        return ephemeralReply(interaction, {
+          content: "An unexpected error occurred while fetching your opponents' stats.",
+        })
+      }
+      const wantedAccepterCooldownEnd = wantedAccepterStats.lastLoss.getTime() + DUEL_COOLDOWN
+      if (wantedAccepterCooldownEnd > Date.now()) {
+        return ephemeralReply(interaction, {
+          content: `${wantedAccepter} has recently lost a duel, you cannot challenge them right now. They can duel again <t:${Math.floor(wantedAccepterCooldownEnd / 1000)}:R>.`,
+        })
+      }
+
+      timeoutDuration = NAMED_DUEL_TIMEOUT_DURATION
+      content = `${wagerMsg}${challenger} is looking for a duel against ${wantedAccepter}, press the button to accept.`
+      failedDuelContent = `${wagerMsg}${wantedAccepter} failed accept ${challenger}'s duel.`
     }
 
     // Are we on global CD?
@@ -104,33 +130,23 @@ class Duel {
 
       const globalCooldownEnd = guildOptions.lastDuel.getTime() + guildOptions.globalDuelCD
       if (globalCooldownEnd > Date.now()) {
-        return interaction.reply({
+        return ephemeralReply(interaction, {
           content: `Duels are on cooldown here. You can duel again <t:${Math.floor(globalCooldownEnd / 1000)}:R>.`,
-          ephemeral: true,
-          allowedMentions: { repliedUser: false },
         })
       }
     }
 
     this.inProgress = true
-    const wagerMsg = wager ? '> ' + wager + '\n' : ''
 
     // Disable the duel after a timeout
-    const timeoutDuration = wanted_accepter ? NAMED_DUEL_TIMEOUT_DURATION : GLOBAL_DUEL_TIMEOUT_DURATION
     this.timeout = setTimeout(async () => {
       this.inProgress = false
       // Disable the button
       const button = this.createButton(true)
       const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(button)
-      await interaction.editReply({
-        content: `${wagerMsg}${challenger} failed to find someone to duel.`,
-        components: [row],
-      })
+      await interaction.editReply({ content: failedDuelContent, components: [row] })
     }, timeoutDuration)
 
-    const content = wanted_accepter
-      ? `${wagerMsg}${challenger} is looking for a duel against ${wanted_accepter}, press the button to accept.`
-      : `${wagerMsg}${challenger} is looking for a duel, press the button to accept.`
     const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(this.createButton(false))
     const response = await interaction.reply({ content, withResponse: true, components: [row] })
 
@@ -142,14 +158,10 @@ class Duel {
     collector.on('collect', async (collectionInteraction: ButtonInteraction) => {
       await collectionInteraction.deferUpdate()
 
-      // Prevent accepting your own duels and ensure that the acceptor is valid.
+      // Prevent accepting your own duels and ensure that the accepter is valid.
       const accepter = collectionInteraction.user
-      if (wanted_accepter && accepter.id !== wanted_accepter.id) {
-        return collectionInteraction.followUp({
-          content: "This duel wasn't meant for you, BEGONE!",
-          ephemeral: true,
-          allowedMentions: { repliedUser: false },
-        })
+      if (wantedAccepter && accepter.id !== wantedAccepter.id) {
+        return ephemeralButtonFollowup(collectionInteraction, { content: "This duel wasn't meant for you, BEGONE!" })
       }
 
       const accepterStats = await this.getUserWithDuelStats(collectionInteraction.user.id)
@@ -157,24 +169,19 @@ class Duel {
         return
       }
 
-      // Check if the acceptor has recently lost and can't duel right now. Print their timeout.
-      const acceptorCooldownEnd = accepterStats.lastLoss.getTime() + DUEL_COOLDOWN
-      if (acceptorCooldownEnd > Date.now()) {
-        return collectionInteraction.followUp({
-          content: `${accepter}, you have recently lost a duel. You can duel again <t:${Math.floor(acceptorCooldownEnd / 1000)}:R>.`,
-          ephemeral: true,
-          allowedMentions: { repliedUser: false },
+      // Check if the accepter has recently lost and can't duel right now. Print their timeout.
+      const accepterCooldownEnd = accepterStats.lastLoss.getTime() + DUEL_COOLDOWN
+      if (accepterCooldownEnd > Date.now()) {
+        return ephemeralButtonFollowup(collectionInteraction, {
+          content: `${accepter}, you have recently lost a duel. You can duel again <t:${Math.floor(accepterCooldownEnd / 1000)}:R>.`,
         })
       }
 
       if (!this.inProgress) {
         // This case is not really supposed to happen because you should not be able to accept a duel after it has expired
         // We are handling this anyways
-        await collectionInteraction.followUp({
-          content: `Someone beat you to the challenge! (or the duel expired... who knows!). You may issue a new challenge with ${inlineCode(
-            '/duel'
-          )}.`,
-          ephemeral: true,
+        await ephemeralButtonFollowup(collectionInteraction, {
+          content: `Someone beat you to the challenge! (or the duel expired... who knows!). You may issue a new challenge with ${inlineCode('/duel')}.`,
         })
         // Disable the button
         const button = this.createButton(true)
@@ -220,7 +227,7 @@ class Duel {
 
         winnerText = `${challenger} has won!`
       } else if (accepterScore > challengerScore) {
-        await this.updateUserScore(challengerStats.duelStats[0] as Duels, 'loss')
+        await this.updateUserScore(challengerStats.duelStats[0], 'loss')
         await this.updateUserScore(accepterStats.duelStats[0], 'win')
 
         const [guild, member] = getGuildAndCallerFromCommand(interaction)
@@ -228,7 +235,7 @@ class Duel {
 
         winnerText = `${accepter} has won!`
       } else {
-        await this.updateUserScore(challengerStats.duelStats[0] as Duels, 'draw')
+        await this.updateUserScore(challengerStats.duelStats[0], 'draw')
         await this.updateUserScore(accepterStats.duelStats[0], 'draw')
 
         const challengerMember = getCallerFromCommand(interaction)
