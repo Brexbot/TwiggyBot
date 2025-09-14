@@ -59,6 +59,10 @@ class Duel {
     wantedAccepter: GuildMember | undefined,
     interaction: CommandInteraction
   ) {
+    if (wager && wager.length > 420) {
+      return ephemeralReply(interaction, { content: 'Stop.' })
+    }
+
     // Get the challenger from the DB. Create them if they don't exist yet.
     const challenger = interaction.user
     if (challenger.id === wantedAccepter?.id) {
