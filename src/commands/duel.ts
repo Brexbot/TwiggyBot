@@ -25,8 +25,8 @@ import {
 } from '../utils/CommandUtils.js'
 import { shuffleArray } from '../utils/Helpers.js'
 
-export const DUEL_COOLDOWN = 10 * 60 * 1000 // Cooldown period after loss in milliseconds
-const GLOBAL_DUEL_TIMEOUT_DURATION = 5 * 60 * 1000
+export const DUEL_COOLDOWN = 10 * 10 * 1000 // Cooldown period after loss in milliseconds
+const GLOBAL_DUEL_TIMEOUT_DURATION = 5 * 10 * 1000
 const NAMED_DUEL_TIMEOUT_DURATION = 1 * 60 * 1000
 const DRAW_TIMEOUT_DURATION = 10 * 60 * 1000
 
@@ -56,7 +56,7 @@ class Duel {
       type: ApplicationCommandOptionType.User,
       description: 'The one person who can accept the duel',
     })
-    wantedAccepter: User | undefined,
+    wantedAccepter: GuildMember | undefined,
     interaction: CommandInteraction
   ) {
     // Get the challenger from the DB. Create them if they don't exist yet.
@@ -64,7 +64,8 @@ class Duel {
     if (challenger.id === wantedAccepter?.id) {
       return ephemeralReply(interaction, { content: 'You cannot duel yourself.' })
     }
-    if (wantedAccepter?.bot) {
+
+    if (wantedAccepter?.user.bot) {
       return ephemeralReply(interaction, { content: 'Stop trying to fight a bot, chat.' })
     }
 
@@ -222,7 +223,7 @@ class Duel {
 
         winnerText = `${challenger} has won!`
       } else if (accepterScore > challengerScore) {
-        await this.updateUserScore(challengerStats.duelStats[0] as Duels, 'loss')
+        await this.updateUserScore(challengerStats.duelStats[0], 'loss')
         await this.updateUserScore(accepterStats.duelStats[0], 'win')
 
         const [guild, member] = getGuildAndCallerFromCommand(interaction)
@@ -230,7 +231,7 @@ class Duel {
 
         winnerText = `${accepter} has won!`
       } else {
-        await this.updateUserScore(challengerStats.duelStats[0] as Duels, 'draw')
+        await this.updateUserScore(challengerStats.duelStats[0], 'draw')
         await this.updateUserScore(accepterStats.duelStats[0], 'draw')
 
         const challengerMember = getCallerFromCommand(interaction)
