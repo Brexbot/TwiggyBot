@@ -25,8 +25,8 @@ import {
 } from '../utils/CommandUtils.js'
 import { shuffleArray } from '../utils/Helpers.js'
 
-export const DUEL_COOLDOWN = 10 * 10 * 1000 // Cooldown period after loss in milliseconds
-const GLOBAL_DUEL_TIMEOUT_DURATION = 5 * 10 * 1000
+export const DUEL_COOLDOWN = 10 * 60 * 1000 // Cooldown period after loss in milliseconds
+const GLOBAL_DUEL_TIMEOUT_DURATION = 5 * 60 * 1000
 const NAMED_DUEL_TIMEOUT_DURATION = 1 * 60 * 1000
 const DRAW_TIMEOUT_DURATION = 10 * 60 * 1000
 
@@ -115,7 +115,7 @@ class Duel {
 
       timeoutDuration = NAMED_DUEL_TIMEOUT_DURATION
       content = `${wagerMsg}${challenger} is looking for a duel against ${wantedAccepter}, press the button to accept.`
-      failedDuelContent = `${wagerMsg}${wantedAccepter} failed accept ${challenger}'s duel.`
+      failedDuelContent = `${wagerMsg}${wantedAccepter} failed to accept ${challenger}'s duel.`
     }
 
     // Are we on global CD?
