@@ -1,1 +1,7 @@
-.gitignore
+.git
+node_modules
+build
+.env*
+prisma/generated
+prisma/*.db
+prisma/*.db-journal

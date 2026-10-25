@@ -217,7 +217,7 @@ class Duel {
       // Get and announce the winner
       const accepterScore = this.getRandomScore()
       const challengerScore = this.getRandomScore()
-      let winnerText = ''
+      let winnerText: string
       if (challengerScore > accepterScore) {
         await this.updateUserScore(challengerStats.duelStats[0], 'win')
         await this.updateUserScore(accepterStats.duelStats[0], 'loss')

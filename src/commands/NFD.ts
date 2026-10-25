@@ -1345,7 +1345,7 @@ export class NFD {
               return
             }
 
-            let covetShunDifference: null | number = null
+            let covetShunDifference: null | number
             if (collectionInteraction.customId == this.COVET_BUTTON_ID) {
               covetShunDifference = await this.covetOrShunDino(
                 'COVET',

@@ -16,17 +16,21 @@ export const superUserIds = [
   ...(process.env.DISCORD_SUPER_USER_ID ? [process.env.DISCORD_SUPER_USER_ID] : []), // Local Dev SU Role
   '89926310410850304', // BRex
   '117728334854619142', // Zuzuvelas
-].map(
-  (id): ApplicationCommandPermissions => ({ id: id, type: ApplicationCommandPermissionType.User, permission: true })
-)
+].map((id): ApplicationCommandPermissions => ({
+  id: id,
+  type: ApplicationCommandPermissionType.User,
+  permission: true,
+}))
 
 export const superUserRoles = [
   ...(process.env.DISCORD_SUPER_USER_ROLE ? [process.env.DISCORD_SUPER_USER_ROLE] : []), // Local Dev SU Role
   '104750975268483072', // Rexcord: Ultimate Scum
   '103679575694774272', // Rexcord: Mods
-].map(
-  (id): ApplicationCommandPermissions => ({ id: id, type: ApplicationCommandPermissionType.Role, permission: true })
-)
+].map((id): ApplicationCommandPermissions => ({
+  id: id,
+  type: ApplicationCommandPermissionType.Role,
+  permission: true,
+}))
 
 export const SuperUsers = superUserIds.concat(superUserRoles)
 

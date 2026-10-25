@@ -82,7 +82,7 @@ class Board {
     const allowedNeighbors = allNeighbors.filter(([x, y]) => this.isInBounds(x, y))
     return allowedNeighbors.reduce((count, [x, y]) => {
       const neighborIsMine = mines[this.indexFromXY(x, y)]
-      return (count += neighborIsMine ? 1 : 0)
+      return count + (neighborIsMine ? 1 : 0)
     }, 0)
   }
 

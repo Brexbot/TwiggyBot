@@ -1,9 +1,9 @@
-FROM node:16.13.1-alpine3.15
+FROM node:24-alpine
 
 WORKDIR /usr/src/app
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 RUN npx prisma generate && npx prisma migrate dev --name init && npm run build
