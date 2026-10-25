@@ -6,6 +6,7 @@
     "sourceMap": true,
     "strict": true,
     "outDir": "build",
+    "rootDir": "src",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "declaration": false,

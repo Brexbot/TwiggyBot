@@ -1,6 +1,7 @@
 import { PrismaClient, RPGCharacter } from '../../prisma/generated/prisma-client-js/index.js'
 import { ELO_DECAY_FACTOR } from '../commands/RPG/Data.js'
 import { getRandomElement } from '../commands/RPG/util.js'
+import { createAdapter } from '../persistence/adapter.js'
 
 function calculateEloDecay(eloRank: number): number {
   // Linear interpolation between eloRank and 1000 which is the mean ladder "skill"
@@ -11,7 +12,7 @@ function calculateEloDecay(eloRank: number): number {
 
 export async function decayElo() {
   console.log(`\nElo Decay running at ${new Date()}`)
-  const client = new PrismaClient()
+  const client = new PrismaClient({ adapter: createAdapter() })
 
   const allEntries = await client.rPGCharacter.findMany()
   let eloDrift = 0
@@ -71,4 +72,6 @@ export async function decayElo() {
     tally += postFixAllEntries[i].eloRank
   }
   console.log(`Mean Elo now ${tally / postFixAllEntries.length}`)
+
+  await client.$disconnect()
 }

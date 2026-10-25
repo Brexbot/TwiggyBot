@@ -120,7 +120,7 @@ export class RPG {
     let text = getRandomElement(attackTexts[attackStat])
 
     // Attack is resolved simply as whoever rolls highest. Meets-it beats-it, so attacker wins ties
-    let damage = 0
+    let damage: number
     if (attackRoll >= defenceRoll) {
       text += ' ' + getRandomElement(defenceFailureTexts[defenceStat])
 

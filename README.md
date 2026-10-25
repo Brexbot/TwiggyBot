@@ -71,7 +71,7 @@ docker run --rm --env-file.env -ti brexbot
 
 ### Locally
 Prerequisites:
-* Node.js >= 16
+* Node.js >= 20.19 (24 LTS recommended)
 
 Install the dependencies
 ```shell

@@ -85,7 +85,7 @@ class QuoteCommand {
 
   private async generateMessage(quoteId?: number, modifier = (a: string) => a): Promise<[string, boolean]> {
     return await this.updateQuotes().then(async () => {
-      let quote: Quote | undefined | null = undefined
+      let quote: Quote | undefined | null
       if (quoteId) {
         quote = this.quotes.find((quote) => quote.id == quoteId)
       } else {
